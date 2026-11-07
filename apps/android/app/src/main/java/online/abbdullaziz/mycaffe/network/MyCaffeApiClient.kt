@@ -260,3 +260,4 @@ class MyCaffeApiClient {
         return if (msg != null) "HTTP $code: $msg" else "HTTP $code gagal memproses permintaan"
     }
 }
+

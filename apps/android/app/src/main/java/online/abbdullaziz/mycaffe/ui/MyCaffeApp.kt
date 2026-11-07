@@ -1013,3 +1013,4 @@ private fun calculateFolderBytes(dir: File?): Long {
     }
     return total
 }
+

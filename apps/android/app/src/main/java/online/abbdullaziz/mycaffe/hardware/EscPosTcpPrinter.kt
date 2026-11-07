@@ -111,3 +111,4 @@ class EscPosTcpPrinter(
 }
 
 typealias EscPosHardwareBridge = EscPosTcpPrinter
+
