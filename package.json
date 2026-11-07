@@ -3,15 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "description": "Unified Client Monorepo for MyCaffe by AzureDevID (online.abbdullaziz.mycaffe: Web PWA QR Order/Backoffice/Superadmin, Android Jetpack Compose POS, iOS Bridge & Shared Design Tokens)",
-  "workspaces": [
-    "apps/web",
-    "packages/*"
-  ],
-  "packageManager": "pnpm@10.0.0",
+  "packageManager": "pnpm@12.18.0",
   "scripts": {
-    "dev": "npm --workspace @azuredevid/mycaffe-web run dev",
-    "build": "npm --workspace @azuredevid/mycaffe-web run build",
-    "typecheck": "npm --workspace @azuredevid/mycaffe-web run typecheck",
+    "dev": "pnpm --filter @azuredevid/mycaffe-web dev",
+    "build": "pnpm --filter @azuredevid/mycaffe-web build",
+    "typecheck": "pnpm --filter @azuredevid/mycaffe-web typecheck",
     "tokens:verify": "node packages/design-tokens/verify-tokens.mjs",
     "android:check": "apps\\android\\gradlew.bat -p apps/android help",
     "android:assemble": "apps\\android\\gradlew.bat -p apps/android assembleDebug",

@@ -1,6 +1,31 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --breakpoint-ipad: 1180px;
+
+  --color-canvas: var(--bg-canvas);
+  --color-surface: var(--bg-surface);
+  --color-muted: var(--bg-muted);
+  --color-ink: var(--text-primary);
+  --color-subink: var(--text-secondary);
+  --color-subtle: var(--border-subtle);
+  --color-strong: var(--border-strong);
+  --color-brand: var(--brand-primary);
+  --color-brand-fg: var(--brand-on-primary);
+  --color-accent: var(--brand-accent);
+  --color-accent-ink: var(--brand-accent-text);
+
+  --color-azd-primary: var(--azd-primary);
+  --color-azd-cyan: var(--azd-cyan);
+  --color-azd-obsidian: var(--azd-obsidian);
+  --color-azd-ink: var(--azd-ink);
+
+  --font-display: var(--font-display), "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --font-sans: var(--font-sans), "Inter", system-ui, sans-serif;
+  --font-mono: var(--font-mono), "JetBrains Mono", Consolas, monospace;
+}
 
 /*
  * Design Read: Multi-tenant hospitality POS, QR Table Order PWA, and SaaS Governance Console
@@ -196,4 +221,3 @@ body {
   color: var(--text-secondary);
   opacity: 0.8;
 }
-
