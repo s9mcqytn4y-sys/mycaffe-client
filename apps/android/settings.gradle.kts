@@ -14,3 +14,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "mycaffe-android-pos"
 include(":app")
+
