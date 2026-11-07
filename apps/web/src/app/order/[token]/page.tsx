@@ -35,6 +35,15 @@ interface PaymentInfo {
   gross_amount: number;
 }
 
+interface ServerQuoteSummary {
+  subtotal: number;
+  tax: number;
+  service: number;
+  discount: number;
+  total: number;
+  quote_fingerprint: string;
+}
+
 export default function GuestOrderPage() {
   const params = useParams();
   const token = typeof params?.token === "string" ? params.token : "";
@@ -51,6 +60,10 @@ export default function GuestOrderPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Server-side quote state
+  const [quote, setQuote] = useState<ServerQuoteSummary | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState<boolean>(false);
+
   // Payment & Tracking State
   const [orderId, setOrderId] = useState<string | null>(null);
   const [trackingToken, setTrackingToken] = useState<string | null>(null);
@@ -58,6 +71,14 @@ export default function GuestOrderPage() {
   const [orderStatus, setOrderStatus] = useState<string>("unpaid");
   const [submittingOrder, setSubmittingOrder] = useState<boolean>(false);
   const [walletCap, setWalletCap] = useState<WalletCapabilityReport | null>(null);
+
+  // Digital Receipt state
+  const [receiptEmail, setReceiptEmail] = useState<string>("");
+  const [receiptSending, setReceiptSending] = useState<boolean>(false);
+  const [receiptSentMessage, setReceiptSentMessage] = useState<string | null>(null);
+
+  // Privacy info modal state
+  const [showPrivacyModal, setShowPrivacyModal] = useState<boolean>(false);
 
   useEffect(() => {
     detectWalletCapabilities().then(setWalletCap).catch(() => null);
@@ -108,6 +129,60 @@ export default function GuestOrderPage() {
     initTable();
   }, [initTable]);
 
+  // Recalculate quote from server whenever cart changes
+  const fetchQuote = useCallback(async () => {
+    if (!tableInfo || cart.length === 0) {
+      setQuote(null);
+      return;
+    }
+    setQuoteLoading(true);
+    try {
+      const itemsPayload = cart.map((item) => ({
+        product_id: item.product.id,
+        quantity: item.quantity,
+        notes: item.notes || ""
+      }));
+
+      const res = await apiFetch<Record<string, unknown>>(
+        `/api/v1/public/stores/${encodeURIComponent(tableInfo.store_slug)}/orders/quote`,
+        {
+          method: "POST",
+          guestToken,
+          body: { items: itemsPayload }
+        }
+      );
+
+      setQuote({
+        subtotal: Number(res.subtotal ?? 0),
+        tax: Number(res.tax ?? res.tax_amount ?? 0),
+        service: Number(res.service ?? res.service_charge ?? 0),
+        discount: Number(res.discount ?? res.discount_amount ?? 0),
+        total: Number(res.total ?? res.grand_total ?? res.gross_amount ?? 0),
+        quote_fingerprint: String(res.quote_fingerprint ?? res.fingerprint ?? "")
+      });
+    } catch {
+      // Fallback local estimation if offline or temporary quote failure
+      const localSubtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+      setQuote({
+        subtotal: localSubtotal,
+        tax: 0,
+        service: 0,
+        discount: 0,
+        total: localSubtotal,
+        quote_fingerprint: ""
+      });
+    } finally {
+      setQuoteLoading(false);
+    }
+  }, [tableInfo, cart, guestToken]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchQuote();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [fetchQuote]);
+
   const addToCart = (product: CatalogProduct) => {
     setCart((prev) => {
       const idx = prev.findIndex((item) => item.product.id === product.id);
@@ -134,14 +209,18 @@ export default function GuestOrderPage() {
     });
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const localSubtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const payableTotal = quote?.total || localSubtotal;
 
   const handleCheckoutQris = async () => {
     if (!tableInfo || cart.length === 0) return;
     setSubmittingOrder(true);
     setError(null);
+
+    const idempotencyKey = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `cart_${Date.now()}`;
+
     try {
-      // 1. Create Guest Order
+      // 1. Create Guest Order with quote fingerprint
       const itemsPayload = cart.map((item) => ({
         product_id: item.product.id,
         quantity: item.quantity,
@@ -155,9 +234,11 @@ export default function GuestOrderPage() {
       }>("/api/v1/public/guest/orders", {
         method: "POST",
         guestToken,
+        idempotencyKey,
         body: {
           items: itemsPayload,
-          customer_name: guestName
+          customer_name: guestName,
+          expected_quote_fingerprint: quote?.quote_fingerprint || undefined
         }
       });
 
@@ -177,6 +258,7 @@ export default function GuestOrderPage() {
       }>(`/api/v1/public/guest/orders/${encodeURIComponent(confirmedOrderId)}/payments`, {
         method: "POST",
         guestToken,
+        idempotencyKey: `pay_${idempotencyKey}`,
         body: {
           payment_method: "qris"
         }
@@ -187,13 +269,34 @@ export default function GuestOrderPage() {
         qr_string: payRes.qr_string || "",
         qr_url: payRes.qr_url || "",
         expires_at: payRes.expires_at,
-        gross_amount: payRes.gross_amount || cartTotal
+        gross_amount: payRes.gross_amount || payableTotal
       });
       setOrderStatus("awaiting_payment");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memproses pembayaran QRIS");
     } finally {
       setSubmittingOrder(false);
+    }
+  };
+
+  // Digital Receipt Email Handler
+  const handleSendReceipt = async () => {
+    if (!orderId || !receiptEmail) return;
+    setReceiptSending(true);
+    try {
+      await apiFetch(`/api/v1/public/guest/orders/${encodeURIComponent(orderId)}/receipt/send`, {
+        method: "POST",
+        guestToken,
+        body: {
+          channel: "email",
+          to: receiptEmail
+        }
+      });
+      setReceiptSentMessage(`Struk digital berhasil dikirimkan ke ${receiptEmail}.`);
+    } catch (err) {
+      setReceiptSentMessage(err instanceof Error ? err.message : "Gagal mengirim struk.");
+    } finally {
+      setReceiptSending(false);
     }
   };
 
@@ -304,7 +407,7 @@ export default function GuestOrderPage() {
               onClick={() => setSelectedCategory("all")}
               className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
                 selectedCategory === "all"
-                  ? "bg-brand-primary text-brand-contrast"
+                  ? "bg-brand text-brand-fg"
                   : "bg-surface text-ink border border-subtle hover:bg-muted"
               }`}
             >
@@ -316,7 +419,7 @@ export default function GuestOrderPage() {
                 onClick={() => setSelectedCategory(c.id)}
                 className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
                   selectedCategory === c.id
-                    ? "bg-brand-primary text-brand-contrast"
+                    ? "bg-brand text-brand-fg"
                     : "bg-surface text-ink border border-subtle hover:bg-muted"
                 }`}
               >
@@ -345,7 +448,7 @@ export default function GuestOrderPage() {
                 </div>
 
                 <div className="mt-4 flex items-center justify-between pt-2 border-t border-subtle">
-                  <span className="font-display text-sm font-bold tabular-nums text-brand-accent">
+                  <span className="font-display text-sm font-bold tabular-nums text-accent">
                     {formatIdr(prod.price)}
                   </span>
                   <button
@@ -406,20 +509,42 @@ export default function GuestOrderPage() {
                   </div>
                 ))}
 
-                {/* Total Summary */}
+                {/* Total Summary with Server Quote */}
                 <div className="pt-4 space-y-2">
                   <div className="flex items-center justify-between text-xs text-subink">
                     <span>Subtotal Menu</span>
-                    <span className="font-mono font-medium text-ink">{formatIdr(cartTotal)}</span>
+                    <span className="font-mono font-medium text-ink">
+                      {formatIdr(quote?.subtotal || localSubtotal)}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-subink">
-                    <span>Pajak & Layanan Restoran</span>
-                    <span className="text-[11px] italic">Dihitung otomatis di kasir</span>
-                  </div>
+
+                  {quote && quote.tax > 0 && (
+                    <div className="flex items-center justify-between text-xs text-subink">
+                      <span>Pajak Restoran</span>
+                      <span className="font-mono font-medium text-ink">{formatIdr(quote.tax)}</span>
+                    </div>
+                  )}
+
+                  {quote && quote.service > 0 && (
+                    <div className="flex items-center justify-between text-xs text-subink">
+                      <span>Biaya Layanan</span>
+                      <span className="font-mono font-medium text-ink">{formatIdr(quote.service)}</span>
+                    </div>
+                  )}
+
+                  {quote && quote.discount > 0 && (
+                    <div className="flex items-center justify-between text-xs text-brand-accent">
+                      <span>Potongan Diskon</span>
+                      <span className="font-mono font-medium">-{formatIdr(quote.discount)}</span>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between pt-2 border-t border-subtle">
-                    <span className="font-display text-base font-bold text-ink">Total Estimasi</span>
-                    <span className="font-display text-lg font-extrabold tabular-nums text-brand-accent">
-                      {formatIdr(cartTotal)}
+                    <span className="font-display text-base font-bold text-ink">
+                      Total Pembayaran {quoteLoading && <span className="text-xs text-subink font-normal">(verifikasi server...)</span>}
+                    </span>
+                    <span className="font-display text-lg font-extrabold tabular-nums text-accent">
+                      {formatIdr(payableTotal)}
                     </span>
                   </div>
 
@@ -428,11 +553,21 @@ export default function GuestOrderPage() {
                     disabled={submittingOrder || cart.length === 0}
                     className="btn-primary min-h-[48px] w-full mt-4 py-3 text-sm font-bold shadow-md"
                   >
-                    {submittingOrder ? "Membuat Kode QRIS..." : "Bayar Sekarang via QRIS"}
+                    {submittingOrder ? "Membuat Kode QRIS..." : `Bayar Sekarang ${formatIdr(payableTotal)}`}
                   </button>
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Privacy & PDP Guarantee Link */}
+          <div className="text-center pt-2">
+            <button
+              onClick={() => setShowPrivacyModal(true)}
+              className="text-[11px] text-subink hover:text-ink underline"
+            >
+              Kebijakan Privasi & Perlindungan Data Pribadi (UU PDP)
+            </button>
           </div>
         </div>
       </div>
@@ -447,27 +582,55 @@ export default function GuestOrderPage() {
               </h3>
               <p className="text-xs text-subink">
                 {orderStatus === "paid"
-                  ? "Pesanan Anda berhasil dikonfirmasi dan sedang disiapkan di dapur/bar."
-                  : "Mendukung BCA, GoPay, OVO, Dana, LinkAja, ShopeePay, dan seluruh aplikasi m-Banking."}
+                  ? "Pesanan Anda berhasil dikonfirmasi dan langsung masuk ke KDS dapur/bar."
+                  : "Mendukung BCA, GoPay, OVO, Dana, LinkAja, ShopeePay, dan seluruh m-Banking."}
               </p>
             </div>
 
             {orderStatus === "paid" ? (
               <div className="my-6 text-center space-y-4">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success/20 text-success text-2xl font-bold">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 text-2xl font-bold">
                   OK
                 </div>
                 <div>
                   <p className="text-sm font-bold text-ink">Nomor Meja: {tableInfo?.table_number}</p>
                   <p className="text-xs text-subink">
-                    Staf kami akan segera mengantarkan pesanan ke meja Anda.
+                    Pesanan Anda sedang disiapkan dan akan segera diantarkan ke meja.
                   </p>
                 </div>
+
+                {/* Struk Digital Form */}
+                <div className="rounded-xl border border-subtle bg-canvas p-3 space-y-2 text-left">
+                  <label className="text-[11px] font-semibold text-ink">
+                    Kirim Struk Digital ke Email Anda:
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={receiptEmail}
+                      onChange={(e) => setReceiptEmail(e.target.value)}
+                      placeholder="contoh@email.com"
+                      className="input-field text-xs py-1"
+                    />
+                    <button
+                      onClick={handleSendReceipt}
+                      disabled={receiptSending || !receiptEmail}
+                      className="btn-secondary px-3 text-xs font-bold"
+                    >
+                      {receiptSending ? "..." : "Kirim"}
+                    </button>
+                  </div>
+                  {receiptSentMessage && (
+                    <p className="text-[11px] text-ink font-medium mt-1">{receiptSentMessage}</p>
+                  )}
+                </div>
+
                 <button
                   onClick={() => {
                     setPaymentInfo(null);
                     setCart([]);
                     setOrderStatus("unpaid");
+                    setReceiptSentMessage(null);
                   }}
                   className="btn-primary min-h-[44px] w-full py-2 text-xs font-bold"
                 >
@@ -493,11 +656,11 @@ export default function GuestOrderPage() {
                 </div>
 
                 <div className="text-center space-y-1">
-                  <p className="font-display text-2xl font-black text-brand-accent tabular-nums">
+                  <p className="font-display text-2xl font-black text-accent tabular-nums">
                     {formatIdr(paymentInfo.gross_amount)}
                   </p>
                   <p className="text-[11px] text-subink animate-pulse">
-                    Menunggu konfirmasi pembayaran otomatis (webhook)...
+                    Menunggu konfirmasi pembayaran otomatis dari bank/e-wallet...
                   </p>
                 </div>
 
@@ -511,6 +674,36 @@ export default function GuestOrderPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Privacy Policy Modal */}
+      {showPrivacyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-subtle bg-surface p-6 shadow-2xl space-y-4">
+            <h3 className="font-display text-lg font-bold text-ink">
+              Kebijakan Data Pribadi Tamu (UU PDP)
+            </h3>
+            <div className="space-y-2 text-xs text-subink leading-relaxed max-h-[60vh] overflow-y-auto">
+              <p>
+                Data nama pemesan dan email struk Anda hanya digunakan untuk keperluan pengantaran pesanan di meja dan pengiriman bukti transaksi resmi.
+              </p>
+              <p>
+                Kami tidak membagikan data kontak Anda kepada pihak ketiga manapun untuk keperluan pemasaran tanpa izin Anda.
+              </p>
+              <p>
+                Sesuai Undang-Undang Perlindungan Data Pribadi (UU PDP No. 27/2022), Anda memiliki hak untuk meminta penghapusan riwayat data identitas Anda melalui staf kasir gerai.
+              </p>
+            </div>
+            <div className="pt-2 border-t border-subtle flex justify-end">
+              <button
+                onClick={() => setShowPrivacyModal(false)}
+                className="btn-primary px-4 py-2 text-xs font-bold"
+              >
+                Saya Mengerti
+              </button>
+            </div>
           </div>
         </div>
       )}
