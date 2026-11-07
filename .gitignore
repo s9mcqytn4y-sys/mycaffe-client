@@ -1,0 +1,8 @@
+﻿node_modules/
+.gradle/
+build/
+*.o
+*.ipa
+.DS_Store
+.env
+.env.*

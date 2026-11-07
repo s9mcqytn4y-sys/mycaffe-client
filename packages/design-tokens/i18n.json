@@ -1,0 +1,41 @@
+{
+  "defaultLocale": "id-ID",
+  "supportedLocales": ["id-ID", "en-US"],
+  "currency": {
+    "code": "IDR",
+    "minorUnitDecimals": 0,
+    "symbol": "Rp"
+  },
+  "messages": {
+    "id-ID": {
+      "qr.header.welcome": "Selamat datang, silakan pilih menu dari meja Anda",
+      "qr.table.verified": "Meja Terverifikasi",
+      "qr.cart.checkout": "Lanjut Pembayaran",
+      "qr.payment.qris_dynamic": "QRIS Otomatis (Langsung Terverifikasi)",
+      "qr.payment.qris_static": "QRIS Gerai (Konfirmasi Kasir)",
+      "qr.payment.cash": "Bayar Tunai di Kasir",
+      "order.status.queued": "Menunggu Antrean Dapur",
+      "order.status.preparing": "Sedang Disiapkan Barista/Dapur",
+      "order.status.ready": "Pesanan Siap Disajikan",
+      "order.status.served": "Pesanan Selesai",
+      "pos.hardware.test_print": "Uji Cetak Struk",
+      "pos.hardware.open_drawer": "Buka Laci Kasir",
+      "legal.footer.powered_by": "Didukung oleh AzureDevID"
+    },
+    "en-US": {
+      "qr.header.welcome": "Welcome, please order directly from your table",
+      "qr.table.verified": "Verified Table",
+      "qr.cart.checkout": "Proceed to Payment",
+      "qr.payment.qris_dynamic": "Instant QRIS (Auto-Verified)",
+      "qr.payment.qris_static": "Store Static QRIS (Cashier Check)",
+      "qr.payment.cash": "Pay Cash at Counter",
+      "order.status.queued": "Queued for Kitchen",
+      "order.status.preparing": "Being Prepared",
+      "order.status.ready": "Ready to Serve",
+      "order.status.served": "Order Completed",
+      "pos.hardware.test_print": "Test Receipt Print",
+      "pos.hardware.open_drawer": "Open Cash Drawer",
+      "legal.footer.powered_by": "Powered by AzureDevID"
+    }
+  }
+}

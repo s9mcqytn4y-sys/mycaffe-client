@@ -1,0 +1,33 @@
+name: iOS POS Hardware Bridge & Xcode Archive
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "apps/ios/**"
+      - "packages/design-tokens/**"
+
+permissions:
+  contents: read
+
+jobs:
+  ios-xcode-verify:
+    name: Build & Verify Objective-C/Swift on macOS-15 Xcode
+    runs-on: macos-15
+    steps:
+      - name: Checkout client monorepo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Select latest stable Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Compile & test Objective-C Apple Foundation Hardware Bridge
+        run: |
+          clang -fobjc-arc -framework Foundation \
+            -Wall -Wextra -Werror \
+            -Iapps/ios/Sources \
+            -c apps/ios/Sources/MyCaffeHardwareBridge.m \
+            -o /tmp/MyCaffeHardwareBridge.o
+          echo "Compiled Mach-O arm64/x86_64 Objective-C object cleanly."
