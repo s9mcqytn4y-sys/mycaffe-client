@@ -1,8 +1,17 @@
+/*
+ * MyCaffe by AzureDevID - iOS & iPadOS Native Hardware Bridge Implementation
+ * Official Bundle Identifier: online.abbdullaziz.mycaffe
+ */
+
 #include "MyCaffeHardwareBridge.h"
 
 #ifdef __APPLE__
 #import <Foundation/Foundation.h>
 #endif
+
+const char *mycaffe_ios_bundle_identifier(void) {
+    return MYCAFFE_IOS_BUNDLE_ID;
+}
 
 size_t mycaffe_escpos_build_drawer_kick(uint8_t *out_buf, size_t capacity) {
     if (out_buf == NULL || capacity < 7) {
@@ -35,10 +44,15 @@ int mycaffe_validate_printer_config(const MyCaffeLanPrinterConfig *cfg) {
 
 #ifdef __APPLE__
 @interface MyCaffeIosEscPosAdapter : NSObject
+- (NSString *)bundleIdentifier;
 - (NSData *)buildCashDrawerPulsePacket;
 @end
 
 @implementation MyCaffeIosEscPosAdapter
+- (NSString *)bundleIdentifier {
+    return @MYCAFFE_IOS_BUNDLE_ID;
+}
+
 - (NSData *)buildCashDrawerPulsePacket {
     uint8_t buf[8];
     size_t len = mycaffe_escpos_build_drawer_kick(buf, sizeof(buf));
