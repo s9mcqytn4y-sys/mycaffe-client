@@ -1,0 +1,29 @@
+{
+  "id": "online.abbdullaziz.mycaffe",
+  "name": "MyCaffe by AzureDevID",
+  "short_name": "MyCaffe",
+  "description": "Sistem Kasir POS, Pesan Meja QR, Layar Dapur KDS, dan Konsol Tata Kelola Kafe Multi-Tenant oleh AzureDevID.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FAF6F1",
+  "theme_color": "#2C1A12",
+  "lang": "id-ID",
+  "categories": ["business", "food", "finance", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

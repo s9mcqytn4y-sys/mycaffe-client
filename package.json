@@ -2,11 +2,15 @@
   "name": "@azuredevid/mycaffe-client",
   "version": "1.0.0",
   "private": true,
-  "description": "Unified Client Monorepo for MyCaffe by AzureDevID (Web PWA QR Order/Backoffice/Superadmin, Android Jetpack Compose POS, iOS Bridge & Shared Design Tokens)",
-  "packageManager": "pnpm@10.0.0",
+  "description": "Unified Client Monorepo for MyCaffe by AzureDevID (online.abbdullaziz.mycaffe: Web PWA QR Order/Backoffice/Superadmin, Android Jetpack Compose POS, iOS Bridge & Shared Design Tokens)",
+  "packageManager": "pnpm@12.18.0",
   "scripts": {
+    "dev": "pnpm --filter @azuredevid/mycaffe-web dev",
+    "build": "pnpm --filter @azuredevid/mycaffe-web build",
+    "typecheck": "pnpm --filter @azuredevid/mycaffe-web typecheck",
     "tokens:verify": "node packages/design-tokens/verify-tokens.mjs",
-    "android:check": "gradle -p apps/android help",
+    "android:check": "apps\\android\\gradlew.bat -p apps/android help",
+    "android:assemble": "apps\\android\\gradlew.bat -p apps/android assembleDebug",
     "ios:lint-objc": "powershell -ExecutionPolicy Bypass -File apps/ios/scripts/Verify-ObjCSyntax.ps1"
   }
 }
