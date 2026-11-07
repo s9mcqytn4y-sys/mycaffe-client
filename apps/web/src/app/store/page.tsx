@@ -17,9 +17,13 @@ export default function StoreConsolePage() {
   const [email, setEmail] = useState<string>("owner@kopi-nusantara.demo");
   const [password, setPassword] = useState<string>("PasswordKopi123!");
   const [loginSlug, setLoginSlug] = useState<string>("kopi-nusantara");
-  const [activeTab, setActiveTab] = useState<"catalog" | "payment" | "network">("catalog");
+  const [activeTab, setActiveTab] = useState<"catalog" | "payment" | "network" | "privacy">("catalog");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Data Privacy export state
+  const [exportLoading, setExportLoading] = useState<boolean>(false);
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const savedToken = localStorage.getItem(TOKEN_KEY) || "";
@@ -71,6 +75,22 @@ export default function StoreConsolePage() {
     localStorage.removeItem(SLUG_KEY);
   };
 
+  const handleRequestDataExport = async () => {
+    setExportLoading(true);
+    setExportMessage(null);
+    try {
+      await apiFetch("/api/v1/store/data-exports", {
+        method: "POST",
+        bearerToken: token
+      });
+      setExportMessage("Permintaan ekspor data berhasil dijadwalkan. Arsip JSON/CSV akan tersedia dalam beberapa saat.");
+    } catch (err) {
+      setExportMessage(err instanceof Error ? err.message : "Permintaan ekspor data sedang diproses atau endpoint sedang disiapkan di server.");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -114,7 +134,7 @@ export default function StoreConsolePage() {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-danger">
+            <div className="mb-4 rounded-xl border border-red-300 bg-red-50 p-3 text-xs text-red-700">
               {error}
             </div>
           )}
@@ -128,7 +148,7 @@ export default function StoreConsolePage() {
                 value={loginSlug}
                 onChange={(e) => setLoginSlug(e.target.value)}
                 placeholder="contoh: kopi-nusantara"
-                className="mt-1 w-full rounded-xl border border-subtle bg-canvas px-3 py-2 text-sm text-ink outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent"
+                className="mt-1 w-full rounded-xl border border-subtle bg-canvas px-3 py-2 text-sm text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               />
             </div>
 
@@ -140,7 +160,7 @@ export default function StoreConsolePage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="owner@gerai.com"
-                className="mt-1 w-full rounded-xl border border-subtle bg-canvas px-3 py-2 text-sm text-ink outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent"
+                className="mt-1 w-full rounded-xl border border-subtle bg-canvas px-3 py-2 text-sm text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               />
             </div>
 
@@ -152,7 +172,7 @@ export default function StoreConsolePage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Minimal 8 karakter"
-                className="mt-1 w-full rounded-xl border border-subtle bg-canvas px-3 py-2 text-sm text-ink outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent"
+                className="mt-1 w-full rounded-xl border border-subtle bg-canvas px-3 py-2 text-sm text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               />
             </div>
 
@@ -168,7 +188,7 @@ export default function StoreConsolePage() {
           <div className="mt-6 border-t border-subtle pt-4 text-center">
             <p className="text-xs text-subink">
               Belum mendaftarkan gerai Anda?{" "}
-              <Link href="/onboarding" className="font-semibold text-brand-accent hover:underline">
+              <Link href="/onboarding" className="font-semibold text-accent hover:underline">
                 Daftar Gerai Baru
               </Link>
             </p>
@@ -183,7 +203,7 @@ export default function StoreConsolePage() {
               onClick={() => setActiveTab("catalog")}
               className={`rounded-xl px-4 py-2 text-xs font-semibold transition-colors ${
                 activeTab === "catalog"
-                  ? "bg-brand-primary text-brand-contrast"
+                  ? "bg-brand text-brand-fg"
                   : "bg-surface text-ink border border-subtle hover:bg-muted"
               }`}
             >
@@ -193,7 +213,7 @@ export default function StoreConsolePage() {
               onClick={() => setActiveTab("payment")}
               className={`rounded-xl px-4 py-2 text-xs font-semibold transition-colors ${
                 activeTab === "payment"
-                  ? "bg-brand-primary text-brand-contrast"
+                  ? "bg-brand text-brand-fg"
                   : "bg-surface text-ink border border-subtle hover:bg-muted"
               }`}
             >
@@ -203,11 +223,21 @@ export default function StoreConsolePage() {
               onClick={() => setActiveTab("network")}
               className={`rounded-xl px-4 py-2 text-xs font-semibold transition-colors ${
                 activeTab === "network"
-                  ? "bg-brand-primary text-brand-contrast"
+                  ? "bg-brand text-brand-fg"
                   : "bg-surface text-ink border border-subtle hover:bg-muted"
               }`}
             >
               Topologi Jaringan & MikroTik
+            </button>
+            <button
+              onClick={() => setActiveTab("privacy")}
+              className={`rounded-xl px-4 py-2 text-xs font-semibold transition-colors ${
+                activeTab === "privacy"
+                  ? "bg-brand text-brand-fg"
+                  : "bg-surface text-ink border border-subtle hover:bg-muted"
+              }`}
+            >
+              Privasi & Data (UU PDP)
             </button>
           </div>
 
@@ -222,6 +252,86 @@ export default function StoreConsolePage() {
 
           {activeTab === "network" && (
             <TabNetworkMikrotik token={token} storeSlug={storeSlug} />
+          )}
+
+          {activeTab === "privacy" && (
+            <div className="space-y-6 rounded-2xl border border-subtle bg-surface p-6 shadow-sm">
+              <div className="border-b border-subtle pb-4">
+                <h2 className="font-display text-lg font-bold text-ink">
+                  Kedaulatan & Perlindungan Data Pribadi Gerai (UU PDP No. 27/2022)
+                </h2>
+                <p className="mt-1 text-xs text-subink">
+                  Data Anda adalah hak milik Anda seutuhnya. Kami menjamin kerahasiaan data operasional dan tidak menjual data transaksi kepada pihak manapun.
+                </p>
+              </div>
+
+              {/* Data Category Transparency Table */}
+              <div className="space-y-3">
+                <h3 className="font-display text-sm font-bold text-ink">Tujuan Penggunaan Data</h3>
+                <div className="overflow-x-auto rounded-xl border border-subtle">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-canvas border-b border-subtle text-subink font-semibold">
+                      <tr>
+                        <th className="p-3">Kategori Data</th>
+                        <th className="p-3">Tujuan Pemrosesan</th>
+                        <th className="p-3">Kerahasiaan & Keamanan</th>
+                        <th className="p-3">Masa Retensi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-subtle text-ink">
+                      <tr>
+                        <td className="p-3 font-semibold">Transaksi & Pembayaran</td>
+                        <td className="p-3 text-subink">Perhitungan laporan laba rugi, penyesuaian stok, rekonsiliasi kasir.</td>
+                        <td className="p-3 text-subink">Row Level Security (RLS) PostgreSQL 18 terisolasi per tenant.</td>
+                        <td className="p-3 font-mono text-[11px]">10 Tahun (Kepatuhan Pajak UU KUP)</td>
+                      </tr>
+                      <tr>
+                        <td className="p-3 font-semibold">Kredensial Midtrans / SMTP</td>
+                        <td className="p-3 text-subink">Penyelesaian transaksi pembayaran dan pengiriman email struk langsung via akun Anda.</td>
+                        <td className="p-3 text-subink">Terenkripsi AES-256-GCM. Tidak pernah ditampilkan kembali di antarmuka.</td>
+                        <td className="p-3 font-mono text-[11px]">Selama Akun Aktif</td>
+                      </tr>
+                      <tr>
+                        <td className="p-3 font-semibold">Identitas Staf & Akun</td>
+                        <td className="p-3 text-subink">Autentikasi sesi kasir, hak akses RBAC, jejak audit operasional.</td>
+                        <td className="p-3 text-subink">PIN di-hash menggunakan Argon2id dengan salt acak per pengguna.</td>
+                        <td className="p-3 font-mono text-[11px]">Dihapus Saat Tutup Akun</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Data Portability (Export) */}
+              <div className="rounded-xl border border-subtle bg-canvas p-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h4 className="font-display text-sm font-bold text-ink">Unduh Salinan Data Gerai (Portabilitas Data)</h4>
+                    <p className="text-xs text-subink mt-0.5">
+                      Ekspor seluruh data katalog, riwayat pesanan, dan pergerakan kas gerai dalam format arsip JSON & CSV terbuka.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleRequestDataExport}
+                    disabled={exportLoading}
+                    className="btn-secondary px-4 py-2 text-xs font-bold"
+                  >
+                    {exportLoading ? "Menyiapkan..." : "Minta Unduh Arsip Data"}
+                  </button>
+                </div>
+                {exportMessage && (
+                  <p className="text-xs font-medium text-brand-accent mt-2">{exportMessage}</p>
+                )}
+              </div>
+
+              {/* Account Clearance & Closure Notice */}
+              <div className="rounded-xl border border-subtle p-4 space-y-2">
+                <h4 className="font-display text-sm font-bold text-ink">Penutupan Akun & Pemusnahan Kunci</h4>
+                <p className="text-xs text-subink leading-relaxed">
+                  Jika Anda memutuskan untuk berhenti menggunakan MyCaffe, Anda dapat mengajukan permintaan penutupan akun. Sistem memberlakukan masa tenggang 7 hari (*cooling-off period*), menonaktifkan kunci enkripsi, dan menghapus seluruh data PII staf/pelanggan secara permanen.
+                </p>
+              </div>
+            </div>
           )}
         </div>
       )}
