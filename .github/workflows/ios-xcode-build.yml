@@ -10,9 +10,12 @@ on:
 permissions:
   contents: read
 
+env:
+  PRODUCT_BUNDLE_IDENTIFIER: online.abbdullaziz.mycaffe
+
 jobs:
   ios-xcode-verify:
-    name: Build & Verify Objective-C/Swift on macOS-15 Xcode
+    name: Build & Verify Objective-C/Swift on macOS-15 Xcode (online.abbdullaziz.mycaffe)
     runs-on: macos-15
     steps:
       - name: Checkout client monorepo
@@ -30,4 +33,4 @@ jobs:
             -Iapps/ios/Sources \
             -c apps/ios/Sources/MyCaffeHardwareBridge.m \
             -o /tmp/MyCaffeHardwareBridge.o
-          echo "Compiled Mach-O arm64/x86_64 Objective-C object cleanly."
+          echo "Compiled Mach-O arm64/x86_64 Objective-C object cleanly for ${PRODUCT_BUNDLE_IDENTIFIER}."

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="MyCaffe Icon">
+  <rect width="512" height="512" rx="96" fill="#2C1A12"/>
+  <path d="M128 170h202v118c0 56-45 101-101 101s-101-45-101-101V170z" fill="#C68B59"/>
+  <path d="M330 192h32c28 0 50 22 50 50s-22 50-50 50h-32v-30h32c11 0 20-9 20-20s-9-20-20-20h-32v-30z" fill="#FAF6F1"/>
+  <rect x="112" y="410" width="234" height="22" rx="11" fill="#FAF6F1"/>
+</svg>
+
