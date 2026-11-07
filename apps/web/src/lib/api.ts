@@ -1,3 +1,5 @@
+import type { paths } from "../types/api.generated";
+
 export class ApiError extends Error {
   public readonly status: number;
   public readonly details?: unknown;
@@ -10,18 +12,21 @@ export class ApiError extends Error {
   }
 }
 
-interface RequestOptions {
+export interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   bearerToken?: string;
   platformAdminKey?: string;
   guestToken?: string;
+  idempotencyKey?: string;
+  requestId?: string;
   includeCredentials?: boolean;
 }
 
 export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = {
-    Accept: "application/json"
+    Accept: "application/json",
+    "X-Request-ID": opts.requestId || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `req_${Date.now()}`)
   };
 
   if (opts.body !== undefined) {
@@ -35,6 +40,10 @@ export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Prom
   }
   if (opts.guestToken) {
     headers["X-Guest-Token"] = opts.guestToken;
+  }
+  if (opts.idempotencyKey) {
+    headers["Idempotency-Key"] = opts.idempotencyKey;
+    headers["X-Idempotency-Key"] = opts.idempotencyKey;
   }
 
   let res: Response;
@@ -71,6 +80,27 @@ export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Prom
   }
 
   return (parsed ?? ({} as T)) as T;
+}
+
+// Type-safe API caller derived from OpenAPI paths
+export type ApiPaths = keyof paths;
+export type HttpMethod = "get" | "post" | "put" | "patch" | "delete";
+
+export async function typedApiFetch<
+  Path extends ApiPaths,
+  Method extends HttpMethod & keyof paths[Path]
+>(
+  path: Path,
+  method: Method,
+  options?: RequestOptions & {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    body?: any;
+  }
+): Promise<unknown> {
+  return apiFetch(path as string, {
+    ...options,
+    method: method.toUpperCase() as RequestOptions["method"]
+  });
 }
 
 // 1. Public Plans, Legal & Onboarding
@@ -333,4 +363,3 @@ export interface CreatePlatformInvoiceInput {
   plan_code: "starter_umkm" | "pro_cafe" | "enterprise_whitelabel";
   billing_cycle: "monthly" | "annual";
 }
-
