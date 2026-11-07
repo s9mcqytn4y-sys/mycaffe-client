@@ -22,3 +22,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+test-results/
+playwright-report/
+apps/web/test-results/
+apps/web/playwright-report/

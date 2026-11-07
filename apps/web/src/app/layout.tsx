@@ -8,11 +8,33 @@ import "./globals.css";
 // visual language, dial ENERGY 2 / RHYTHM 2 / MOTION 1.
 
 export const metadata: Metadata = {
-  title: "MyCaffe by AzureDevID | Kasir POS, Pesan Meja QR & Tata Kelola Kafe",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://abbdullaziz.online"),
+  title: {
+    default: "MyCaffe by AzureDevID | Kasir POS, Pesan Meja QR & Tata Kelola Kafe",
+    template: "%s | MyCaffe by AzureDevID",
+  },
   description:
     "Platform operasional kafe dan restoran multi-tenant oleh AzureDevID: pesan meja QR tanpa antre, kasir POS tablet, layar dapur KDS, integrasi QRIS Midtrans, dan generator jaringan MikroTik.",
   manifest: "/manifest.webmanifest",
-  applicationName: "MyCaffe by AzureDevID"
+  applicationName: "MyCaffe by AzureDevID",
+  icons: {
+    icon: [
+      { url: "/Favicon16.png", sizes: "16x16", type: "image/png" },
+      { url: "/Favicon32.png", sizes: "32x32", type: "image/png" },
+      { url: "/Favicon.ico", sizes: "any" },
+    ],
+    apple: [
+      { url: "/AppleTouchIcon180.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  openGraph: {
+    title: "MyCaffe by AzureDevID | Kasir POS, Pesan Meja QR & Tata Kelola Kafe",
+    description: "Sistem Kasir POS & QR Order Meja Multi-Tenant dengan 0% Komisi & Enkripsi Kunci Mandiri (BYOK).",
+    url: "https://abbdullaziz.online",
+    siteName: "MyCaffe by AzureDevID",
+    locale: "id_ID",
+    type: "website",
+  },
 };
 
 export const viewport: Viewport = {

@@ -1,0 +1,21 @@
+{
+  "name": "MyCaffe by AzureDevID",
+  "short_name": "MyCaffe",
+  "description": "Configurable Multi-Tenant QR Table Ordering, POS & KDS Platform by AzureDevID",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07111F",
+  "theme_color": "#0A4DA2",
+  "icons": [
+    {
+      "src": "/AndroidChrome192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/AndroidChrome512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
