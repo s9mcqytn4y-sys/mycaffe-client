@@ -28,8 +28,8 @@ jobs:
 
       - name: Compile & test Objective-C Apple Foundation Hardware Bridge
         run: |
-          clang -fobjc-arc -framework Foundation \
-            -Wall -Wextra -Werror \
+          clang -fobjc-arc \
+            -Wall -Wextra -Werror -Wno-unused-command-line-argument \
             -Iapps/ios/Sources \
             -c apps/ios/Sources/MyCaffeHardwareBridge.m \
             -o /tmp/MyCaffeHardwareBridge.o
