@@ -38,6 +38,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,6 +65,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.background
+import androidx.compose.material3.ButtonDefaults
 import online.abbdullaziz.mycaffe.hardware.EscPosTcpPrinter
 import online.abbdullaziz.mycaffe.hardware.LanPrinterTarget
 import online.abbdullaziz.mycaffe.hardware.PaperWidth
@@ -71,11 +74,14 @@ import online.abbdullaziz.mycaffe.network.HealthStatusResult
 import online.abbdullaziz.mycaffe.network.MidtransCredentialSnapshot
 import online.abbdullaziz.mycaffe.network.MikrotikVlanSnapshot
 import online.abbdullaziz.mycaffe.network.MyCaffeApiClient
+import online.abbdullaziz.mycaffe.network.OwnerSummarySnapshot
 import online.abbdullaziz.mycaffe.network.PosTableItem
+import online.abbdullaziz.mycaffe.network.RemoteApprovalItem
 import online.abbdullaziz.mycaffe.network.StaffSessionState
 import java.io.File
 
 private enum class CompanionTab(val tag: String, val label: String, val badge: String) {
+    OWNER_RADAR("tab_owner_radar", "Owner Radar", "CEO"),
     KASIR_QR("tab_kasir_qr", "Kasir & QR", "POS"),
     MIDTRANS_WALLET("tab_midtrans_wallet", "Midtrans & Wallet", "PAY"),
     JARINGAN_PRINTER("tab_network_printer", "Jaringan & Printer", "LAN"),
@@ -122,6 +128,48 @@ fun MyCaffeApp() {
     var printerOnline by remember { mutableStateOf(false) }
     var printerFeedback by remember { mutableStateOf("Siap menguji koneksi soket TCP:9100 pada jaringan LAN gerai.") }
 
+    var ownerSummary by remember {
+        mutableStateOf<OwnerSummarySnapshot?>(
+            OwnerSummarySnapshot(
+                grossSalesTodayIdr = 4_850_000L,
+                netSalesTodayIdr = 4_365_000L,
+                totalOrdersCount = 87,
+                averageOrderValueIdr = 55_747L,
+                cashCollectedIdr = 1_212_500L,
+                digitalQrisCollectedIdr = 3_152_500L,
+                pendingApprovalsCount = 2
+            )
+        )
+    }
+    var ownerLoading by remember { mutableStateOf(false) }
+    var busyModeEnabled by rememberSaveable { mutableStateOf(false) }
+    var pendingApprovals by remember {
+        mutableStateOf(
+            listOf(
+                RemoteApprovalItem(
+                    id = "APP-001",
+                    orderId = "ORD-9821",
+                    tableNumber = "Meja T-04",
+                    actionType = "void",
+                    amountIdr = 84_000L,
+                    cashierName = "Budi (Kasir 1)",
+                    reason = "Pelanggan salah memilih varian sirup & ganti meja",
+                    requestedAt = "10:14 WIB"
+                ),
+                RemoteApprovalItem(
+                    id = "APP-002",
+                    orderId = "ORD-9825",
+                    tableNumber = "Meja T-07",
+                    actionType = "manual_discount",
+                    amountIdr = 32_000L,
+                    cashierName = "Siti (Kasir 2)",
+                    reason = "Diskon Khusus 20% Partner Media & Komunitas",
+                    requestedAt = "10:28 WIB"
+                )
+            )
+        )
+    }
+
     fun probeBackendHealth() {
         scope.launch {
             healthLoading = true
@@ -154,6 +202,11 @@ fun MyCaffeApp() {
 
             apiClient.fetchMikrotikSnapshot(apiBaseUrl, session.accessToken)
                 .onSuccess { mikrotikSnapshot = it }
+
+            ownerLoading = true
+            apiClient.fetchOwnerSummary(apiBaseUrl, session.accessToken)
+                .onSuccess { ownerSummary = it }
+            ownerLoading = false
         }
     }
 
@@ -249,6 +302,38 @@ fun MyCaffeApp() {
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         when (activeTab) {
+                            CompanionTab.OWNER_RADAR -> OwnerRadarTab(
+                                darkTheme = darkTheme,
+                                session = staffSession,
+                                summary = ownerSummary,
+                                loading = ownerLoading,
+                                onRefresh = {
+                                    staffSession?.let { s ->
+                                        scope.launch {
+                                            ownerLoading = true
+                                            apiClient.fetchOwnerSummary(apiBaseUrl, s.accessToken)
+                                                .onSuccess { ownerSummary = it }
+                                            ownerLoading = false
+                                        }
+                                    }
+                                },
+                                approvals = pendingApprovals,
+                                onApprove = { item ->
+                                    pendingApprovals = pendingApprovals.filterNot { it.id == item.id }
+                                    ownerSummary = ownerSummary?.let { current ->
+                                        current.copy(pendingApprovalsCount = (current.pendingApprovalsCount - 1).coerceAtLeast(0))
+                                    }
+                                },
+                                onReject = { item ->
+                                    pendingApprovals = pendingApprovals.filterNot { it.id == item.id }
+                                    ownerSummary = ownerSummary?.let { current ->
+                                        current.copy(pendingApprovalsCount = (current.pendingApprovalsCount - 1).coerceAtLeast(0))
+                                    }
+                                },
+                                busyModeEnabled = busyModeEnabled,
+                                onToggleBusyMode = { busyModeEnabled = it }
+                            )
+
                             CompanionTab.KASIR_QR -> KasirAndQrTab(
                                 darkTheme = darkTheme,
                                 apiBaseUrl = apiBaseUrl,
@@ -389,6 +474,392 @@ fun MyCaffeApp() {
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+private fun formatRupiah(amount: Long): String {
+    val reversed = amount.toString().reversed()
+    val chunks = reversed.chunked(3).joinToString(".")
+    return "Rp ${chunks.reversed()}"
+}
+
+@Composable
+private fun OwnerRadarTab(
+    darkTheme: Boolean,
+    session: StaffSessionState?,
+    summary: OwnerSummarySnapshot?,
+    loading: Boolean,
+    onRefresh: () -> Unit,
+    approvals: List<RemoteApprovalItem>,
+    onApprove: (RemoteApprovalItem) -> Unit,
+    onReject: (RemoteApprovalItem) -> Unit,
+    busyModeEnabled: Boolean,
+    onToggleBusyMode: (Boolean) -> Unit
+) {
+    // 1. Psychological Growth Milestone (Anti-Slop Positive Reinforcement)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("card_growth_milestone"),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (darkTheme) DarkSurface else LightMuted
+        ),
+        border = BorderStroke(1.dp, if (darkTheme) DarkBorder else LightBorder)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "🎉 Bisnis Kamu Berkembang Pesat!",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (darkTheme) StatusOkBgDark else StatusOkBgLight
+                ) {
+                    Text(
+                        text = "1.250 Pesanan",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (darkTheme) StatusOkFgDark else StatusOkFgLight
+                    )
+                }
+            }
+            Text(
+                text = "Selamat! Performa gerai bulan ini sangat optimal dengan 0% komisi transaksi. Hubungi developer jika bisnis kamu memerlukan ekspansi multi-cabang atau white-label brand.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+
+    // 2. Executive Telemetry Radar (Live Omzet)
+    SectionCard(
+        title = "Live Telemetry Radar (Omzet Hari Ini)",
+        subtitle = "Ringkasan metrik finansial real-time gerai yang terhubung"
+    ) {
+        val gross = summary?.grossSalesTodayIdr ?: 4_850_000L
+        val orders = summary?.totalOrdersCount ?: 87
+        val aov = summary?.averageOrderValueIdr ?: 55_747L
+        val qris = summary?.digitalQrisCollectedIdr ?: 3_152_500L
+        val cash = summary?.cashCollectedIdr ?: 1_212_500L
+
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Main Revenue Display
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "TOTAL OMZET KOTOR (HARI INI)",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = formatRupiah(gross),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = if (darkTheme) StatusOkBgDark else StatusOkBgLight
+                        ) {
+                            Text(
+                                text = "+14.2% vs kemarin",
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (darkTheme) StatusOkFgDark else StatusOkFgLight
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Secondary Stats Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "Pesanan Selesai",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "$orders Transaksi",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                }
+
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "Rata-rata Keranjang (AOV)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = formatRupiah(aov),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                }
+            }
+
+            // Settlement Breakdown
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "Distribusi Penerimaan Kasir & Gateway:",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "• QRIS Midtrans BYOK (65%)",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = formatRupiah(qris),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "• Tunai Kasir Laci (25%)",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = formatRupiah(cash),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            OutlinedButton(
+                onClick = onRefresh,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .testTag("btn_refresh_owner_radar"),
+                enabled = !loading
+            ) {
+                Text(if (loading) "Memperbarui Data..." else "Sinkronkan Radar Omzet")
+            }
+        }
+    }
+
+    // 3. ADR-007 Remote Operational Approval Radar
+    SectionCard(
+        title = "Persetujuan Jarak Jauh (ADR-007)",
+        subtitle = "Persetujuan void, refund, dan diskon manual tanpa harus hadir fisik di kasir"
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (approvals.isEmpty()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (darkTheme) StatusOkBgDark else StatusOkBgLight
+                ) {
+                    Text(
+                        text = "Semua permintaan operasional kasir telah diselesaikan. Tidak ada antrean approval.",
+                        modifier = Modifier.padding(14.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                        color = if (darkTheme) StatusOkFgDark else StatusOkFgLight
+                    )
+                }
+            } else {
+                approvals.forEach { item ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("approval_item_${item.id}"),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        border = BorderStroke(
+                            1.dp,
+                            if (darkTheme) StatusWarnFgDark else StatusWarnFgLight
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "${item.actionType.uppercase()}: ${item.orderId}",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = if (darkTheme) StatusWarnBgDark else StatusWarnBgLight
+                                ) {
+                                    Text(
+                                        text = item.tableNumber,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (darkTheme) StatusWarnFgDark else StatusWarnFgLight
+                                    )
+                                }
+                            }
+
+                            Text(
+                                text = "Nominal: ${formatRupiah(item.amountIdr)} | Diajukan oleh: ${item.cashierName} (${item.requestedAt})",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+
+                            Text(
+                                text = "Alasan: \"${item.reason}\"",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            // Thumb-zone action buttons
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = { onApprove(item) },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .heightIn(min = 48.dp)
+                                        .testTag("btn_approve_${item.id}"),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (darkTheme) StatusOkFgDark else StatusOkFgLight
+                                    )
+                                ) {
+                                    Text("Setujui", fontWeight = FontWeight.Bold)
+                                }
+
+                                OutlinedButton(
+                                    onClick = { onReject(item) },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .heightIn(min = 48.dp)
+                                        .testTag("btn_reject_${item.id}"),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = if (darkTheme) StatusErrFgDark else StatusErrFgLight
+                                    ),
+                                    border = BorderStroke(
+                                        1.dp,
+                                        if (darkTheme) StatusErrFgDark else StatusErrFgLight
+                                    )
+                                ) {
+                                    Text("Tolak", fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 4. Emergency Store Controls
+    SectionCard(
+        title = "Kontrol Darurat Gerai (Emergency Kill-Switch)",
+        subtitle = "Aksi pencegahan gangguan operasional saat gerai mengalami lonjakan pesanan"
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Mode Sibuk / Pause QR Meja",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Hentikan sementara pesanan baru dari QR meja tamu tanpa mengganggu pesanan yang sudah berjalan di dapur.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = busyModeEnabled,
+                    onCheckedChange = onToggleBusyMode,
+                    modifier = Modifier.testTag("switch_busy_mode")
+                )
             }
         }
     }

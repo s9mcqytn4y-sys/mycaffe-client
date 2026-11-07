@@ -20,6 +20,12 @@ export default defineConfig({
       name: "mobile-safari",
       use: { ...devices["iPhone 14"] }
     }
-  ]
+  ],
+  webServer: {
+    command: "pnpm start",
+    url: "http://127.0.0.1:3000",
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  },
 });
 
