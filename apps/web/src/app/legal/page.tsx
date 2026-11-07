@@ -1,11 +1,11 @@
 "use client";
 
-import React, { Suspense, useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { apiFetch, LegalDocument, normalizeLegalDoc } from "@/lib/api";
 import { useThemeLocale } from "@/components/Providers";
 import { DataStateBox, StatusBadge } from "@/components/Shell";
+import { apiFetch, LegalDocument, normalizeLegalDoc } from "@/lib/api";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
 
 function LegalPageInner() {
   const { locale } = useThemeLocale();
