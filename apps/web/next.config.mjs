@@ -2,6 +2,7 @@
 const backendInternalUrl = (process.env.BACKEND_INTERNAL_URL || "http://127.0.0.1:8080").replace(/\/+$/, "");
 
 const nextConfig = {
+  ...(process.env.BUILD_STANDALONE === "true" ? { output: "standalone" } : {}),
   reactStrictMode: true,
   poweredByHeader: false,
   async rewrites() {
@@ -19,4 +20,3 @@ const nextConfig = {
 };
 
 export default nextConfig;
-
