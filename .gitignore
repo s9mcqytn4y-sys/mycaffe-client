@@ -6,6 +6,8 @@ apps/web/out/
 *.tsbuildinfo
 .gradle/
 apps/android/.gradle/
+.kotlin/
+**/.kotlin/
 build/
 apps/android/build/
 apps/android/app/build/

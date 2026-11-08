@@ -1,0 +1,103 @@
+[
+  {
+    "id": "qris",
+    "name": "QRIS (Semua Pembayaran)",
+    "category": "qris",
+    "asset_path": "brand/midtrans/qris.png",
+    "aspect_ratio": 3.33,
+    "fee_type": "percentage",
+    "default_fee_rate": 0.007,
+    "settlement_sla": "T+1 Hari Kerja"
+  },
+  {
+    "id": "gopay",
+    "name": "GoPay / GoPay Later",
+    "category": "ewallet",
+    "asset_path": "brand/midtrans/gopay.svg",
+    "aspect_ratio": 4.1,
+    "fee_type": "percentage",
+    "default_fee_rate": 0.02,
+    "settlement_sla": "Real-time"
+  },
+  {
+    "id": "shopeepay",
+    "name": "ShopeePay",
+    "category": "ewallet",
+    "asset_path": "brand/midtrans/shopeepay.svg",
+    "aspect_ratio": 3.5,
+    "fee_type": "percentage",
+    "default_fee_rate": 0.02,
+    "settlement_sla": "Real-time"
+  },
+  {
+    "id": "bca_va",
+    "name": "BCA Virtual Account",
+    "category": "bank_transfer",
+    "asset_path": "brand/midtrans/bca.png",
+    "aspect_ratio": 3.2,
+    "fee_type": "fixed",
+    "default_fee_nominal": 4000,
+    "settlement_sla": "Real-time"
+  },
+  {
+    "id": "bni_va",
+    "name": "BNI Virtual Account",
+    "category": "bank_transfer",
+    "asset_path": "brand/midtrans/bni.png",
+    "aspect_ratio": 3.29,
+    "fee_type": "fixed",
+    "default_fee_nominal": 4000,
+    "settlement_sla": "Real-time"
+  },
+  {
+    "id": "bri_va",
+    "name": "BRI Virtual Account (BRIVA)",
+    "category": "bank_transfer",
+    "asset_path": "brand/midtrans/bri.png",
+    "aspect_ratio": 2.64,
+    "fee_type": "fixed",
+    "default_fee_nominal": 4000,
+    "settlement_sla": "Real-time"
+  },
+  {
+    "id": "mandiri_va",
+    "name": "Mandiri Bill Payment",
+    "category": "bank_transfer",
+    "asset_path": "brand/midtrans/mandiri.png",
+    "aspect_ratio": 3.38,
+    "fee_type": "fixed",
+    "default_fee_nominal": 4000,
+    "settlement_sla": "Real-time"
+  },
+  {
+    "id": "permata_va",
+    "name": "Permata Virtual Account",
+    "category": "bank_transfer",
+    "asset_path": "brand/midtrans/permata_bank.png",
+    "aspect_ratio": 3.73,
+    "fee_type": "fixed",
+    "default_fee_nominal": 4000,
+    "settlement_sla": "Real-time"
+  },
+  {
+    "id": "cimb_va",
+    "name": "CIMB Niaga VA",
+    "category": "bank_transfer",
+    "asset_path": "brand/midtrans/cimbniaga.png",
+    "aspect_ratio": 5.84,
+    "fee_type": "fixed",
+    "default_fee_nominal": 4000,
+    "settlement_sla": "Real-time"
+  },
+  {
+    "id": "credit_card",
+    "name": "Kartu Kredit / Debit",
+    "category": "card",
+    "asset_path": "brand/midtrans/visa.png",
+    "aspect_ratio": 3.2,
+    "fee_type": "percentage_and_fixed",
+    "default_fee_rate": 0.028,
+    "default_fee_nominal": 2000,
+    "settlement_sla": "T+2 Hari Kerja"
+  }
+]

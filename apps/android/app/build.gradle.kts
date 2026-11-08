@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "online.abbdullaziz.mycaffe"
+    namespace = "com.azuredevid.cassy"
     compileSdk = 35
 
     defaultConfig {
@@ -68,6 +68,9 @@ dependencies {
 
     // Security & Encrypted Shared Preferences
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // Image Loading for WebP Menu Catalog from Cloudflare R2 CDN
+    implementation("io.coil-kt:coil-compose:2.7.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
