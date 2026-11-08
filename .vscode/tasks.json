@@ -4,19 +4,26 @@
     {
       "label": "Web: Dev Server (:3000)",
       "type": "shell",
-      "command": "npm --workspace @azuredevid/mycaffe-web run dev",
+      "command": "pnpm --filter @azuredevid/mycaffe-web run dev",
       "group": "build",
       "problemMatcher": []
     },
     {
       "label": "Web: Typecheck & Production Build",
       "type": "shell",
-      "command": "npm --workspace @azuredevid/mycaffe-web run typecheck && npm --workspace @azuredevid/mycaffe-web run build",
+      "command": "pnpm --filter @azuredevid/mycaffe-web run typecheck && pnpm --filter @azuredevid/mycaffe-web run build",
       "group": {
         "kind": "build",
         "isDefault": true
       },
       "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Web: Playwright E2E Tests",
+      "type": "shell",
+      "command": "pnpm --filter @azuredevid/mycaffe-web test:e2e",
+      "group": "test",
+      "problemMatcher": []
     },
     {
       "label": "Design Tokens: Verify WCAG AA & i18n",
@@ -33,6 +40,13 @@
       "problemMatcher": []
     },
     {
+      "label": "Android: Build App Bundle (AAB)",
+      "type": "shell",
+      "command": ".\\apps\\android\\gradlew.bat -p apps/android bundleDebug",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
       "label": "Android: Run Unit Tests",
       "type": "shell",
       "command": ".\\apps\\android\\gradlew.bat -p apps/android test",
@@ -40,9 +54,9 @@
       "problemMatcher": []
     },
     {
-      "label": "Android: Launch Emulator (Medium_Tablet)",
+      "label": "Android: Launch Cassy Tablet Emulator (Medium_Tablet)",
       "type": "shell",
-      "command": "& \"$env:LOCALAPPDATA\\Android\\Sdk\\emulator\\emulator.exe\" -avd Medium_Tablet",
+      "command": "& \"$env:LOCALAPPDATA\\Android\\Sdk\\emulator\\emulator.exe\" -avd Medium_Tablet -gpu host -accel on -memory 4096",
       "isBackground": true,
       "problemMatcher": []
     },
@@ -62,4 +76,3 @@
     }
   ]
 }
-
