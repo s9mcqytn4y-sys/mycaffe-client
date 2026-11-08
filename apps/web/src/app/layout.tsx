@@ -10,13 +10,13 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://abbdullaziz.online"),
   title: {
-    default: "MyCaffe by AzureDevID | Kasir POS, Pesan Meja QR & Tata Kelola Kafe",
-    template: "%s | MyCaffe by AzureDevID",
+    default: "Cassy by AzureDevID | Kasir POS, Pesan Meja QR & Tata Kelola Kafe",
+    template: "%s | Cassy by AzureDevID",
   },
   description:
-    "Platform operasional kafe dan restoran multi-tenant oleh AzureDevID: pesan meja QR tanpa antre, kasir POS tablet, layar dapur KDS, integrasi QRIS Midtrans, dan generator jaringan MikroTik.",
+    "Cassy oleh AzureDevID: Platform operasional kafe dan restoran multi-tenant, pesan meja QR tanpa antre, kasir POS tablet, layar dapur KDS, integrasi QRIS Midtrans, dan generator jaringan MikroTik.",
   manifest: "/manifest.webmanifest",
-  applicationName: "MyCaffe by AzureDevID",
+  applicationName: "Cassy by AzureDevID",
   icons: {
     icon: [
       { url: "/Favicon16.png", sizes: "16x16", type: "image/png" },
@@ -28,10 +28,10 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "MyCaffe by AzureDevID | Kasir POS, Pesan Meja QR & Tata Kelola Kafe",
-    description: "Sistem Kasir POS & QR Order Meja Multi-Tenant dengan 0% Komisi & Enkripsi Kunci Mandiri (BYOK).",
+    title: "Cassy by AzureDevID | Kasir POS, Pesan Meja QR & Tata Kelola Kafe",
+    description: "Cassy: Sistem Kasir POS & QR Order Meja Multi-Tenant dengan 0% Komisi & Enkripsi Kunci Mandiri (BYOK).",
     url: "https://abbdullaziz.online",
-    siteName: "MyCaffe by AzureDevID",
+    siteName: "Cassy by AzureDevID",
     locale: "id_ID",
     type: "website",
   },

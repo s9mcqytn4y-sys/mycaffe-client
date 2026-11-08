@@ -1,8 +1,8 @@
 {
   "id": "online.abbdullaziz.mycaffe",
-  "name": "MyCaffe by AzureDevID",
-  "short_name": "MyCaffe",
-  "description": "Sistem Kasir POS, Pesan Meja QR, Layar Dapur KDS, dan Konsol Tata Kelola Kafe Multi-Tenant oleh AzureDevID.",
+  "name": "Cassy by AzureDevID",
+  "short_name": "Cassy",
+  "description": "Cassy: Sistem Kasir POS, Pesan Meja QR, Layar Dapur KDS, dan Konsol Tata Kelola Kafe Multi-Tenant oleh AzureDevID.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

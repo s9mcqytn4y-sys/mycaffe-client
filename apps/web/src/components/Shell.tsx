@@ -173,11 +173,11 @@ export function TopNavBar() {
             aria-hidden="true"
             className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand font-display text-sm font-extrabold text-brand-fg"
           >
-            MC
+            CS
           </span>
           <span className="leading-tight">
             <span className="block font-display text-base font-extrabold tracking-tight text-ink">
-              MyCaffe
+              Cassy
             </span>
             <span className="block text-[11px] font-medium text-subink">
               by AzureDevID
@@ -278,7 +278,7 @@ export function SiteFooter() {
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start">
           <div className="max-w-xl space-y-2">
             <p className="font-display text-base font-bold text-ink">
-              MyCaffe by AzureDevID
+              Cassy by AzureDevID
             </p>
             <p className="text-sm text-subink">
               {locale === "en-US"
