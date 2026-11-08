@@ -5,7 +5,7 @@
   <key>CFBundleDisplayName</key>
   <string>Cassy POS</string>
   <key>CFBundleIdentifier</key>
-  <string>online.abbdullaziz.mycaffe</string>
+  <string>com.azuredevid.cassy</string>
   <key>CFBundleName</key>
   <string>Cassy</string>
   <key>CFBundlePackageType</key>

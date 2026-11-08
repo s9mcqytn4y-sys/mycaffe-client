@@ -286,7 +286,7 @@ export function SiteFooter() {
                 : "Dioperasikan oleh AzureDevID (Jakarta Pusat, DKI Jakarta, Indonesia). Sistem kasir POS multi-tenant, pesan meja QR, layar dapur KDS, dan tata kelola jaringan gerai."}
             </p>
             <p className="font-mono text-xs text-subink">
-              App ID: online.abbdullaziz.mycaffe | Kepatuhan UU No. 27 Tahun 2022 (UU PDP) &amp; QRIS IDR
+              App ID: com.azuredevid.cassy | Kepatuhan UU No. 27 Tahun 2022 (UU PDP) &amp; QRIS IDR
             </p>
           </div>
 

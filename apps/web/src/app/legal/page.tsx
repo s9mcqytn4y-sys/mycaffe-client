@@ -78,7 +78,7 @@ function LegalPageInner() {
           <div>
             <p className="font-semibold text-[#00AEEF]">Penyelenggara Sistem Elektronik</p>
             <p className="mt-0.5">AzureDevID (Unit Produk MyCaffe POS)</p>
-            <p className="font-mono text-[11px] text-slate-400">ID Paket: online.abbdullaziz.mycaffe</p>
+            <p className="font-mono text-[11px] text-slate-400">ID Paket: com.azuredevid.cassy</p>
           </div>
           <div>
             <p className="font-semibold text-[#00AEEF]">Domisili &amp; Wilayah Hukum</p>

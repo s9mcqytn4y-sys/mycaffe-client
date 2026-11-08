@@ -2,7 +2,7 @@
   "name": "@azuredevid/mycaffe-client",
   "version": "1.0.0",
   "private": true,
-  "description": "Unified Client Monorepo for MyCaffe by AzureDevID (online.abbdullaziz.mycaffe: Web PWA QR Order/Backoffice/Superadmin, Android Jetpack Compose POS, iOS Bridge & Shared Design Tokens)",
+  "description": "Unified Client Monorepo for MyCaffe by AzureDevID (com.azuredevid.cassy: Web PWA QR Order/Backoffice/Superadmin, Android Jetpack Compose POS, iOS Bridge & Shared Design Tokens)",
   "packageManager": "pnpm@12.18.0",
   "scripts": {
     "dev": "pnpm --filter @azuredevid/mycaffe-web dev",
