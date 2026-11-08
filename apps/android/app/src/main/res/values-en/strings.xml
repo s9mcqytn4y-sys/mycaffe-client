@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App & Identity -->
+    <string name="app_name">Cassy POS</string>
+    <string name="a11y_cassy_logo">Cassy POS Monogram Logo</string>
+
+    <!-- Navigation & Categories -->
+    <string name="category_all">All Items</string>
+    <string name="category_signature">Signature</string>
+    <string name="category_espresso">Espresso</string>
+    <string name="category_manual_brew">Manual Brew</string>
+    <string name="category_pastry">Pastry</string>
+    <string name="category_non_coffee">Non-Coffee</string>
+    <string name="category_meals">Meals</string>
+    <string name="category_beans">Beans &amp; Bottle</string>
+
+    <!-- Hardware Status -->
+    <string name="lan_status_ok">LAN 9100: OK</string>
+    <string name="lan_status_off">LAN 9100: OFF</string>
+    <string name="btn_byok_settings">BYOK</string>
+    <string name="btn_pair_device">Pair</string>
+
+    <!-- Catalog Grid -->
+    <string name="catalog_title">Menu Catalog (%1$d Items)</string>
+    <string name="catalog_source_cdn">Cloudflare R2 CDN WebP</string>
+    <string name="search_placeholder">Search 38 official items (Espresso, Latte, Croissant...)</string>
+    <string name="a11y_clear_search">Clear search text</string>
+    <string name="catalog_loading">Loading product catalog...</string>
+    <string name="catalog_empty_search">No products matching \"%1$s\"</string>
+    <string name="stock_label">Stock: %1$d</string>
+
+    <!-- Order Summary Panel -->
+    <string name="order_heading">Order: %1$s</string>
+    <string name="cart_locked_notice">Cart Locked (Active QRIS Session)</string>
+    <string name="order_type_dine_in">DINE-IN</string>
+    <string name="order_type_takeaway">TAKEAWAY</string>
+    <string name="cart_empty_title">Cashier cart is empty</string>
+    <string name="cart_empty_subtitle">Select items from the catalog on the left</string>
+    <string name="a11y_decrease_qty">Decrease quantity of %1$s</string>
+    <string name="a11y_increase_qty">Increase quantity of %1$s</string>
+    <string name="subtotal_label">Subtotal</string>
+    <string name="tax_pb1_label">PB1 Tax (10%)</string>
+    <string name="grand_total_label">Grand Total</string>
+    <string name="btn_kick_drawer">Open Drawer (RJ11)</string>
+    <string name="btn_send_to_kitchen">Send to Kitchen</string>
+    <string name="btn_pay_cash">Cash Payment</string>
+    <string name="btn_pay_qris">Dynamic QRIS</string>
+    <string name="btn_reprint_stations">Reprint</string>
+
+    <!-- Cash Modal -->
+    <string name="modal_cash_title">Cash Settlement &amp; Change</string>
+    <string name="modal_cash_total">Total Due: %1$s</string>
+    <string name="modal_cash_quick_prompt">Select Tendered Amount / Quick Presets:</string>
+    <string name="chip_exact_cash">Exact</string>
+    <string name="input_cash_tendered_label">Cash Tendered (IDR)</string>
+    <string name="change_label">CHANGE: %1$s</string>
+    <string name="insufficient_cash">Short by %1$s</string>
+    <string name="btn_complete_and_print">Settle &amp; Print Receipt</string>
+    <string name="btn_cancel">Cancel</string>
+
+    <!-- QRIS Modal -->
+    <string name="modal_qris_title">Midtrans Dynamic QRIS</string>
+    <string name="qris_expiry_format">Expires in: %1$s</string>
+    <string name="qris_payment_instructions">Scan using BCA, GoPay, ShopeePay, OVO, Dana, LinkAja</string>
+    <string name="qris_syncing_status">Checking settlement status...</string>
+    <string name="qris_waiting_status">Waiting for customer payment...</string>
+    <string name="btn_force_sync">Check Payment Status</string>
+    <string name="btn_confirm_paid">Confirm Paid</string>
+    <string name="btn_cancel_qris">Cancel / Edit Order</string>
+    <string name="toast_qris_cancelled">QRIS session cancelled. Cart unlocked.</string>
+    <string name="toast_qris_success">QRIS Payment Confirmed Paid!</string>
+    <string name="toast_cash_success">Cash Transaction Completed!</string>
+    <string name="toast_kitchen_sent">Kitchen Ticket Round #%1$d Dispatched!</string>
+    <string name="toast_drawer_kicked">Cash Drawer Opened (RJ11 Kick)</string>
+
+    <!-- Store Pairing Screen -->
+    <string name="pairing_screen_title">POS Tablet Device Pairing</string>
+    <string name="pairing_screen_desc">Connect this POS tablet to your store by scanning the Signed QR Code from Owner Dashboard, or enter the 6-character code manually.</string>
+    <string name="pairing_connecting">Connecting to store server...</string>
+    <string name="btn_scan_qr_camera">Scan Store Pairing QR (Camera)</string>
+    <string name="btn_close_camera">Close Camera</string>
+    <string name="or_divider">OR</string>
+    <string name="store_slug_label">Store Slug</string>
+    <string name="pairing_code_label">6-Character Pairing Code (e.g. CAS-892)</string>
+    <string name="btn_pair_manual">Connect with Manual Code</string>
+    <string name="err_invalid_qr_format">Invalid QR Code format (must be JSON signed payload).</string>
+    <string name="err_code_length">Enter at least 4 to 6 characters for store pairing code.</string>
+</resources>
+
