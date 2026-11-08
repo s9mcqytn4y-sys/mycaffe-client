@@ -49,10 +49,10 @@ class MainActivity : ComponentActivity() {
                         }
                         "settings" -> {
                             MidtransConfigScreen(
-                                onSaveCredentials = { merchantId, clientKey, serverKey, isSandbox ->
+                                onSaveSuccess = { response ->
                                     Toast.makeText(
                                         this@MainActivity,
-                                        "Kredensial Midtrans tersimpan: $merchantId (${if (isSandbox) "Sandbox" else "Production"})",
+                                        "Kredensial tersimpan: ${response.merchantId} [${response.environment}] (Status: ${response.validationStatus})",
                                         Toast.LENGTH_LONG
                                     ).show()
                                     currentScreen = "pos"
