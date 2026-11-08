@@ -104,4 +104,51 @@ class LanPrinterDiscoveryManager(private val context: Context) {
             } catch (_: Exception) {}
         }
     }
+
+    /**
+     * Broadcasts a UDP probe datagram across the local subnet to discover thermal printers
+     * that do not broadcast mDNS / DNS-SD services.
+     */
+    fun discoverPrintersViaUdp(
+        targetPort: Int = 9100,
+        broadcastTimeoutMs: Int = 2000
+    ): Flow<DiscoveredPrinter> = kotlinx.coroutines.flow.flow {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val probePacket = byteArrayOf(0x1F, 0x1B, 0x1F, 0x00) // Standard POS probe header
+            try {
+                java.net.DatagramSocket().use { socket ->
+                    socket.broadcast = true
+                    socket.soTimeout = broadcastTimeoutMs
+
+                    val broadcastAddress = java.net.InetAddress.getByName("255.255.255.255")
+                    val packet = java.net.DatagramPacket(probePacket, probePacket.size, broadcastAddress, targetPort)
+                    socket.send(packet)
+
+                    val buffer = ByteArray(1024)
+                    val responsePacket = java.net.DatagramPacket(buffer, buffer.size)
+
+                    val startTime = System.currentTimeMillis()
+                    while (System.currentTimeMillis() - startTime < broadcastTimeoutMs) {
+                        try {
+                            socket.receive(responsePacket)
+                            val host = responsePacket.address.hostAddress
+                            if (host != null) {
+                                emit(
+                                    DiscoveredPrinter(
+                                        name = "UDP Printer ($host)",
+                                        hostAddress = host,
+                                        port = targetPort
+                                    )
+                                )
+                            }
+                        } catch (_: java.net.SocketTimeoutException) {
+                            break
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+                // Safely end flow on socket failure
+            }
+        }
+    }
 }

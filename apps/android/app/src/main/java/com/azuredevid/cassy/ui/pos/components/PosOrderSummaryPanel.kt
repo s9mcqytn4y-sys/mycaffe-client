@@ -1,0 +1,310 @@
+package com.azuredevid.cassy.ui.pos.components
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.azuredevid.cassy.ui.pos.CartItem
+import com.azuredevid.cassy.ui.theme.StatusErrBgLight
+import com.azuredevid.cassy.ui.theme.StatusErrFgLight
+import com.azuredevid.cassy.ui.theme.StatusWarnBgLight
+import com.azuredevid.cassy.ui.theme.StatusWarnFgLight
+import java.text.NumberFormat
+
+/**
+ * Panel 3: Active Order Summary & Settlement Panel (35% screen width).
+ * Features:
+ * - Table / Queue Header & Dine-In / Takeaway toggle
+ * - Cart Items (+ / -) with Cart Lock support during active QRIS checkout
+ * - Subtotal, PB1 10%, and Grand Total
+ * - Cash Drawer RJ11 Kick action
+ * - Dine-In "Kirim ke Dapur" (Send to Kitchen) trigger without payment gate
+ * - Settlement buttons (Tunai & QRIS Dinamis)
+ * - Hardware Failover Alert Banner with manual station reprint trigger
+ */
+@Composable
+fun PosOrderSummaryPanel(
+    panelWidth: Dp,
+    tableName: String,
+    orderType: String,
+    onToggleOrderType: () -> Unit,
+    cart: List<CartItem>,
+    isCartLocked: Boolean,
+    onIncreaseQuantity: (CartItem) -> Unit,
+    onDecreaseQuantity: (CartItem) -> Unit,
+    subtotal: Long,
+    taxPb1: Long,
+    grandTotal: Long,
+    rupiahFormat: NumberFormat,
+    onOpenDrawerKick: () -> Unit,
+    onSendToKitchen: () -> Unit,
+    onOpenCashModal: () -> Unit,
+    onOpenQrisModal: () -> Unit,
+    failoverWarning: String?,
+    onReprintStations: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .width(panelWidth)
+            .fillMaxHeight(),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                // Header Order Meja & Dine-In / Takeaway Toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Pesanan: $tableName",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (isCartLocked) {
+                            Text(
+                                text = "Keranjang Terkunci (Sesi QRIS Aktif)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    // Order Type Pill Toggle
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = if (orderType == "DINE-IN") StatusWarnBgLight else MaterialTheme.colorScheme.secondaryContainer,
+                        modifier = Modifier.clickable(enabled = !isCartLocked) { onToggleOrderType() }
+                    ) {
+                        Text(
+                            text = orderType,
+                            color = if (orderType == "DINE-IN") StatusWarnFgLight else MaterialTheme.colorScheme.onSecondaryContainer,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                // Failover Alert Banner
+                if (!failoverWarning.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = StatusErrBgLight,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = failoverWarning,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = StatusErrFgLight,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.weight(1f)
+                            )
+                            TextButton(
+                                onClick = onReprintStations,
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text("Cetak Ulang", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                // Cart Items List
+                if (cart.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Keranjang kasir masih kosong\nPilih menu dari katalog di sebelah kiri",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 240.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(cart, key = { it.product.id }) { item ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = item.product.name,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        text = "Rp ${rupiahFormat.format(item.product.basePriceIdr * item.quantity)}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontFamily = FontFamily.Monospace,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    OutlinedButton(
+                                        onClick = { onDecreaseQuantity(item) },
+                                        enabled = !isCartLocked,
+                                        contentPadding = PaddingValues(0.dp),
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Text("-", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                    }
+
+                                    Text(
+                                        text = "${item.quantity}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.widthIn(min = 20.dp),
+                                        textAlign = TextAlign.Center
+                                    )
+
+                                    OutlinedButton(
+                                        onClick = { onIncreaseQuantity(item) },
+                                        enabled = !isCartLocked,
+                                        contentPadding = PaddingValues(0.dp),
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Text("+", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Bill Summary & Action Buttons
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                HorizontalDivider()
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Subtotal", style = MaterialTheme.typography.bodySmall)
+                    Text("Rp ${rupiahFormat.format(subtotal)}", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("PB1 (10%)", style = MaterialTheme.typography.bodySmall)
+                    Text("Rp ${rupiahFormat.format(taxPb1)}", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Grand Total", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Rp ${rupiahFormat.format(grandTotal)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                // Action Row 1: RJ11 Kick & Dine-In "Kirim ke Dapur" Trigger
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onOpenDrawerKick,
+                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 44.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp)
+                    ) {
+                        Text("Buka Laci (RJ11)", style = MaterialTheme.typography.labelSmall)
+                    }
+
+                    if (orderType == "DINE-IN") {
+                        FilledTonalButton(
+                            onClick = onSendToKitchen,
+                            enabled = cart.isNotEmpty() && !isCartLocked,
+                            modifier = Modifier.weight(1f).defaultMinSize(minHeight = 44.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp)
+                        ) {
+                            Text("Kirim ke Dapur", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                // Action Row 2: Settlement Buttons: Tunai vs QRIS Dinamis
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = onOpenCashModal,
+                        enabled = cart.isNotEmpty() && !isCartLocked,
+                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
+                    ) {
+                        Text("Bayar Tunai", fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = onOpenQrisModal,
+                        enabled = cart.isNotEmpty(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
+                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
+                    ) {
+                        Text("QRIS Dinamis", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
