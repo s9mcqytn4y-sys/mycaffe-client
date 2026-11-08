@@ -1,5 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- App & Identity -->
     <string name="app_name">Cassy POS</string>
-</resources>
+    <string name="a11y_cassy_logo">Logo Monogram Cassy POS</string>
 
+    <!-- Navigation & Categories -->
+    <string name="category_all">Semua Menu</string>
+    <string name="category_signature">Signature</string>
+    <string name="category_espresso">Espresso</string>
+    <string name="category_manual_brew">Manual Brew</string>
+    <string name="category_pastry">Pastry</string>
+    <string name="category_non_coffee">Non-Coffee</string>
+    <string name="category_meals">Meals</string>
+    <string name="category_beans">Beans &amp; Bottle</string>
+
+    <!-- Hardware Status -->
+    <string name="lan_status_ok">LAN 9100: OK</string>
+    <string name="lan_status_off">LAN 9100: OFF</string>
+    <string name="btn_byok_settings">BYOK</string>
+    <string name="btn_pair_device">Pair</string>
+
+    <!-- Catalog Grid -->
+    <string name="catalog_title">Katalog Menu (%1$d Produk)</string>
+    <string name="catalog_source_cdn">Cloudflare R2 CDN WebP</string>
+    <string name="search_placeholder">Cari 38 menu resmi (Espresso, Latte, Croissant...)</string>
+    <string name="a11y_clear_search">Hapus teks pencarian</string>
+    <string name="catalog_loading">Memuat katalog produk...</string>
+    <string name="catalog_empty_search">Tidak ada produk yang cocok dengan pencarian \"%1$s\"</string>
+    <string name="stock_label">Stok: %1$d</string>
+
+    <!-- Order Summary Panel -->
+    <string name="order_heading">Pesanan: %1$s</string>
+    <string name="cart_locked_notice">Keranjang Terkunci (Sesi QRIS Aktif)</string>
+    <string name="order_type_dine_in">DINE-IN</string>
+    <string name="order_type_takeaway">TAKEAWAY</string>
+    <string name="cart_empty_title">Keranjang kasir masih kosong</string>
+    <string name="cart_empty_subtitle">Pilih menu dari katalog di sebelah kiri</string>
+    <string name="a11y_decrease_qty">Kurangi jumlah %1$s</string>
+    <string name="a11y_increase_qty">Tambah jumlah %1$s</string>
+    <string name="subtotal_label">Subtotal</string>
+    <string name="tax_pb1_label">PB1 (10%)</string>
+    <string name="grand_total_label">Grand Total</string>
+    <string name="btn_kick_drawer">Buka Laci (RJ11)</string>
+    <string name="btn_send_to_kitchen">Kirim ke Dapur</string>
+    <string name="btn_pay_cash">Bayar Tunai</string>
+    <string name="btn_pay_qris">QRIS Dinamis</string>
+    <string name="btn_reprint_stations">Cetak Ulang</string>
+
+    <!-- Cash Modal -->
+    <string name="modal_cash_title">Pembayaran Tunai &amp; Kembalian</string>
+    <string name="modal_cash_total">Total Tagihan: %1$s</string>
+    <string name="modal_cash_quick_prompt">Pilih Uang Diterima / Pecahan Cepat:</string>
+    <string name="chip_exact_cash">Pas</string>
+    <string name="input_cash_tendered_label">Nominal Tunai Diterima (Rp)</string>
+    <string name="change_label">KEMBALIAN: %1$s</string>
+    <string name="insufficient_cash">Uang diterima kurang %1$s</string>
+    <string name="btn_complete_and_print">Selesaikan &amp; Cetak Struk</string>
+    <string name="btn_cancel">Batal</string>
+
+    <!-- QRIS Modal -->
+    <string name="modal_qris_title">QRIS Dinamis Midtrans</string>
+    <string name="qris_expiry_format">Kadaluwarsa: %1$s</string>
+    <string name="qris_payment_instructions">Scan menggunakan BCA, GoPay, ShopeePay, OVO, Dana, LinkAja</string>
+    <string name="qris_syncing_status">Memeriksa status pelunasan...</string>
+    <string name="qris_waiting_status">Menunggu pembayaran pelanggan...</string>
+    <string name="btn_force_sync">Periksa Status Pembayaran</string>
+    <string name="btn_confirm_paid">Konfirmasi Lunas</string>
+    <string name="btn_cancel_qris">Batal / Ubah Pesanan</string>
+    <string name="toast_qris_cancelled">Sesi QRIS dibatalkan. Keranjang terbuka kembali.</string>
+    <string name="toast_qris_success">Pembayaran QRIS Terkonfirmasi Lunas!</string>
+    <string name="toast_cash_success">Transaksi Tunai Selesai!</string>
+    <string name="toast_kitchen_sent">Tiket Dapur Ronde #%1$d Terkirim!</string>
+    <string name="toast_drawer_kicked">Laci Kasir Terbuka (RJ11 Kick)</string>
+
+    <!-- Store Pairing Screen -->
+    <string name="pairing_screen_title">Pairing Perangkat Tablet POS</string>
+    <string name="pairing_screen_desc">Hubungkan tablet POS ini ke gerai Anda dengan memindai Signed QR Code dari Dashboard Pemilik, atau masukkan kode 6-digit manual.</string>
+    <string name="pairing_connecting">Menghubungkan ke server gerai...</string>
+    <string name="btn_scan_qr_camera">Pindai QR Pairing Gerai (Kamera)</string>
+    <string name="btn_close_camera">Tutup Kamera</string>
+    <string name="or_divider">ATAU</string>
+    <string name="store_slug_label">Slug Gerai (Store Slug)</string>
+    <string name="pairing_code_label">Kode Pairing 6-Karakter (Contoh: CAS-892)</string>
+    <string name="btn_pair_manual">Hubungkan dengan Kode Manual</string>
+    <string name="err_invalid_qr_format">Format QR Code tidak valid (harus JSON signed payload).</string>
+    <string name="err_code_length">Masukkan minimal 4 hingga 6 karakter kode pairing gerai.</string>
+</resources>

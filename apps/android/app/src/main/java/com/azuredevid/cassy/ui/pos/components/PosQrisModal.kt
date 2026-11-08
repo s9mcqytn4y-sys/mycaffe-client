@@ -11,11 +11,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.azuredevid.cassy.R
 import com.azuredevid.cassy.core.util.QrBitmapGenerator
 import kotlinx.coroutines.delay
 import java.text.NumberFormat
@@ -24,6 +25,7 @@ import java.text.NumberFormat
  * Dynamic QRIS modal with live ZXing QR render, 15-minute countdown timer,
  * hybrid status sync (WebSocket/Polling status check), and Force Sync action.
  * Enforces Cart Lock while active.
+ * Supports dual-language i18n and WCAG 2.2 AA accessibility.
  */
 @Composable
 fun PosQrisModal(
@@ -62,13 +64,13 @@ fun PosQrisModal(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("QRIS Dinamis Midtrans", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.modal_qris_title), fontWeight = FontWeight.Bold)
                 Surface(
                     shape = RoundedCornerShape(4.dp),
                     color = MaterialTheme.colorScheme.tertiaryContainer
                 ) {
                     Text(
-                        text = "Kadaluwarsa: $timeFormatted",
+                        text = stringResource(R.string.qris_expiry_format, timeFormatted),
                         style = MaterialTheme.typography.labelSmall,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
@@ -84,7 +86,7 @@ fun PosQrisModal(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Total Tagihan: Rp ${rupiahFormat.format(grandTotal)}",
+                    text = stringResource(R.string.modal_cash_total, "Rp ${rupiahFormat.format(grandTotal)}"),
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleMedium,
                     fontFamily = FontFamily.Monospace,
@@ -96,7 +98,7 @@ fun PosQrisModal(
                 if (qrBitmap != null) {
                     Image(
                         bitmap = qrBitmap.asImageBitmap(),
-                        contentDescription = "QRIS Dinamis Midtrans",
+                        contentDescription = stringResource(R.string.modal_qris_title),
                         modifier = Modifier
                             .size(200.dp)
                             .clip(RoundedCornerShape(8.dp))
@@ -117,7 +119,7 @@ fun PosQrisModal(
 
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "Scan menggunakan BCA, GoPay, ShopeePay, OVO, Dana, LinkAja",
+                    text = stringResource(R.string.qris_payment_instructions),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -136,21 +138,21 @@ fun PosQrisModal(
                         Spacer(modifier = Modifier.width(6.dp))
                     }
                     Text(
-                        text = if (isSyncing) "Memeriksa status pelunasan..." else "Menunggu pembayaran pelanggan...",
+                        text = if (isSyncing) stringResource(R.string.qris_syncing_status) else stringResource(R.string.qris_waiting_status),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(
                     onClick = onForceSyncPayment,
                     enabled = !isSyncing,
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                    modifier = Modifier.defaultMinSize(minHeight = 36.dp)
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp)
                 ) {
-                    Text("Periksa Status Pembayaran", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.btn_force_sync), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                 }
             }
         },
@@ -159,7 +161,7 @@ fun PosQrisModal(
                 onClick = onConfirmPaymentSuccess,
                 modifier = Modifier.defaultMinSize(minHeight = 48.dp)
             ) {
-                Text("Konfirmasi Lunas", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.btn_confirm_paid), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
@@ -167,9 +169,8 @@ fun PosQrisModal(
                 onClick = onCancelOrderAndReleaseLock,
                 modifier = Modifier.defaultMinSize(minHeight = 48.dp)
             ) {
-                Text("Batal / Ubah Pesanan")
+                Text(stringResource(R.string.btn_cancel_qris))
             }
         }
     )
 }
-

@@ -13,6 +13,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -22,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.azuredevid.cassy.R
 import com.azuredevid.cassy.data.model.CatalogProduct
 import com.azuredevid.cassy.ui.theme.StatusErrFgLight
 import java.text.NumberFormat
@@ -29,6 +33,7 @@ import java.text.NumberFormat
 /**
  * Panel 2: Product Catalog Grid (55% screen width in Landscape POS).
  * Displays search box, product cards with CDN WebP imagery, station badge, and stock count.
+ * Accessible with WCAG 2.2 AA compliant labels and clear contrast.
  */
 @Composable
 fun PosCatalogGrid(
@@ -42,6 +47,7 @@ fun PosCatalogGrid(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val clearSearchDesc = stringResource(R.string.a11y_clear_search)
 
     Column(
         modifier = modifier
@@ -58,12 +64,12 @@ fun PosCatalogGrid(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Katalog Menu (${displayedProducts.size} Produk)",
+                text = stringResource(R.string.catalog_title, displayedProducts.size),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Cloudflare R2 CDN WebP",
+                text = stringResource(R.string.catalog_source_cdn),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -75,7 +81,7 @@ fun PosCatalogGrid(
             onValueChange = onSearchQueryChange,
             placeholder = {
                 Text(
-                    "Cari 38 menu resmi (Espresso, Latte, Croissant...)",
+                    stringResource(R.string.search_placeholder),
                     style = MaterialTheme.typography.bodySmall
                 )
             },
@@ -85,7 +91,10 @@ fun PosCatalogGrid(
                 .padding(bottom = 10.dp),
             trailingIcon = {
                 if (searchQuery.isNotBlank()) {
-                    IconButton(onClick = { onSearchQueryChange("") }) {
+                    IconButton(
+                        onClick = { onSearchQueryChange("") },
+                        modifier = Modifier.semantics { contentDescription = clearSearchDesc }
+                    ) {
                         Text("✕", fontWeight = FontWeight.Bold)
                     }
                 }
@@ -94,12 +103,16 @@ fun PosCatalogGrid(
 
         if (isLoadingCatalog) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(stringResource(R.string.catalog_loading), style = MaterialTheme.typography.bodySmall)
+                }
             }
         } else if (displayedProducts.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = "Tidak ada produk yang cocok dengan pencarian \"$searchQuery\"",
+                    text = stringResource(R.string.catalog_empty_search, searchQuery),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -178,7 +191,7 @@ fun PosCatalogGrid(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "Stok: ${product.stockQuantity}",
+                                    text = stringResource(R.string.stock_label, product.stockQuantity),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = if (product.stockQuantity < 10) StatusErrFgLight else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -190,4 +203,3 @@ fun PosCatalogGrid(
         }
     }
 }
-

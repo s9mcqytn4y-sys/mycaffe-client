@@ -8,6 +8,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.azuredevid.cassy.R
 import com.azuredevid.cassy.core.hardware.EscPosReceiptBuilder
 import com.azuredevid.cassy.core.hardware.KdsTicketRouter
 import com.azuredevid.cassy.core.hardware.PrinterPort9100Manager
@@ -84,16 +86,16 @@ fun PosLandscapeScreen(
     var isQrisSyncing by remember { mutableStateOf(false) }
     var failoverAlert by remember { mutableStateOf<String?>(null) }
 
-    // Categories
+    // Categories with adaptive i18n
     val categories = listOf(
-        "all" to "Semua Menu",
-        "signature" to "Signature",
-        "espresso" to "Espresso",
-        "manual_brew" to "Manual Brew",
-        "pastry" to "Pastry",
-        "non_coffee" to "Non-Coffee",
-        "meals" to "Meals",
-        "beans" to "Beans & Bottle"
+        "all" to stringResource(R.string.category_all),
+        "signature" to stringResource(R.string.category_signature),
+        "espresso" to stringResource(R.string.category_espresso),
+        "manual_brew" to stringResource(R.string.category_manual_brew),
+        "pastry" to stringResource(R.string.category_pastry),
+        "non_coffee" to stringResource(R.string.category_non_coffee),
+        "meals" to stringResource(R.string.category_meals),
+        "beans" to stringResource(R.string.category_beans)
     )
 
     // Filtered Products
@@ -220,7 +222,7 @@ fun PosLandscapeScreen(
 
                         dineInRound++
                         cart.forEach { it.isSentToKitchen = true }
-                        Toast.makeText(context, "Tiket Dapur Ronde #${dineInRound - 1} Terkirim!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.toast_kitchen_sent, dineInRound - 1), Toast.LENGTH_LONG).show()
                     }
                 },
                 onOpenCashModal = { showCashModal = true },
@@ -303,7 +305,7 @@ fun PosLandscapeScreen(
 
                         failoverAlert = if (res.hasAnyFailover) "Perhatian: Sebagian printer offline. Tiket dialihkan." else null
 
-                        Toast.makeText(context, "Transaksi Tunai Selesai!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.toast_cash_success), Toast.LENGTH_LONG).show()
                         showCashModal = false
                         cart.clear()
                         dineInRound = 1
@@ -328,13 +330,13 @@ fun PosLandscapeScreen(
                         isQrisSyncing = true
                         delay(1200L) // Polling probe simulation to backend API
                         isQrisSyncing = false
-                        Toast.makeText(context, "Status terkini: Menunggu pemindaian oleh pelanggan", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Status: Menunggu pembayaran", Toast.LENGTH_SHORT).show()
                     }
                 },
                 onCancelOrderAndReleaseLock = {
                     // Release Cart Lock and notify backend
                     showQrisModal = false
-                    Toast.makeText(context, "Sesi QRIS dibatalkan. Keranjang terbuka kembali.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.toast_qris_cancelled), Toast.LENGTH_SHORT).show()
                 },
                 onConfirmPaymentSuccess = {
                     coroutineScope.launch {
@@ -374,7 +376,7 @@ fun PosLandscapeScreen(
 
                         failoverAlert = if (res.hasAnyFailover) "Perhatian: Sebagian printer offline. Tiket dialihkan." else null
 
-                        Toast.makeText(context, "Pembayaran QRIS Terkonfirmasi Lunas!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.toast_qris_success), Toast.LENGTH_LONG).show()
                         showQrisModal = false
                         cart.clear()
                         dineInRound = 1

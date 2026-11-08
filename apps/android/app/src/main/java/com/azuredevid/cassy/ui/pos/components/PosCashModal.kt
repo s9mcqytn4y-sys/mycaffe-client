@@ -6,10 +6,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.azuredevid.cassy.R
 import com.azuredevid.cassy.ui.theme.StatusErrBgLight
 import com.azuredevid.cassy.ui.theme.StatusErrFgLight
 import com.azuredevid.cassy.ui.theme.StatusOkBgLight
@@ -19,6 +21,7 @@ import java.text.NumberFormat
 /**
  * Cash settlement modal with preset chips (Pas, 50k, 100k, 200k),
  * manual tender input, and real-time change calculation.
+ * Supports dual-language i18n and WCAG 2.2 AA accessibility.
  */
 @Composable
 fun PosCashModal(
@@ -35,7 +38,7 @@ fun PosCashModal(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Pembayaran Tunai & Kembalian", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.modal_cash_title), fontWeight = FontWeight.Bold)
         },
         text = {
             Column(
@@ -43,31 +46,31 @@ fun PosCashModal(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "Total Tagihan: Rp ${rupiahFormat.format(grandTotal)}",
+                    text = stringResource(R.string.modal_cash_total, "Rp ${rupiahFormat.format(grandTotal)}"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                Text("Pilih Uang Diterima / Pecahan Cepat:", style = MaterialTheme.typography.labelSmall)
+                Text(stringResource(R.string.modal_cash_quick_prompt), style = MaterialTheme.typography.labelSmall)
 
-                // Quick Cash Chips
+                // Quick Cash Chips (Min Height 48dp)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     OutlinedButton(
                         onClick = { cashTenderedStr = grandTotal.toString() },
-                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 40.dp),
+                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp),
                         contentPadding = PaddingValues(2.dp)
                     ) {
-                        Text("Pas", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.chip_exact_cash), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
 
                     OutlinedButton(
                         onClick = { cashTenderedStr = "50000" },
-                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 40.dp),
+                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp),
                         contentPadding = PaddingValues(2.dp)
                     ) {
                         Text("50k", style = MaterialTheme.typography.labelSmall)
@@ -75,7 +78,7 @@ fun PosCashModal(
 
                     OutlinedButton(
                         onClick = { cashTenderedStr = "100000" },
-                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 40.dp),
+                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp),
                         contentPadding = PaddingValues(2.dp)
                     ) {
                         Text("100k", style = MaterialTheme.typography.labelSmall)
@@ -83,7 +86,7 @@ fun PosCashModal(
 
                     OutlinedButton(
                         onClick = { cashTenderedStr = "200000" },
-                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 40.dp),
+                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp),
                         contentPadding = PaddingValues(2.dp)
                     ) {
                         Text("200k", style = MaterialTheme.typography.labelSmall)
@@ -94,7 +97,7 @@ fun PosCashModal(
                 OutlinedTextField(
                     value = cashTenderedStr,
                     onValueChange = { cashTenderedStr = it.filter { char -> char.isDigit() } },
-                    label = { Text("Nominal Tunai Diterima (Rp)") },
+                    label = { Text(stringResource(R.string.input_cash_tendered_label)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -109,7 +112,7 @@ fun PosCashModal(
                     Column(modifier = Modifier.padding(10.dp)) {
                         if (isSufficient) {
                             Text(
-                                text = "KEMBALIAN: Rp ${rupiahFormat.format(change)}",
+                                text = stringResource(R.string.change_label, "Rp ${rupiahFormat.format(change)}"),
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontFamily = FontFamily.Monospace,
@@ -117,7 +120,7 @@ fun PosCashModal(
                             )
                         } else {
                             Text(
-                                text = "Uang diterima kurang Rp ${rupiahFormat.format(grandTotal - tenderedLong)}",
+                                text = stringResource(R.string.insufficient_cash, "Rp ${rupiahFormat.format(grandTotal - tenderedLong)}"),
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = StatusErrFgLight
@@ -133,7 +136,7 @@ fun PosCashModal(
                 enabled = isSufficient,
                 modifier = Modifier.defaultMinSize(minHeight = 48.dp)
             ) {
-                Text("Selesaikan & Cetak Struk", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.btn_complete_and_print), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
@@ -141,9 +144,8 @@ fun PosCashModal(
                 onClick = onDismiss,
                 modifier = Modifier.defaultMinSize(minHeight = 48.dp)
             ) {
-                Text("Batal")
+                Text(stringResource(R.string.btn_cancel))
             }
         }
     )
 }
-
