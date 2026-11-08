@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { apiFetch, KdsTicket } from "@/lib/api";
+import { useTenantWebSocket } from "@/lib/useTenantWebSocket";
 import { DataStateBox, StatusBadge } from "@/components/Shell";
 
 export default function DedicatedKdsPage() {
@@ -47,14 +48,19 @@ export default function DedicatedKdsPage() {
     }
   }, [token]);
 
-  useEffect(() => {
-    fetchKdsTickets();
-    // Auto polling every 5 seconds for wet-hand kitchen hands-free operation
-    const interval = setInterval(() => {
+  const wsUrl = typeof window !== "undefined" && token
+    ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/api/v1/realtime/ws?channels=kds&token=${encodeURIComponent(token)}`
+    : "";
+
+  const { status: wsStatus } = useTenantWebSocket({
+    url: wsUrl,
+    enabled: Boolean(token),
+    onMessage: () => {
       fetchKdsTickets();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [fetchKdsTickets]);
+    },
+    onFallbackPoll: fetchKdsTickets,
+    fallbackPollingIntervalMs: 5000
+  });
 
   const handleBumpTicket = async (ticketId: string, nextStatus: "preparing" | "ready" | "served") => {
     try {
@@ -108,9 +114,19 @@ export default function DedicatedKdsPage() {
               Kitchen Display System (KDS)
             </h1>
             <StatusBadge tone="ok" label={storeSlug || "Gerai Aktif"} />
+            <StatusBadge
+              tone={wsStatus === "connected" ? "ok" : wsStatus === "reconnecting" ? "warn" : "info"}
+              label={
+                wsStatus === "connected"
+                  ? "Realtime WS"
+                  : wsStatus === "reconnecting"
+                  ? "Reconnecting..."
+                  : "Polling Fallback (5s)"
+              }
+            />
           </div>
           <p className="mt-1 text-xs text-subink">
-            Pembaruan otomatis tiap 5 detik | Sinkronisasi terakhir: {lastUpdated || "Menghubungkan..."}
+            Sinkronisasi otomatis | Pembaruan terakhir: {lastUpdated || "Menghubungkan..."}
           </p>
         </div>
 
@@ -257,4 +273,3 @@ export default function DedicatedKdsPage() {
     </div>
   );
 }
-

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Cassy Official Monogram Vector">
+  <defs>
+    <linearGradient id="cassyMonoGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0A4DA2"/>
+      <stop offset="50%" stop-color="#00AEEF"/>
+      <stop offset="100%" stop-color="#C68B59"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Cassy Stylized 'C' & Coffee Steam Motif -->
+  <g transform="translate(18, 0)" fill="none" stroke="url(#cassyMonoGrad)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 370 148 C 340 108 290 88 236 88 C 142 88 88 162 88 256 C 88 350 142 424 236 424 C 290 424 340 404 370 364"/>
+    <path d="M 344 196 C 314 172 272 172 248 196 C 220 224 220 260 264 284 C 316 312 320 348 288 376 C 260 400 216 396 188 372"/>
+    <circle cx="388" cy="256" r="22" fill="#C68B59" stroke="none"/>
+  </g>
+</svg>

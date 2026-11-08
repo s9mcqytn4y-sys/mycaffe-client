@@ -13,17 +13,51 @@
   "categories": ["business", "food", "finance", "productivity"],
   "icons": [
     {
-      "src": "/icon-192.svg",
+      "src": "/AndroidChrome192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icon-512.svg",
+      "src": "/AndroidChrome512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/AndroidChrome192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/AndroidChrome512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/brand/cassy/CassyMonogramVector.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Pesan Meja QR",
+      "url": "/order/demo",
+      "description": "Buka katalog menu pesan meja mandiri"
+    },
+    {
+      "name": "Layar Dapur KDS",
+      "url": "/kds",
+      "description": "Pantau antrean pesanan dapur secara real-time"
+    },
+    {
+      "name": "Antrean TV",
+      "url": "/queue",
+      "description": "Tampilan layar panggil antrean pelanggan"
     }
   ]
 }
-

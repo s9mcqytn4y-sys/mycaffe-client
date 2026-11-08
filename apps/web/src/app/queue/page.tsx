@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useTenantWebSocket } from "@/lib/useTenantWebSocket";
 
 interface QueueItem {
   id: string;
@@ -67,14 +68,19 @@ export default function QueueDisplayPage() {
     }
   }, [displayToken]);
 
-  useEffect(() => {
-    fetchQueueOrders();
-    // Auto-refresh every 3 seconds for smooth real-time TV displays
-    const interval = setInterval(() => {
+  const wsUrl = typeof window !== "undefined" && displayToken
+    ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/api/v1/realtime/ws?channels=queue&token=${encodeURIComponent(displayToken)}`
+    : "";
+
+  const { status: wsStatus } = useTenantWebSocket({
+    url: wsUrl,
+    enabled: Boolean(displayToken),
+    onMessage: () => {
       fetchQueueOrders();
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [fetchQueueOrders]);
+    },
+    onFallbackPoll: fetchQueueOrders,
+    fallbackPollingIntervalMs: 3000
+  });
 
   const handleSaveToken = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -125,101 +131,115 @@ export default function QueueDisplayPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-canvas text-ink select-none overflow-hidden">
-      {/* Top Header Bar */}
-      <header className="flex items-center justify-between border-b border-subtle bg-surface px-8 py-5 shadow-sm">
+    <div className="flex h-screen flex-col bg-canvas text-ink p-6 select-none overflow-hidden">
+      {/* Top TV Bar */}
+      <header className="flex items-center justify-between border-b border-subtle pb-4">
         <div className="flex items-center gap-4">
-          <div className="h-4 w-4 rounded-full bg-emerald-500 animate-pulse" />
-          <h1 className="font-display text-2xl font-black tracking-tight text-ink">
-            Antrean Pesanan MyCaffe
-          </h1>
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand font-display text-xl font-black text-brand-fg">
+            C
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-black tracking-tight text-ink">
+              Nomor Panggilan Antrean
+            </h1>
+            <p className="text-xs text-subink">
+              Silakan ambil pesanan Anda di meja pengambilan (Pickup Counter) saat nomor Anda muncul di kolom hijau.
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="font-mono text-2xl font-bold tabular-nums text-subink">
-            {currentTime}
+          <div className="flex items-center gap-2">
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${
+                wsStatus === "connected"
+                  ? "bg-emerald-500 animate-pulse"
+                  : wsStatus === "reconnecting"
+                  ? "bg-amber-500 animate-ping"
+                  : "bg-slate-400"
+              }`}
+            />
+            <span className="font-mono text-xs text-subink">
+              {wsStatus === "connected" ? "LIVE WS" : "POLLING"}
+            </span>
           </div>
-          <button
-            onClick={() => {
-              localStorage.removeItem("mycaffe_display_token");
-              setDisplayToken("");
-            }}
-            className="text-[11px] text-subink/60 hover:text-ink underline"
-          >
-            Ubah Token
-          </button>
+          <div className="text-right">
+            <div className="font-mono text-3xl font-black text-ink">{currentTime}</div>
+            <div className="text-xs font-semibold text-accent">WIB (Jakarta)</div>
+          </div>
         </div>
       </header>
 
-      {/* Main 2-Column Split: Sedang Disiapkan vs Siap Diambil */}
-      <main className="grid flex-1 grid-cols-2 divide-x divide-subtle">
-        {/* Column 1: Sedang Disiapkan */}
-        <section className="flex flex-col p-8 space-y-6">
-          <div className="flex items-center justify-between border-b border-subtle pb-4">
-            <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-subink">
+      {/* Main Split Panels */}
+      <div className="mt-6 grid flex-1 grid-cols-12 gap-6 overflow-hidden">
+        {/* Panel Sedang Dipersiapkan (Barista/Kitchen) */}
+        <div className="col-span-5 flex flex-col rounded-3xl border border-subtle bg-surface p-6 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between border-b border-subtle pb-3">
+            <h2 className="font-display text-xl font-black text-amber-700 dark:text-amber-400">
               Sedang Disiapkan
             </h2>
-            <span className="rounded-xl bg-muted px-4 py-1.5 font-mono text-sm font-bold text-subink">
+            <span className="rounded-full bg-amber-100 px-3 py-1 font-mono text-xs font-bold text-amber-800">
               {preparingList.length} Pesanan
             </span>
           </div>
 
-          {preparingList.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center text-subink/60 text-lg italic">
-              Tidak ada antrean persiapan
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {preparingList.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-center rounded-2xl border border-subtle bg-surface p-6 shadow-sm"
-                >
-                  <span className="font-mono text-4xl sm:text-5xl font-black tabular-nums text-ink">
-                    {item.queue_number}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+          <div className="mt-4 flex-1 overflow-y-auto pr-1">
+            {preparingList.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-center text-sm text-subink italic">
+                Semua pesanan yang masuk telah siap disajikan
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {preparingList.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex min-h-[72px] items-center justify-center rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm"
+                  >
+                    <span className="font-mono text-3xl font-black text-ink">
+                      {item.queue_number}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
-        {/* Column 2: Siap Diambil */}
-        <section className="flex flex-col p-8 space-y-6 bg-emerald-50/30">
-          <div className="flex items-center justify-between border-b border-emerald-300 pb-4">
-            <h2 className="font-display text-2xl sm:text-3xl font-black text-emerald-800">
-              Silakan Diambil
+        {/* Panel Silakan Ambil / Siap Saji */}
+        <div className="col-span-7 flex flex-col rounded-3xl border-2 border-emerald-500 bg-emerald-50/20 p-6 shadow-md overflow-hidden">
+          <div className="flex items-center justify-between border-b border-emerald-200 pb-3">
+            <h2 className="font-display text-2xl font-black text-emerald-800 dark:text-emerald-400">
+              Silakan Ambil Pesanan
             </h2>
-            <span className="rounded-xl bg-emerald-200/80 px-4 py-1.5 font-mono text-sm font-black text-emerald-900">
+            <span className="rounded-full bg-emerald-100 px-3 py-1 font-mono text-xs font-bold text-emerald-800">
               {readyList.length} Siap
             </span>
           </div>
 
-          {readyList.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center text-emerald-800/60 text-lg italic">
-              Menunggu pesanan selesai disajikan
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {readyList.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-center rounded-2xl border-2 border-emerald-500 bg-white p-6 shadow-md"
-                >
-                  <span className="font-mono text-5xl sm:text-6xl font-black tabular-nums text-emerald-700">
-                    {item.queue_number}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </main>
-
-      {/* Footer Banner */}
-      <footer className="border-t border-subtle bg-surface px-8 py-3 text-center text-xs text-subink">
-        Silakan tunjukkan struk digital atau nomor pesanan Anda saat mengambil minuman/makanan di konter.
-      </footer>
+          <div className="mt-4 flex-1 overflow-y-auto pr-1">
+            {readyList.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-center text-sm text-subink italic">
+                Menunggu pesanan selesai disiapkan...
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                {readyList.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    className={`flex min-h-[96px] items-center justify-center rounded-2xl border-2 border-emerald-500 bg-surface p-4 shadow-lg ${
+                      idx === 0 ? "animate-bounce" : ""
+                    }`}
+                  >
+                    <span className="font-mono text-4xl font-black text-emerald-700">
+                      {item.queue_number}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
