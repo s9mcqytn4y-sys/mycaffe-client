@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
   <key>CFBundleDisplayName</key>
-  <string>MyCaffe POS</string>
+  <string>Cassy POS</string>
   <key>CFBundleIdentifier</key>
   <string>online.abbdullaziz.mycaffe</string>
   <key>CFBundleName</key>
-  <string>MyCaffe</string>
+  <string>Cassy</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
