@@ -20,12 +20,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.azuredevid.cassy.data.model.CatalogProduct
 import com.azuredevid.cassy.data.model.PaymentChannelRegistry
-import com.azuredevid.cassy.data.model.SeedCatalog
+import com.azuredevid.cassy.data.repository.KtorCatalogRepository
 import com.azuredevid.cassy.ui.theme.*
 import java.text.NumberFormat
 import java.util.Locale
@@ -38,10 +39,30 @@ data class CartItem(
 
 @Composable
 fun PosLandscapeScreen(
+    catalogRepository: com.azuredevid.cassy.domain.repository.CatalogRepository? = null,
     onOpenDrawerKick: () -> Unit,
     onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val repo = remember(catalogRepository) {
+        catalogRepository ?: KtorCatalogRepository(context)
+    }
+
+    var allProducts by remember { mutableStateOf<List<CatalogProduct>>(emptyList()) }
+    var isLoadingCatalog by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        repo.getCatalog("central-cafe")
+            .onSuccess {
+                allProducts = it
+                isLoadingCatalog = false
+            }
+            .onFailure {
+                isLoadingCatalog = false
+            }
+    }
+
     val rupiahFormat = remember { NumberFormat.getIntegerInstance(Locale("id", "ID")) }
 
     var selectedCategoryId by rememberSaveable { mutableStateOf("all") }
@@ -51,7 +72,7 @@ fun PosLandscapeScreen(
 
     // Categories
     val categories = listOf(
-        "all" to "Semua Menu (38)",
+        "all" to "Semua Menu",
         "signature" to "Signature",
         "espresso" to "Espresso",
         "manual_brew" to "Manual Brew",
@@ -61,11 +82,11 @@ fun PosLandscapeScreen(
         "beans" to "Beans & Bottle"
     )
 
-    val displayedProducts = remember(selectedCategoryId) {
+    val displayedProducts = remember(selectedCategoryId, allProducts) {
         if (selectedCategoryId == "all") {
-            SeedCatalog.sampleProducts
+            allProducts
         } else {
-            SeedCatalog.sampleProducts.filter { it.categoryId == selectedCategoryId }
+            allProducts.filter { it.categoryId == selectedCategoryId }
         }
     }
 
