@@ -11,6 +11,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import com.azuredevid.cassy.core.hardware.PrinterPort9100Manager
+import com.azuredevid.cassy.ui.pairing.StorePairingScreen
 import com.azuredevid.cassy.ui.pos.PosLandscapeScreen
 import com.azuredevid.cassy.ui.settings.MidtransConfigScreen
 import com.azuredevid.cassy.ui.theme.CassyTheme
@@ -32,10 +33,9 @@ class MainActivity : ComponentActivity() {
                             PosLandscapeScreen(
                                 onOpenDrawerKick = {
                                     lifecycleScope.launch {
-                                        // Pemicu Drawer Kick ESC/POS Pin 2 ke Printer Kasir LAN Port 9100
                                         printerManager.openCashDrawer("192.168.10.200", 9100)
                                             .onSuccess {
-                                                Toast.makeText(this@MainActivity, "Perintah Buka Laci Kasir Terkirim (ESC/POS 1B700019FA)", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(this@MainActivity, "Perintah Buka Laci Kasir Terkirim (RJ11)", Toast.LENGTH_SHORT).show()
                                             }
                                             .onFailure {
                                                 Toast.makeText(this@MainActivity, "Simulasi Buka Laci (Printer LAN tidak terjangkau)", Toast.LENGTH_SHORT).show()
@@ -44,6 +44,9 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onNavigateToSettings = {
                                     currentScreen = "settings"
+                                },
+                                onNavigateToPairing = {
+                                    currentScreen = "pairing"
                                 }
                             )
                         }
@@ -62,10 +65,21 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
+                        "pairing" -> {
+                            StorePairingScreen(
+                                onPairingSuccess = { storeSlug, token ->
+                                    Toast.makeText(
+                                        this@MainActivity,
+                                        "Tablet berhasil terhubung ke gerai: $storeSlug",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                    currentScreen = "pos"
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
     }
 }
-
