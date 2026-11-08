@@ -12,26 +12,42 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.azuredevid.cassy.data.model.PaymentCredentialRequest
+import com.azuredevid.cassy.data.model.PaymentCredentialResponse
+import com.azuredevid.cassy.data.repository.KtorPaymentCredentialRepository
+import com.azuredevid.cassy.domain.repository.PaymentCredentialRepository
 import com.azuredevid.cassy.ui.theme.*
+import kotlinx.coroutines.launch
 
 @Composable
 fun MidtransConfigScreen(
+    repository: PaymentCredentialRepository? = null,
     currentMerchantId: String = "",
     currentClientKey: String = "",
     currentServerKey: String = "",
-    onSaveCredentials: (merchantId: String, clientKey: String, serverKey: String, isSandbox: Boolean) -> Unit,
+    onSaveSuccess: (PaymentCredentialResponse) -> Unit = {},
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val credRepo = remember(repository) {
+        repository ?: KtorPaymentCredentialRepository(context)
+    }
+    val coroutineScope = rememberCoroutineScope()
+
     var merchantId by rememberSaveable { mutableStateOf(currentMerchantId) }
     var clientKey by rememberSaveable { mutableStateOf(currentClientKey) }
     var serverKey by rememberSaveable { mutableStateOf(currentServerKey) }
     var isServerKeyVisible by rememberSaveable { mutableStateOf(false) }
+
+    var isSaving by remember { mutableStateOf(false) }
+    var saveFeedback by remember { mutableStateOf<Pair<Boolean, String>?>(null) } // (isSuccess, message)
 
     // Auto-detection Environment from Server Key / Client Key prefix
     val isSandbox = serverKey.startsWith("SB-") || clientKey.startsWith("SB-")
@@ -72,7 +88,10 @@ fun MidtransConfigScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            OutlinedButton(onClick = onNavigateBack) {
+            OutlinedButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.heightIn(min = 48.dp)
+            ) {
                 Text("Kembali ke POS")
             }
         }
@@ -110,7 +129,9 @@ fun MidtransConfigScreen(
                         clientKey = "SB-Mid-client-demoSecretKey123"
                         serverKey = "SB-Mid-server-demoSecretServer456"
                         probeStatus = null
+                        saveFeedback = null
                     },
+                    modifier = Modifier.heightIn(min = 48.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
                 ) {
                     Text("Gunakan Kredensial Sandbox")
@@ -197,7 +218,10 @@ fun MidtransConfigScreen(
             placeholder = { Text("Contoh: SB-Mid-server-xxx atau Mid-server-xxx") },
             visualTransformation = if (isServerKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
-                TextButton(onClick = { isServerKeyVisible = !isServerKeyVisible }) {
+                TextButton(
+                    onClick = { isServerKeyVisible = !isServerKeyVisible },
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
                     Text(if (isServerKeyVisible) "Sembunyikan" else "Tampilkan")
                 }
             },
@@ -240,14 +264,11 @@ fun MidtransConfigScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Probe Test Feedback Banner
-        if (probeStatus != null) {
+        // Save Feedback Banner (Success / Error)
+        if (saveFeedback != null) {
+            val (isOk, msg) = saveFeedback!!
             Surface(
-                color = when (probeStatus) {
-                    "success" -> StatusOkBgLight
-                    "error" -> StatusErrBgLight
-                    else -> MaterialTheme.colorScheme.surfaceVariant
-                },
+                color = if (isOk) StatusOkBgLight else StatusErrBgLight,
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -259,32 +280,20 @@ fun MidtransConfigScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = when (probeStatus) {
-                            "success" -> "✓ Berhasil Terhubung:"
-                            "error" -> "✕ Gagal Terhubung:"
-                            else -> "Memeriksa..."
-                        },
+                        text = if (isOk) "✓ Tersimpan:" else "✕ Gagal Menyimpan:",
                         fontWeight = FontWeight.Bold,
-                        color = when (probeStatus) {
-                            "success" -> StatusOkFgLight
-                            "error" -> StatusErrFgLight
-                            else -> MaterialTheme.colorScheme.onSurface
-                        }
+                        color = if (isOk) StatusOkFgLight else StatusErrFgLight
                     )
                     Text(
-                        text = probeMessage,
+                        text = msg,
                         style = MaterialTheme.typography.bodySmall,
-                        color = when (probeStatus) {
-                            "success" -> StatusOkFgLight
-                            "error" -> StatusErrFgLight
-                            else -> MaterialTheme.colorScheme.onSurface
-                        }
+                        color = if (isOk) StatusOkFgLight else StatusErrFgLight
                     )
                 }
             }
         }
 
-        // Action Buttons Row
+        // Action Buttons Row (Touch Target Min 48dp)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -299,7 +308,10 @@ fun MidtransConfigScreen(
                         probeMessage = "Kredensial belum lengkap atau format prefix kunci salah."
                     }
                 },
-                modifier = Modifier.weight(1f)
+                enabled = !isSaving,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp)
             ) {
                 Text("Uji Koneksi Sandbox (Live Probe)")
             }
@@ -307,13 +319,48 @@ fun MidtransConfigScreen(
             Button(
                 onClick = {
                     if (isMerchantIdValid && isClientKeyValid && isServerKeyValid) {
-                        onSaveCredentials(merchantId, clientKey, serverKey, isSandbox)
+                        isSaving = true
+                        saveFeedback = null
+                        coroutineScope.launch {
+                            val request = PaymentCredentialRequest(
+                                environment = if (isSandbox) "sandbox" else "production",
+                                merchantId = merchantId,
+                                clientKey = clientKey,
+                                serverKey = serverKey,
+                                isEnabled = true,
+                                fallbackStaticQrisEnabled = true,
+                                verifyLive = false
+                            )
+
+                            credRepo.saveCredentials(request)
+                                .onSuccess { resp ->
+                                    isSaving = false
+                                    saveFeedback = Pair(true, "Kredensial tersimpan di PostgreSQL 18. Masked Key: ${resp.serverKeyMasked}")
+                                    onSaveSuccess(resp)
+                                }
+                                .onFailure { err ->
+                                    isSaving = false
+                                    saveFeedback = Pair(false, err.message ?: "Koneksi ke backend gagal.")
+                                }
+                        }
                     }
                 },
-                enabled = isMerchantIdValid && isClientKeyValid && isServerKeyValid,
-                modifier = Modifier.weight(1f)
+                enabled = isMerchantIdValid && isClientKeyValid && isServerKeyValid && !isSaving,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp)
             ) {
-                Text("Simpan & Aktifkan Kredensial")
+                if (isSaving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Menyimpan...")
+                } else {
+                    Text("Simpan & Aktifkan Kredensial")
+                }
             }
         }
     }
