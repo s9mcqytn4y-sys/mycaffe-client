@@ -1,6 +1,7 @@
 package com.azuredevid.cassy.ui.pos
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -31,7 +33,9 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.azuredevid.cassy.core.hardware.EscPosReceiptBuilder
+import com.azuredevid.cassy.core.hardware.KdsTicketRouter
 import com.azuredevid.cassy.core.hardware.PrinterPort9100Manager
+import com.azuredevid.cassy.core.util.QrBitmapGenerator
 import com.azuredevid.cassy.data.model.CatalogProduct
 import com.azuredevid.cassy.data.repository.KtorCatalogRepository
 import com.azuredevid.cassy.domain.repository.CatalogRepository
@@ -50,9 +54,10 @@ data class CartItem(
 fun PosLandscapeScreen(
     catalogRepository: CatalogRepository? = null,
     printerManager: PrinterPort9100Manager = remember { PrinterPort9100Manager() },
-    printerIp: String = "192.168.10.200",
+    printerEndpoints: KdsTicketRouter.PrinterEndpoints = remember { KdsTicketRouter.PrinterEndpoints() },
     onOpenDrawerKick: () -> Unit = {},
     onNavigateToSettings: () -> Unit,
+    onNavigateToPairing: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -60,6 +65,7 @@ fun PosLandscapeScreen(
     val repo = remember(catalogRepository) {
         catalogRepository ?: KtorCatalogRepository(context)
     }
+    val ticketRouter = remember(printerManager) { KdsTicketRouter(printerManager) }
 
     var allProducts by remember { mutableStateOf<List<CatalogProduct>>(emptyList()) }
     var isLoadingCatalog by remember { mutableStateOf(true) }
@@ -218,7 +224,7 @@ fun PosLandscapeScreen(
                         }
                     }
 
-                    // Bottom Navigation: Hardware Status & Settings
+                    // Bottom Navigation: Hardware Status, Settings & Pairing
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -239,12 +245,25 @@ fun PosLandscapeScreen(
                             )
                         }
 
-                        OutlinedButton(
-                            onClick = onNavigateToSettings,
-                            contentPadding = PaddingValues(4.dp),
-                            modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Text("BYOK", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            OutlinedButton(
+                                onClick = onNavigateToSettings,
+                                contentPadding = PaddingValues(2.dp),
+                                modifier = Modifier.weight(1f).defaultMinSize(minHeight = 44.dp)
+                            ) {
+                                Text("BYOK", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            }
+
+                            OutlinedButton(
+                                onClick = onNavigateToPairing,
+                                contentPadding = PaddingValues(2.dp),
+                                modifier = Modifier.weight(1f).defaultMinSize(minHeight = 44.dp)
+                            ) {
+                                Text("Pair", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
@@ -342,7 +361,6 @@ fun PosLandscapeScreen(
                             ) {
                                 Column {
                                     Box {
-                                        // AsyncImage WebP dari CDN R2
                                         AsyncImage(
                                             model = ImageRequest.Builder(context)
                                                 .data(product.imageUrl)
@@ -576,9 +594,9 @@ fun PosLandscapeScreen(
                         OutlinedButton(
                             onClick = {
                                 coroutineScope.launch {
-                                    printerManager.openCashDrawer(printerIp)
+                                    printerManager.openCashDrawer(printerEndpoints.cashierPrinterIp)
                                         .onSuccess {
-                                            Toast.makeText(context, "Laci Kasir Terbuka (ESC p 0 25 250)", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "Laci Kasir Terbuka (RJ11 Kick)", Toast.LENGTH_SHORT).show()
                                         }
                                         .onFailure {
                                             Toast.makeText(context, "Laci Kasir Terbuka (Simulasi Lokal)", Toast.LENGTH_SHORT).show()
@@ -726,9 +744,10 @@ fun PosLandscapeScreen(
                         onClick = {
                             coroutineScope.launch {
                                 // 1. Buka Laci Kasir ESC/POS RJ11
-                                printerManager.openCashDrawer(printerIp)
+                                printerManager.openCashDrawer(printerEndpoints.cashierPrinterIp)
 
                                 // 2. Cetak Struk Kasir Resmi 80mm
+                                val orderNum = "ORD-" + System.currentTimeMillis().toString().takeLast(8)
                                 val receiptBuilder = EscPosReceiptBuilder(EscPosReceiptBuilder.PaperWidth.WIDTH_80MM)
                                 val receiptItems = cart.map {
                                     EscPosReceiptBuilder.ReceiptItem(
@@ -740,7 +759,7 @@ fun PosLandscapeScreen(
                                 val receiptBytes = receiptBuilder.buildStoreReceipt(
                                     storeName = "Central Cafe Senopati",
                                     storeAddress = "Jl. Senopati No. 18, Jakarta Selatan",
-                                    orderId = "ORD-" + System.currentTimeMillis().toString().takeLast(8),
+                                    orderId = orderNum,
                                     tableName = tableName,
                                     cashierName = "Kasir 1",
                                     items = receiptItems,
@@ -751,9 +770,25 @@ fun PosLandscapeScreen(
                                     cashTenderedIdr = tenderedLong,
                                     changeIdr = change
                                 )
-                                printerManager.printRawBytes(printerIp, receiptBytes)
 
-                                Toast.makeText(context, "Transaksi Selesai & Struk Tercetak!", Toast.LENGTH_LONG).show()
+                                // 3. Rute dan Cetak Tiket KDS (Bar & Dapur)
+                                val stationItems = cart.map {
+                                    KdsTicketRouter.StationItem(
+                                        name = it.product.name,
+                                        quantity = it.quantity,
+                                        prepStation = it.product.prepStation,
+                                        notes = it.notes
+                                    )
+                                }
+                                ticketRouter.routeOrder(
+                                    orderNumber = orderNum,
+                                    tableOrQueue = tableName,
+                                    items = stationItems,
+                                    endpoints = printerEndpoints,
+                                    cashierReceiptBytes = receiptBytes
+                                )
+
+                                Toast.makeText(context, "Transaksi Selesai & Tiket KDS Terkirim!", Toast.LENGTH_LONG).show()
                                 showCashModal = false
                                 cart.clear()
                             }
@@ -779,6 +814,13 @@ fun PosLandscapeScreen(
         // MODAL 2: QRIS DINAMIS (MIDTRANS CORE API)
         // =====================================================================
         if (showQrisModal) {
+            val qrisPayload = remember(grandTotal) {
+                "00020101021226590014ID.LINKAJA.WWW0118936009110020038849520458125303360540" + grandTotal + "5802ID5914Central Cafe6007Jakarta6304"
+            }
+            val qrBitmap = remember(qrisPayload) {
+                QrBitmapGenerator.createQrBitmap(qrisPayload, 400, 400)
+            }
+
             AlertDialog(
                 onDismissRequest = { showQrisModal = false },
                 title = { Text("QRIS Dinamis Midtrans Core API", fontWeight = FontWeight.Bold) },
@@ -796,31 +838,29 @@ fun PosLandscapeScreen(
                         )
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        // QR Code Graphic Container
-                        Surface(
-                            modifier = Modifier.size(190.dp),
-                            color = Color.White,
-                            border = androidx.compose.foundation.BorderStroke(2.dp, Color.LightGray),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(8.dp)) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        text = "QRIS DINAMIS",
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.DarkGray,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "[MIDTRANS CORE API]\nNMID: ID1020038849201",
-                                        textAlign = TextAlign.Center,
-                                        color = Color.Gray,
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
+                        // QR Code Bitmap Render via ZXing
+                        if (qrBitmap != null) {
+                            Image(
+                                bitmap = qrBitmap.asImageBitmap(),
+                                contentDescription = "QRIS Dinamis Midtrans",
+                                modifier = Modifier
+                                    .size(190.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .border(2.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                            )
+                        } else {
+                            Surface(
+                                modifier = Modifier.size(190.dp),
+                                color = Color.White,
+                                border = androidx.compose.foundation.BorderStroke(2.dp, Color.LightGray),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text("QRIS DINAMIS\n(MIDTRANS CORE API)", textAlign = TextAlign.Center)
                                 }
                             }
                         }
+
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = "Scan menggunakan BCA, GoPay, ShopeePay, OVO, Dana, LinkAja",
@@ -834,7 +874,7 @@ fun PosLandscapeScreen(
                     Button(
                         onClick = {
                             coroutineScope.launch {
-                                // Cetak Struk Pembayaran QRIS Berhasil
+                                val orderNum = "QRIS-" + System.currentTimeMillis().toString().takeLast(8)
                                 val receiptBuilder = EscPosReceiptBuilder(EscPosReceiptBuilder.PaperWidth.WIDTH_80MM)
                                 val receiptItems = cart.map {
                                     EscPosReceiptBuilder.ReceiptItem(
@@ -846,7 +886,7 @@ fun PosLandscapeScreen(
                                 val receiptBytes = receiptBuilder.buildStoreReceipt(
                                     storeName = "Central Cafe Senopati",
                                     storeAddress = "Jl. Senopati No. 18, Jakarta Selatan",
-                                    orderId = "QRIS-" + System.currentTimeMillis().toString().takeLast(8),
+                                    orderId = orderNum,
                                     tableName = tableName,
                                     cashierName = "Kasir 1",
                                     items = receiptItems,
@@ -855,9 +895,25 @@ fun PosLandscapeScreen(
                                     grandTotalIdr = grandTotal,
                                     paymentMethod = "QRIS DINAMIS (MIDTRANS)"
                                 )
-                                printerManager.printRawBytes(printerIp, receiptBytes)
 
-                                Toast.makeText(context, "Pembayaran QRIS Terkonfirmasi & Struk Tercetak!", Toast.LENGTH_LONG).show()
+                                // Dispatch to Bar, Kitchen, and Cashier printers
+                                val stationItems = cart.map {
+                                    KdsTicketRouter.StationItem(
+                                        name = it.product.name,
+                                        quantity = it.quantity,
+                                        prepStation = it.product.prepStation,
+                                        notes = it.notes
+                                    )
+                                }
+                                ticketRouter.routeOrder(
+                                    orderNumber = orderNum,
+                                    tableOrQueue = tableName,
+                                    items = stationItems,
+                                    endpoints = printerEndpoints,
+                                    cashierReceiptBytes = receiptBytes
+                                )
+
+                                Toast.makeText(context, "Pembayaran QRIS Terkonfirmasi & Tiket KDS Terkirim!", Toast.LENGTH_LONG).show()
                                 showQrisModal = false
                                 cart.clear()
                             }
