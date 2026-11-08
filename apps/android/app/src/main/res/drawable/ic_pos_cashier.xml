@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Register Monitor Frame -->
+    <path
+        android:strokeColor="#2C1A12"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M4,4 L20,4 C21.1,4 22,4.9 22,6 L22,14 C22,15.1 21.1,16 20,16 L4,16 C2.9,16 2,15.1 2,14 L2,6 C2,4.9 2.9,4 4,4 Z" />
+    <!-- Stand -->
+    <path
+        android:strokeColor="#2C1A12"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M12,16 L12,19 M8,21 L16,21" />
+    <!-- Cash Drawer Base Line -->
+    <path
+        android:strokeColor="#C68B59"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M6,10 L18,10" />
+</vector>
+

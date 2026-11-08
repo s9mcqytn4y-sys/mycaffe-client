@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <style>
+      @keyframes printPaper {
+        0% { transform: translateY(0); opacity: 0; }
+        20% { opacity: 1; }
+        80% { transform: translateY(-24px); opacity: 1; }
+        100% { transform: translateY(-28px); opacity: 0; }
+      }
+      .paper-slip {
+        animation: printPaper 2.8s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+      }
+    </style>
+  </defs>
+
+  <!-- Printer Base Body -->
+  <rect x="24" y="60" width="72" height="42" rx="8" fill="#2C1A12" stroke="#5C3A21" stroke-width="2" />
+  
+  <!-- Paper Mouth Emitter Slot -->
+  <rect x="34" y="56" width="52" height="6" rx="3" fill="#140E0B" />
+  
+  <!-- LED Light Indicator (Ready Matcha Green) -->
+  <circle cx="86" cy="88" r="3" fill="#166534" />
+  <circle cx="76" cy="88" r="3" fill="#00AEEF" />
+  
+  <!-- Paper Slip Rising Out -->
+  <g class="paper-slip">
+    <path d="M 38 56 L 82 56 L 82 22 L 77 26 L 72 22 L 67 26 L 62 22 L 57 26 L 52 22 L 47 26 L 42 22 L 38 26 Z" fill="#FFFFFF" stroke="#E6DDD3" stroke-width="1.5" />
+    <!-- Receipt text lines -->
+    <line x1="44" y1="34" x2="76" y2="34" stroke="#5C3A21" stroke-width="1.5" stroke-linecap="round" />
+    <line x1="44" y1="40" x2="68" y2="40" stroke="#8C7362" stroke-width="1.5" stroke-linecap="round" />
+    <line x1="44" y1="46" x2="74" y2="46" stroke="#8C7362" stroke-width="1.5" stroke-linecap="round" />
+  </g>
+</svg>
+

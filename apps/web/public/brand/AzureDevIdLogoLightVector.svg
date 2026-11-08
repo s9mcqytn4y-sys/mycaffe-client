@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" width="1200" height="360" role="img" aria-label="AzureDevID Official Logo">
+  <defs>
+    <linearGradient id="azGradL" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0A4DA2"/>
+      <stop offset="55%" stop-color="#0077CC"/>
+      <stop offset="100%" stop-color="#00AEEF"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(20,-42) scale(0.82)" fill="url(#azGradL)">
+    <path d="M192 128 H236 L278 218 L244 252 L214 186 L180 262 H134 L192 128 Z"/>
+    <path d="M126 280 H178 L216 318 L316 218 L348 250 L216 382 L162 328 L138 382 H90 L126 280 Z"/>
+    <path d="M262 128 H326 C398 128 446 176 446 255 C446 334 398 382 326 382 H270 L250 338 L278 310 L292 338 H324 C369 338 398 306 398 255 C398 204 369 172 324 172 H304 L262 214 V128 Z"/>
+  </g>
+  <text x="430" y="218" font-family="'Plus Jakarta Sans', 'Inter', 'Segoe UI', system-ui, sans-serif" font-size="116" font-weight="800" letter-spacing="-2.5" fill="#0B192C">AzureDev<tspan fill="#0088CC">ID</tspan></text>
+</svg>

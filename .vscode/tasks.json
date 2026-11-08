@@ -33,6 +33,27 @@
       "problemMatcher": []
     },
     {
+      "label": "Android: Run Unit Tests",
+      "type": "shell",
+      "command": ".\\apps\\android\\gradlew.bat -p apps/android test",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Android: Launch Emulator (Medium_Tablet)",
+      "type": "shell",
+      "command": "& \"$env:LOCALAPPDATA\\Android\\Sdk\\emulator\\emulator.exe\" -avd Medium_Tablet",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Android: Install Debug APK via ADB",
+      "type": "shell",
+      "command": "adb install -r apps/android/app/build/outputs/apk/debug/app-debug.apk",
+      "dependsOn": "Android: Assemble Debug APK",
+      "problemMatcher": []
+    },
+    {
       "label": "iOS: Verify Objective-C Hardware Bridge",
       "type": "shell",
       "command": "powershell -ExecutionPolicy Bypass -File apps/ios/scripts/Verify-ObjCSyntax.ps1",

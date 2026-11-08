@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Kop Surat Resmi - AzureDevID</title>
+  <style>
+    @page { size: A4; margin: 18mm 20mm 20mm 20mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Inter', Arial, sans-serif;
+      color: #0F172A;
+      margin: 0;
+      padding: 0;
+      background: #F1F5F9;
+    }
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 12px auto;
+      padding: 18mm 20mm 22mm 20mm;
+      background: #FFFFFF;
+      position: relative;
+      box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 14px;
+      border-bottom: 3px solid #0A4DA2;
+      position: relative;
+    }
+    .header::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -6px;
+      height: 1px;
+      background: #00AEEF;
+    }
+    .brand-block {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .brand-block img {
+      height: 62px;
+      width: auto;
+    }
+    .company-title {
+      font-size: 22pt;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #0B192C;
+      margin: 0;
+      line-height: 1.1;
+    }
+    .company-title span { color: #0088CC; }
+    .company-sub {
+      font-size: 9.5pt;
+      font-weight: 600;
+      color: #0A4DA2;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin: 4px 0 0 0;
+    }
+    .contact-meta {
+      text-align: right;
+      font-size: 8.8pt;
+      line-height: 1.5;
+      color: #334155;
+    }
+    .contact-meta strong { color: #0F172A; }
+    .watermark {
+      position: absolute;
+      top: 44%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 280px;
+      opacity: 0.05;
+      pointer-events: none;
+    }
+    .doc-meta {
+      margin-top: 26px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10.5pt;
+      line-height: 1.6;
+    }
+    .content {
+      margin-top: 24px;
+      font-size: 10.5pt;
+      line-height: 1.7;
+      color: #1E293B;
+    }
+    .signature {
+      margin-top: 48px;
+      width: 240px;
+      margin-left: auto;
+      text-align: left;
+      font-size: 10.5pt;
+    }
+    .sig-space { height: 72px; }
+    .footer {
+      position: absolute;
+      left: 20mm;
+      right: 20mm;
+      bottom: 14mm;
+      padding-top: 8px;
+      border-top: 1px solid #CBD5E1;
+      display: flex;
+      justify-content: space-between;
+      font-size: 8pt;
+      color: #64748B;
+    }
+    @media print {
+      body { background: none; }
+      .sheet { margin: 0; box-shadow: none; width: auto; min-height: auto; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <img class="watermark" src="../AzureDevIdMonogramVector.svg" alt="">
+    <header class="header">
+      <div class="brand-block">
+        <img src="../AzureDevIdMonogramVector.svg" alt="AzureDevID">
+        <div>
+          <h1 class="company-title">AzureDev<span>ID</span></h1>
+          <p class="company-sub">Software Engineering, Cloud SaaS &amp; Enterprise POS Solutions</p>
+        </div>
+      </div>
+      <div class="contact-meta">
+        <strong>Pelaku Usaha Terdaftar OSS RBA (KBLI 62019 &amp; 63122)</strong><br>
+        Kec. Johar Baru, Kota Adm. Jakarta Pusat, DKI Jakarta<br>
+        Web: https://abbdullaziz.online &bull; Produk: MyCaffe POS<br>
+        Email Resmi: admin@abbdullaziz.online
+      </div>
+    </header>
+
+    <section class="doc-meta">
+      <div>
+        Nomor: 001/AZD-LEGAL/XI/2026<br>
+        Lampiran: 1 (Satu) Berkas<br>
+        Perihal: <strong>[Judul Surat Resmi / Pemberitahuan Kerjasama]</strong>
+      </div>
+      <div>Jakarta, 7 November 2026</div>
+    </section>
+
+    <main class="content">
+      <p>Kepada Yth.<br>
+      <strong>[Nama Penerima / Mitra Merchant / Instansi]</strong><br>
+      di Tempat</p>
+
+      <p>Dengan hormat,</p>
+      <p>Melalui surat resmi ini, <strong>AzureDevID</strong> selaku pengembang dan penyelenggara platform perangkat lunak kasir &amp; pemesanan mandiri <strong>MyCaffe by AzureDevID</strong> menyampaikan bahwa [isi pokok surat ditulis di bagian ini dengan bahasa lugas, akurat, dan dapat dipertanggungjawabkan secara hukum].</p>
+      <p>Demikian surat ini kami sampaikan. Atas perhatian dan kerja sama yang baik, kami ucapkan terima kasih.</p>
+
+      <div class="signature">
+        Hormat kami,<br>
+        <strong>AzureDevID</strong>
+        <div class="sig-space"></div>
+        <strong><u>Abdul Aziz</u></strong><br>
+        Direktur / Pemilik Usaha
+      </div>
+    </main>
+
+    <footer class="footer">
+      <span>AzureDevID &bull; Publisher Resmi Platform SaaS MyCaffe POS</span>
+      <span>Dokumen Resmi Korporat &bull; https://abbdullaziz.online</span>
+    </footer>
+  </div>
+</body>
+</html>

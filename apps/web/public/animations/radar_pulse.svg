@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <style>
+      @keyframes pulseRing {
+        0% { r: 16px; opacity: 0.9; stroke-width: 2.5px; }
+        50% { opacity: 0.5; }
+        100% { r: 52px; opacity: 0; stroke-width: 1px; }
+      }
+      @keyframes pulseDot {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.15); }
+      }
+      .ring-1 {
+        animation: pulseRing 2.4s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+        transform-origin: center;
+      }
+      .ring-2 {
+        animation: pulseRing 2.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.8s infinite;
+        transform-origin: center;
+      }
+      .dot {
+        animation: pulseDot 1.2s ease-in-out infinite;
+        transform-origin: center;
+      }
+    </style>
+  </defs>
+  <!-- Background subtle field -->
+  <circle cx="60" cy="60" r="54" fill="#0A4DA2" fill-opacity="0.04" stroke="#0A4DA2" stroke-opacity="0.12" stroke-width="1" />
+  
+  <!-- Outer expanding rings -->
+  <circle class="ring-1" cx="60" cy="60" r="16" fill="none" stroke="#00AEEF" />
+  <circle class="ring-2" cx="60" cy="60" r="16" fill="none" stroke="#0A4DA2" />
+  
+  <!-- Center beacon -->
+  <circle class="dot" cx="60" cy="60" r="12" fill="#0A4DA2" />
+  <circle cx="60" cy="60" r="5" fill="#00AEEF" />
+</svg>
+
