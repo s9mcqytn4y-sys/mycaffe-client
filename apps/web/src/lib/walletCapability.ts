@@ -35,7 +35,7 @@ export async function detectWalletCapabilities(): Promise<WalletCapabilityReport
             supportedMethods: "https://apple.com/apple-pay",
             data: {
               version: 3,
-              merchantIdentifier: "online.abbdullaziz.mycaffe",
+              merchantIdentifier: "com.azuredevid.cassy",
               merchantCapabilities: ["supports3DS"],
               supportedNetworks: ["visa", "masterCard"],
               countryCode: "ID"

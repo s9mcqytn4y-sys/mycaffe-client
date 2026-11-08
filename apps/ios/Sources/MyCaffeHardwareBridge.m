@@ -1,6 +1,6 @@
 /*
  * MyCaffe by AzureDevID - iOS & iPadOS Native Hardware Bridge Implementation
- * Official Bundle Identifier: online.abbdullaziz.mycaffe
+ * Official Bundle Identifier: com.azuredevid.cassy
  */
 
 #include "MyCaffeHardwareBridge.h"

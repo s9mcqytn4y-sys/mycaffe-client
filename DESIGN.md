@@ -4,7 +4,7 @@
 
 ## 1. Brand Architecture & Official Package Identity
 - **Endorsed Dual-Brand**: `MyCaffe by AzureDevID` (operated by AzureDevID, Jakarta Pusat, DKI Jakarta, Indonesia).
-- **Official Legal Package & App ID**: `online.abbdullaziz.mycaffe` across Android (`namespace` and `applicationId`), iOS (`CFBundleIdentifier`), and Web App Manifest (`id`).
+- **Official Legal Package & App ID**: `com.azuredevid.cassy` across Android (`namespace` and `applicationId`), iOS (`CFBundleIdentifier`), and Web App Manifest (`id`).
 - **Operational Surfaces (`MyCaffe` Default)**:
   - **Light Mode (`Espresso & Crema`)**: Warm alabaster canvas (`#FAF6F1`), crisp paper cards (`#FFFFFF`), high-contrast espresso ink (`#2C1A12`, 15.45:1 contrast), roasted crema accents (`#C68B59` paired only with `#2C1A12` dark ink, and `#8A4F22` deep roast accent text on light backgrounds for >= 5.5:1 WCAG AA contrast).
   - **Dark Mode (`Roasted Obsidian`)**: Deep roasted coffee bean canvas (`#140E0B`), elevated espresso surface (`#1E1612`), warm crema text (`#FAF6F1`, 16.8:1 contrast), secondary latte mist (`#D6C6B8`, 10.6:1 contrast), warm amber highlight (`#E0A976` with `#140E0B` dark ink on primary actions).

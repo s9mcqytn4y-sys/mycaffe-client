@@ -83,7 +83,7 @@ export default function LandingPage() {
               label={healthLabel}
             />
             <span className="rounded-md border border-subtle bg-surface px-2.5 py-1 font-mono text-xs text-subink">
-              ID Paket: online.abbdullaziz.mycaffe
+              ID Paket: com.azuredevid.cassy
             </span>
           </div>
 

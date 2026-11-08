@@ -3,14 +3,14 @@
 
 /*
  * MyCaffe by AzureDevID - iOS & iPadOS Native Hardware Bridge
- * Official Bundle Identifier: online.abbdullaziz.mycaffe
+ * Official Bundle Identifier: com.azuredevid.cassy
  * Protocol: ESC/POS over LAN TCP:9100 & RJ11 Cash Drawer Kick
  */
 
 #include <stddef.h>
 #include <stdint.h>
 
-#define MYCAFFE_IOS_BUNDLE_ID "online.abbdullaziz.mycaffe"
+#define MYCAFFE_IOS_BUNDLE_ID "com.azuredevid.cassy"
 
 typedef enum {
     MYCAFFE_PAPER_58MM = 58,
@@ -25,7 +25,7 @@ typedef struct {
 } MyCaffeLanPrinterConfig;
 
 /**
- * Returns the canonical Apple bundle identifier ("online.abbdullaziz.mycaffe").
+ * Returns the canonical Apple bundle identifier ("com.azuredevid.cassy").
  */
 const char *mycaffe_ios_bundle_identifier(void);
 

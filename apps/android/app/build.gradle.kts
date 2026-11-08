@@ -9,7 +9,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "online.abbdullaziz.mycaffe"
+        applicationId = "com.azuredevid.cassy"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

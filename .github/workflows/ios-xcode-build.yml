@@ -11,11 +11,11 @@ permissions:
   contents: read
 
 env:
-  PRODUCT_BUNDLE_IDENTIFIER: online.abbdullaziz.mycaffe
+  PRODUCT_BUNDLE_IDENTIFIER: com.azuredevid.cassy
 
 jobs:
   ios-xcode-verify:
-    name: Build & Verify Objective-C/Swift on macOS-15 Xcode (online.abbdullaziz.mycaffe)
+    name: Build & Verify Objective-C/Swift on macOS-15 Xcode (com.azuredevid.cassy)
     runs-on: macos-15
     steps:
       - name: Checkout client monorepo

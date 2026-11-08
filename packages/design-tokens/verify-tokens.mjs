@@ -78,7 +78,7 @@ for (const [locale, dict] of Object.entries(i18n.messages)) {
   }
 }
 
-if (tokens.appIdentifier !== "online.abbdullaziz.mycaffe") {
+if (tokens.appIdentifier !== "com.azuredevid.cassy") {
   console.error(`[FAIL] Unexpected appIdentifier: ${tokens.appIdentifier}`);
   failed = true;
 } else {
