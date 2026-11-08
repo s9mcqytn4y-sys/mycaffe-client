@@ -278,12 +278,12 @@ export function SiteFooter() {
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start">
           <div className="max-w-xl space-y-2">
             <p className="font-display text-base font-bold text-ink">
-              Cassy by AzureDevID
+              Cassy POS by AzureDevID (Usaha Perorangan)
             </p>
             <p className="text-sm text-subink">
               {locale === "en-US"
-                ? "Operated by AzureDevID (Jakarta Pusat, DKI Jakarta, Indonesia). Multi-tenant cafe POS, table QR ordering, KDS, and outlet network governance."
-                : "Dioperasikan oleh AzureDevID (Jakarta Pusat, DKI Jakarta, Indonesia). Sistem kasir POS multi-tenant, pesan meja QR, layar dapur KDS, dan tata kelola jaringan gerai."}
+                ? "Operated by AzureDevID (Usaha Perorangan, Jakarta Pusat, DKI Jakarta, Indonesia). Multi-tenant cafe POS, table QR ordering, KDS, and outlet network governance."
+                : "Dioperasikan secara independen oleh AzureDevID (Usaha Perorangan, Jakarta Pusat, DKI Jakarta, Indonesia). Sistem kasir POS multi-tenant, pesan meja QR, layar dapur KDS, dan tata kelola jaringan gerai."}
             </p>
             <p className="font-mono text-xs text-subink">
               App ID: com.azuredevid.cassy | Kepatuhan UU No. 27 Tahun 2022 (UU PDP) &amp; QRIS IDR

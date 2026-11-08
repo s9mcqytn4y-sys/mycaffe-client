@@ -1,8 +1,8 @@
 {
   "id": "com.azuredevid.cassy",
-  "name": "Cassy by AzureDevID",
-  "short_name": "Cassy",
-  "description": "Cassy: Sistem Kasir POS, Pesan Meja QR, Layar Dapur KDS, dan Konsol Tata Kelola Kafe Multi-Tenant oleh AzureDevID.",
+  "name": "Cassy POS by AzureDevID (Usaha Perorangan)",
+  "short_name": "Cassy POS",
+  "description": "Cassy POS: Sistem Kasir POS, Pesan Meja QR, Layar Dapur KDS, dan Tata Kelola Kafe oleh AzureDevID (Usaha Perorangan).",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FAF6F1",
