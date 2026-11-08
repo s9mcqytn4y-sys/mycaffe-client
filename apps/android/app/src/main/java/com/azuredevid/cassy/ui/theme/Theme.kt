@@ -1,4 +1,4 @@
-package online.abbdullaziz.mycaffe.ui
+package com.azuredevid.cassy.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -71,13 +71,13 @@ private val RoastedObsidianDarkScheme = darkColorScheme(
 )
 
 @Composable
-fun MyCaffeTheme(
-    darkTheme: Boolean,
+fun CassyTheme(
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val scheme = if (darkTheme) RoastedObsidianDarkScheme else EspressoCremaLightScheme
+    val colorScheme = if (darkTheme) RoastedObsidianDarkScheme else EspressoCremaLightScheme
     MaterialTheme(
-        colorScheme = scheme,
+        colorScheme = colorScheme,
         content = content
     )
 }
