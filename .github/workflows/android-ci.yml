@@ -1,0 +1,44 @@
+name: Android POS & Companion CI
+
+on:
+  push:
+    branches: [main, staging, "feat/**", "fix/**"]
+    paths:
+      - "apps/android/**"
+      - "packages/design-tokens/**"
+      - ".github/workflows/android-ci.yml"
+  pull_request:
+    branches: [main, staging]
+    paths:
+      - "apps/android/**"
+      - "packages/design-tokens/**"
+      - ".github/workflows/android-ci.yml"
+
+jobs:
+  android-verify-and-build:
+    name: Gradle Unit Tests & Debug APK Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+          cache: "gradle"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x apps/android/gradlew
+
+      - name: Run Android Unit & Compose Tests
+        run: |
+          cd apps/android
+          ./gradlew test --stacktrace
+
+      - name: Assemble Debug APK
+        run: |
+          cd apps/android
+          ./gradlew assembleDebug --stacktrace
+

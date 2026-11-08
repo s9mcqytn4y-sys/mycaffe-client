@@ -1,0 +1,46 @@
+{
+  "folders": [
+    {
+      "name": "🌐 Web PWA (Next.js 15)",
+      "path": "apps/web"
+    },
+    {
+      "name": "🤖 Android Native (Compose)",
+      "path": "apps/android"
+    },
+    {
+      "name": "🍎 iOS Native (SwiftUI)",
+      "path": "apps/ios"
+    },
+    {
+      "name": "🎨 Shared Design Tokens",
+      "path": "packages/design-tokens"
+    }
+  ],
+  "settings": {
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "files.eol": "\n",
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/.next": true,
+      "**/.gradle": true,
+      "**/build": true,
+      "**/.build": true,
+      "**/out": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "dbaeumer.vscode-eslint",
+      "bradlc.vscode-tailwindcss",
+      "mathiasfrohlich.Kotlin",
+      "fwcd.kotlin",
+      "vscjava.vscode-java-pack",
+      "sswg.swift-lang"
+    ]
+  }
+}
+
