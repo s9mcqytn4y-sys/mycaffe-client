@@ -3,6 +3,8 @@ package com.azuredevid.cassy.core.hardware
 import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
+import android.os.Build
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -16,6 +18,7 @@ data class DiscoveredPrinter(
 /**
  * LanPrinterDiscoveryManager utilizes Android Network Service Discovery (NSD / mDNS)
  * to automatically scan LAN thermal printers (_pdl-datastream._tcp / _printer._tcp) on port 9100.
+ * Compliant with Android 14+ (API 34) registerServiceInfoCallback with safe backward compatibility.
  */
 class LanPrinterDiscoveryManager(private val context: Context) {
 
@@ -40,12 +43,38 @@ class LanPrinterDiscoveryManager(private val context: Context) {
             override fun onDiscoveryStopped(serviceType: String?) {}
 
             override fun onServiceFound(serviceInfo: NsdServiceInfo?) {
-                if (serviceInfo != null) {
+                if (serviceInfo == null) return
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    val executor = ContextCompat.getMainExecutor(context)
+                    val callback = object : NsdManager.ServiceInfoCallback {
+                        override fun onServiceUpdated(resolvedInfo: NsdServiceInfo) {
+                            val host = resolvedInfo.hostAddresses.firstOrNull()?.hostAddress
+                            trySend(
+                                DiscoveredPrinter(
+                                    name = resolvedInfo.serviceName ?: "LAN Printer",
+                                    hostAddress = host,
+                                    port = resolvedInfo.port
+                                )
+                            )
+                            try {
+                                nsdManager.unregisterServiceInfoCallback(this)
+                            } catch (_: Exception) {}
+                        }
+
+                        override fun onServiceInfoCallbackRegistrationFailed(errorCode: Int) {}
+                        override fun onServiceInfoCallbackUnregistered() {}
+                        override fun onServiceLost() {}
+                    }
+                    nsdManager.registerServiceInfoCallback(serviceInfo, executor, callback)
+                } else {
+                    @Suppress("DEPRECATION")
                     nsdManager.resolveService(serviceInfo, object : NsdManager.ResolveListener {
                         override fun onResolveFailed(serviceInfo: NsdServiceInfo?, errorCode: Int) {}
 
                         override fun onServiceResolved(resolvedInfo: NsdServiceInfo?) {
                             if (resolvedInfo != null) {
+                                @Suppress("DEPRECATION")
                                 val host = resolvedInfo.host?.hostAddress
                                 trySend(
                                     DiscoveredPrinter(
