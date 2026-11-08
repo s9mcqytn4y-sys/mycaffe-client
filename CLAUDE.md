@@ -39,3 +39,4 @@ For UI, copy, people, mobile layout, or code comments work, read `antislop.md` (
 - Mobile / responsive: `skills/antislop-layoutmobile/SKILL.md`
 - Code comments: `skills/antislop-code/SKILL.md`
 <!-- antislop:end -->
+

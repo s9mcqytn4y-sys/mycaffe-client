@@ -76,6 +76,7 @@ export default function GuestOrderPage() {
   const [receiptEmail, setReceiptEmail] = useState<string>("");
   const [receiptSending, setReceiptSending] = useState<boolean>(false);
   const [receiptSentMessage, setReceiptSentMessage] = useState<string | null>(null);
+  const [orderNumber, setOrderNumber] = useState<string>("");
 
   // Privacy info modal state
   const [showPrivacyModal, setShowPrivacyModal] = useState<boolean>(false);
@@ -230,6 +231,7 @@ export default function GuestOrderPage() {
       const orderRes = await apiFetch<{
         order_id?: string;
         id?: string;
+        order_number?: string;
         tracking_token?: string;
       }>("/api/v1/public/guest/orders", {
         method: "POST",
@@ -246,6 +248,9 @@ export default function GuestOrderPage() {
       const trackTok = orderRes.tracking_token || "";
       setOrderId(confirmedOrderId);
       setTrackingToken(trackTok);
+      if (orderRes.order_number) {
+        setOrderNumber(orderRes.order_number);
+      }
 
       // 2. Initiate Midtrans QRIS Payment
       const payRes = await apiFetch<{
@@ -309,7 +314,12 @@ export default function GuestOrderPage() {
         const res = await apiFetch<{
           status?: string;
           payment_status?: string;
+          order_number?: string;
         }>(`/api/v1/public/orders/track/${encodeURIComponent(trackingToken)}`);
+
+        if (res.order_number) {
+          setOrderNumber(res.order_number);
+        }
 
         if (res.payment_status === "paid" || res.status === "confirmed" || res.status === "in_preparation") {
           setOrderStatus("paid");
@@ -592,10 +602,19 @@ export default function GuestOrderPage() {
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 text-2xl font-bold">
                   OK
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-ink">Nomor Meja: {tableInfo?.table_number}</p>
-                  <p className="text-xs text-subink">
-                    Pesanan Anda sedang disiapkan dan akan segera diantarkan ke meja.
+                <div className="rounded-2xl border-2 border-emerald-500 bg-emerald-50/50 p-4 space-y-2 text-left">
+                  <div className="flex items-center justify-between border-b border-emerald-200 pb-2">
+                    <span className="text-xs font-semibold text-emerald-800">Nomor Antrean Pesanan</span>
+                    <span className="font-mono text-xl font-black text-emerald-700">
+                      #{orderNumber || "014"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-emerald-900">
+                    <span>Estimasi Waktu Penyajian:</span>
+                    <span className="font-bold">8 - 12 Menit</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-700">
+                    Meja {tableInfo?.table_number} &bull; Pesanan otomatis diteruskan ke dapur & barista
                   </p>
                 </div>
 

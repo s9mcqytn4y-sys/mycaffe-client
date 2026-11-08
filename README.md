@@ -85,3 +85,4 @@ cd apps/android
 Operated by **AzureDevID** (PT Azure Dev Indonesia). All rights reserved.
 Legal Package Identifier: `com.azuredevid.cassy`.
 Visual System: *Espresso & Crema* (`#FAF6F1`, `#2C1A12`, `#C68B59`, `#8A4F22`).
+

@@ -85,3 +85,4 @@ if ($bootCompleted) {
 } else {
     Write-Warning "Emulator masih dalam proses booting di latar belakang (timeout pemeriksaan 120s tercapai)."
 }
+

@@ -1,11 +1,12 @@
 {
-  "name": "MyCaffe by AzureDevID",
-  "short_name": "MyCaffe",
-  "description": "Configurable Multi-Tenant QR Table Ordering, POS & KDS Platform by AzureDevID",
+  "id": "com.azuredevid.cassy",
+  "name": "Cassy by AzureDevID",
+  "short_name": "Cassy",
+  "description": "Cassy: Sistem Kasir POS, Pesan Meja QR, Layar Dapur KDS, dan Konsol Tata Kelola Kafe Multi-Tenant oleh AzureDevID.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#07111F",
-  "theme_color": "#0A4DA2",
+  "background_color": "#FAF6F1",
+  "theme_color": "#2C1A12",
   "icons": [
     {
       "src": "/AndroidChrome192.png",

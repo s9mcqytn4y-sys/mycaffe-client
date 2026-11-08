@@ -26,7 +26,10 @@ export default function QueueDisplayPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedToken = localStorage.getItem("mycaffe_display_token") || "";
+      const savedToken =
+        localStorage.getItem("cassy_display_token") ||
+        localStorage.getItem("mycaffe_display_token") ||
+        "";
       setDisplayToken(savedToken);
     }
   }, []);
@@ -88,6 +91,7 @@ export default function QueueDisplayPage() {
     const tokenInput = String(formData.get("token") || "").trim();
     if (tokenInput) {
       setDisplayToken(tokenInput);
+      localStorage.setItem("cassy_display_token", tokenInput);
       localStorage.setItem("mycaffe_display_token", tokenInput);
       setLoading(true);
       fetchQueueOrders();
