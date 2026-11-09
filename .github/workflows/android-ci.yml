@@ -2,13 +2,13 @@ name: Android POS & Companion CI
 
 on:
   push:
-    branches: [main, staging, "feat/**", "fix/**"]
+    branches: [main, "docs/**", "feat/**", "fix/**"]
     paths:
       - "apps/android/**"
       - "packages/design-tokens/**"
       - ".github/workflows/android-ci.yml"
   pull_request:
-    branches: [main, staging]
+    branches: [main]
     paths:
       - "apps/android/**"
       - "packages/design-tokens/**"

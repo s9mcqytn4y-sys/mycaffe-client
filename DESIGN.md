@@ -1,11 +1,11 @@
-# DESIGN.md: MyCaffe by AzureDevID (Unified Client Design System)
+# DESIGN.md: Cassy by AzureDevID (Unified Client Design System)
 
 > Reading this as: Multi-tenant hospitality POS, QR Table Order PWA, and SaaS Governance Console for Indonesian cafe owners, staff, and guests, in the Espresso & Crema + AzureDevID Control Plane visual language, dial ENERGY 2 / RHYTHM 2 / MOTION 1.
 
 ## 1. Brand Architecture & Official Package Identity
-- **Endorsed Dual-Brand**: `MyCaffe by AzureDevID` (operated by AzureDevID, Jakarta Pusat, DKI Jakarta, Indonesia).
+- **Endorsed Dual-Brand**: `Cassy by AzureDevID` (operated by AzureDevID, Jakarta Pusat, DKI Jakarta, Indonesia).
 - **Official Legal Package & App ID**: `com.azuredevid.cassy` across Android (`namespace` and `applicationId`), iOS (`CFBundleIdentifier`), and Web App Manifest (`id`).
-- **Operational Surfaces (`MyCaffe` Default)**:
+- **Operational Surfaces (`Cassy` Default)**:
   - **Light Mode (`Espresso & Crema`)**: Warm alabaster canvas (`#FAF6F1`), crisp paper cards (`#FFFFFF`), high-contrast espresso ink (`#2C1A12`, 15.45:1 contrast), roasted crema accents (`#C68B59` paired only with `#2C1A12` dark ink, and `#8A4F22` deep roast accent text on light backgrounds for >= 5.5:1 WCAG AA contrast).
   - **Dark Mode (`Roasted Obsidian`)**: Deep roasted coffee bean canvas (`#140E0B`), elevated espresso surface (`#1E1612`), warm crema text (`#FAF6F1`, 16.8:1 contrast), secondary latte mist (`#D6C6B8`, 10.6:1 contrast), warm amber highlight (`#E0A976` with `#140E0B` dark ink on primary actions).
 - **Platform Governance Surfaces (`AzureDevID` Superadmin & Legal)**: Precision enterprise control plane with Obsidian header (`#07111F`), Royal Azure primary (`#0A4DA2`), and Electric Cyan telemetry (`#00AEEF` on `#07111F`, 7.48:1 contrast).
