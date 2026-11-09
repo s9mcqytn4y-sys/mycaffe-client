@@ -1,6 +1,6 @@
 // Run with: node --experimental-strip-types src/features/order/cart.test.mjs
 import assert from "node:assert/strict";
-import { cartReducer, toOrderItems } from "./cart.ts";
+import { cartReducer, optionNames, toOrderItems } from "./cart.ts";
 
 const latte = { productId: "p1", variantId: "v1", name: "Latte", options: [], quantity: 1, notes: "" };
 const oat = { ...latte, options: [{ optionId: "oat", subOptionIds: ["b", "a"] }] };
@@ -22,4 +22,11 @@ assert.equal(cart.length, 1, "quantity zero removes the line");
 assert.deepEqual(toOrderItems(cart)[0].modifiers, [
   { option_id: "oat", quantity: 1, sub_addons: [{ option_id: "b", quantity: 1 }, { option_id: "a", quantity: 1 }] }
 ]);
+assert.deepEqual(optionNames("[]"), [], "an empty snapshot shows nothing");
+assert.deepEqual(optionNames(undefined), []);
+assert.deepEqual(optionNames("not json"), []);
+assert.deepEqual(
+  optionNames('[{"option_name":"Oat","sub_addons":[{"option_name":"Extra"}]},{"option_name":"Less sugar"}]'),
+  ["Oat", "Extra", "Less sugar"]
+);
 console.log("cart ok");
