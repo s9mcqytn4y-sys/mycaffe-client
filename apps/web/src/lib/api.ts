@@ -18,6 +18,7 @@ export interface RequestOptions {
   bearerToken?: string;
   platformAdminKey?: string;
   guestToken?: string;
+  displayToken?: string;
   idempotencyKey?: string;
   requestId?: string;
   includeCredentials?: boolean;
@@ -34,6 +35,9 @@ export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Prom
   }
   if (opts.bearerToken) {
     headers["Authorization"] = `Bearer ${opts.bearerToken}`;
+  }
+  if (opts.displayToken) {
+    headers["Authorization"] = `Display ${opts.displayToken}`;
   }
   if (opts.platformAdminKey) {
     headers["X-Platform-Admin-Key"] = opts.platformAdminKey;
@@ -273,10 +277,11 @@ export interface KdsTicket {
   table_number?: string;
   status: string;
   station?: string;
-  items?: Array<{
+  lines?: Array<{
     name?: string;
-    product_name?: string;
+    variant?: string;
     quantity: number;
+    options?: string;
     notes?: string;
   }>;
   created_at?: string;
@@ -362,4 +367,11 @@ export interface StoreNotificationConfigInput {
 export interface CreatePlatformInvoiceInput {
   plan_code: "starter_umkm" | "pro_cafe" | "enterprise_whitelabel";
   billing_cycle: "monthly" | "annual";
+}
+
+/** Issues a single-use realtime ticket and returns the socket URL. Call once per connection attempt. */
+export async function realtimeUrl(ticketPath: string, opts: RequestOptions): Promise<string> {
+  const { ticket } = await apiFetch<{ ticket: string }>(ticketPath, { ...opts, method: "POST" });
+  const scheme = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${scheme}//${window.location.host}/ws?ticket=${encodeURIComponent(ticket)}`;
 }

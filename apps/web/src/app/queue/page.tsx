@@ -1,19 +1,17 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, realtimeUrl } from "@/lib/api";
 import { useTenantWebSocket } from "@/lib/useTenantWebSocket";
 
 interface QueueItem {
-  id: string;
   queue_number: string;
   status: "queued" | "preparing" | "ready";
 }
 
 interface QueueApiResponse {
-  preparing?: QueueItem[];
-  ready?: QueueItem[];
-  queue?: QueueItem[];
+  store_name?: string;
+  orders?: QueueItem[];
 }
 
 export default function QueueDisplayPage() {
@@ -54,15 +52,11 @@ export default function QueueDisplayPage() {
       return;
     }
     try {
-      const res = await apiFetch<QueueApiResponse>("/api/v1/public/queue", {
-        bearerToken: displayToken
-      }).catch(() => ({} as QueueApiResponse));
+      const res = await apiFetch<QueueApiResponse>("/api/v1/public/queue", { displayToken });
+      const orders = Array.isArray(res.orders) ? res.orders : [];
 
-      const rawPreparing = Array.isArray(res.preparing) ? res.preparing : [];
-      const rawReady = Array.isArray(res.ready) ? res.ready : [];
-
-      setPreparingList(rawPreparing);
-      setReadyList(rawReady);
+      setPreparingList(orders.filter((o) => o.status !== "ready"));
+      setReadyList(orders.filter((o) => o.status === "ready"));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memuat status antrean");
@@ -71,9 +65,14 @@ export default function QueueDisplayPage() {
     }
   }, [displayToken]);
 
-  const wsUrl = typeof window !== "undefined" && displayToken
-    ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/api/v1/realtime/ws?channels=queue&token=${encodeURIComponent(displayToken)}`
-    : "";
+  useEffect(() => {
+    if (displayToken) fetchQueueOrders();
+  }, [displayToken, fetchQueueOrders]);
+
+  const wsUrl = useCallback(
+    () => realtimeUrl("/api/v1/public/queue/ws-ticket", { displayToken }),
+    [displayToken]
+  );
 
   const { status: wsStatus } = useTenantWebSocket({
     url: wsUrl,
@@ -94,7 +93,6 @@ export default function QueueDisplayPage() {
       localStorage.setItem("cassy_display_token", tokenInput);
       localStorage.setItem("mycaffe_display_token", tokenInput);
       setLoading(true);
-      fetchQueueOrders();
     }
   };
 
@@ -196,7 +194,7 @@ export default function QueueDisplayPage() {
               <div className="grid grid-cols-2 gap-3">
                 {preparingList.map((item) => (
                   <div
-                    key={item.id}
+                    key={item.queue_number}
                     className="flex min-h-[72px] items-center justify-center rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm"
                   >
                     <span className="font-mono text-3xl font-black text-ink">
@@ -229,7 +227,7 @@ export default function QueueDisplayPage() {
               <div className="grid grid-cols-3 gap-4">
                 {readyList.map((item, idx) => (
                   <div
-                    key={item.id}
+                    key={item.queue_number}
                     className={`flex min-h-[96px] items-center justify-center rounded-2xl border-2 border-emerald-500 bg-surface p-4 shadow-lg ${
                       idx === 0 ? "animate-bounce" : ""
                     }`}

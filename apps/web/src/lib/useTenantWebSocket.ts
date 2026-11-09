@@ -3,7 +3,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 export type WebSocketStatus = "connecting" | "connected" | "disconnected" | "reconnecting" | "failed";
 
 export interface TenantWebSocketOptions<T> {
-  url: string;
+  /** A function is called on every attempt, for single-use ticket URLs. Keep it stable with useCallback. */
+  url: string | (() => Promise<string>);
   enabled?: boolean;
   onMessage?: (data: T) => void;
   onError?: (error: Event) => void;
@@ -36,6 +37,8 @@ export function useTenantWebSocket<T = unknown>({
   const heartbeatTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef<boolean>(true);
+  const statusRef = useRef<WebSocketStatus>("disconnected");
+  const connectRef = useRef<() => void>(() => undefined);
 
   // Keep latest callbacks in refs to prevent unnecessary re-connections on state updates
   const onMessageRef = useRef(onMessage);
@@ -83,15 +86,36 @@ export function useTenantWebSocket<T = unknown>({
     }
   }, []);
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (!enabled || !url || !isMountedRef.current) return;
 
     clearAllTimers();
 
+    const retry = () => {
+      setStatus("reconnecting");
+      startFallbackPolling();
+
+      // Exponential backoff: 1s, 2s, 4s, 8s, up to maxReconnectDelayMs
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttemptRef.current), maxReconnectDelayMs);
+      reconnectAttemptRef.current += 1;
+      reconnectTimerRef.current = setTimeout(() => {
+        if (isMountedRef.current) connectRef.current();
+      }, delay);
+    };
+
     try {
       setStatus((prev) => (prev === "connected" ? "connected" : "connecting"));
 
-      const ws = new WebSocket(url);
+      let target: string;
+      try {
+        target = typeof url === "string" ? url : await url();
+      } catch {
+        if (isMountedRef.current) retry();
+        return;
+      }
+      if (!isMountedRef.current) return;
+
+      const ws = new WebSocket(target);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -141,19 +165,7 @@ export function useTenantWebSocket<T = unknown>({
           return;
         }
 
-        setStatus("reconnecting");
-        startFallbackPolling();
-
-        // Exponential backoff: 1s, 2s, 4s, 8s, up to maxReconnectDelayMs
-        const attempt = reconnectAttemptRef.current;
-        const delay = Math.min(1000 * Math.pow(2, attempt), maxReconnectDelayMs);
-        reconnectAttemptRef.current += 1;
-
-        reconnectTimerRef.current = setTimeout(() => {
-          if (isMountedRef.current) {
-            connect();
-          }
-        }, delay);
+        retry();
       };
     } catch {
       setStatus("failed");
@@ -162,12 +174,20 @@ export function useTenantWebSocket<T = unknown>({
   }, [enabled, url, clearAllTimers, stopFallbackPolling, startFallbackPolling, heartbeatIntervalMs, maxReconnectDelayMs]);
 
   useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
+
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
+  useEffect(() => {
     isMountedRef.current = true;
     connect();
 
     // Handle system waking up or network re-attaching
     const handleOnline = () => {
-      if (isMountedRef.current && status !== "connected") {
+      if (isMountedRef.current && statusRef.current !== "connected") {
         reconnectAttemptRef.current = 0;
         connect();
       }
@@ -184,7 +204,7 @@ export function useTenantWebSocket<T = unknown>({
         wsRef.current = null;
       }
     };
-  }, [connect, clearAllTimers, status]);
+  }, [connect, clearAllTimers]);
 
   const send = useCallback((payload: unknown) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {

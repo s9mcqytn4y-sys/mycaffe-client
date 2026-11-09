@@ -14,16 +14,12 @@ const SLUG_KEY = "mycaffe_store_slug";
 export default function StoreConsolePage() {
   const [token, setToken] = useState<string>("");
   const [storeSlug, setStoreSlug] = useState<string>("");
-  const [email, setEmail] = useState<string>("owner@kopi-nusantara.demo");
-  const [password, setPassword] = useState<string>("PasswordKopi123!");
-  const [loginSlug, setLoginSlug] = useState<string>("kopi-nusantara");
+  const [email, setEmail] = useState<string>("");
+  const [pin, setPin] = useState<string>("");
+  const [loginSlug, setLoginSlug] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"catalog" | "payment" | "network" | "privacy">("catalog");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Data Privacy export state
-  const [exportLoading, setExportLoading] = useState<boolean>(false);
-  const [exportMessage, setExportMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const savedToken = localStorage.getItem(TOKEN_KEY) || "";
@@ -38,20 +34,18 @@ export default function StoreConsolePage() {
     setError(null);
     try {
       const res = await apiFetch<{
-        token?: string;
         access_token?: string;
-        store_slug?: string;
-      }>("/api/v1/auth/login", {
+      }>("/api/v1/auth/staff/login", {
         method: "POST",
         body: {
           store_slug: loginSlug.trim().toLowerCase(),
           email: email.trim().toLowerCase(),
-          password
+          pin
         }
       });
 
-      const authToken = res.token || res.access_token || "";
-      const confirmedSlug = res.store_slug || loginSlug.trim().toLowerCase();
+      const authToken = res.access_token || "";
+      const confirmedSlug = loginSlug.trim().toLowerCase();
 
       if (!authToken) {
         throw new Error("Respon autentikasi tidak menyertakan token sesi");
@@ -73,22 +67,6 @@ export default function StoreConsolePage() {
     setStoreSlug("");
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(SLUG_KEY);
-  };
-
-  const handleRequestDataExport = async () => {
-    setExportLoading(true);
-    setExportMessage(null);
-    try {
-      await apiFetch("/api/v1/store/data-exports", {
-        method: "POST",
-        bearerToken: token
-      });
-      setExportMessage("Permintaan ekspor data berhasil dijadwalkan. Arsip JSON/CSV akan tersedia dalam beberapa saat.");
-    } catch (err) {
-      setExportMessage(err instanceof Error ? err.message : "Permintaan ekspor data sedang diproses atau endpoint sedang disiapkan di server.");
-    } finally {
-      setExportLoading(false);
-    }
   };
 
   return (
@@ -165,13 +143,17 @@ export default function StoreConsolePage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-ink">Kata Sandi</label>
+              <label className="block text-xs font-semibold text-ink">PIN</label>
               <input
                 type="password"
+                inputMode="numeric"
+                autoComplete="current-password"
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Minimal 8 karakter"
+                pattern="[0-9]{6,12}"
+                title="PIN 6 sampai 12 angka"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder="6 sampai 12 angka"
                 className="mt-1 w-full rounded-xl border border-subtle bg-canvas px-3 py-2 text-sm text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               />
             </div>
@@ -311,17 +293,8 @@ export default function StoreConsolePage() {
                       Ekspor seluruh data katalog, riwayat pesanan, dan pergerakan kas gerai dalam format arsip JSON & CSV terbuka.
                     </p>
                   </div>
-                  <button
-                    onClick={handleRequestDataExport}
-                    disabled={exportLoading}
-                    className="btn-secondary px-4 py-2 text-xs font-bold"
-                  >
-                    {exportLoading ? "Menyiapkan..." : "Minta Unduh Arsip Data"}
-                  </button>
+                  <StatusBadge tone="info" label="Segera tersedia" />
                 </div>
-                {exportMessage && (
-                  <p className="text-xs font-medium text-brand-accent mt-2">{exportMessage}</p>
-                )}
               </div>
 
               {/* Account Clearance & Closure Notice */}

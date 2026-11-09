@@ -617,13 +617,13 @@ export function TabCatalogTablesKds({
                   />
                 </div>
 
-                {Array.isArray(tk.items) && tk.items.length > 0 ? (
+                {Array.isArray(tk.lines) && tk.lines.length > 0 ? (
                   <ul className="space-y-1 text-sm text-ink">
-                    {tk.items.map((it, i) => (
+                    {tk.lines.map((it, i) => (
                       <li key={i} className="flex justify-between gap-2">
                         <span>
                           <strong className="tabular-nums">{it.quantity}x</strong>{" "}
-                          {it.name || it.product_name || "Item"}
+                          {it.name || "Item"}
                         </span>
                         {it.notes ? <span className="text-xs text-subink">({it.notes})</span> : null}
                       </li>
