@@ -3,7 +3,7 @@
 [![Android CI](https://github.com/s9mcqytn4y-sys/mycaffe-client/actions/workflows/android-ci.yml/badge.svg)](https://github.com/s9mcqytn4y-sys/mycaffe-client/actions)
 [![Web CI](https://github.com/s9mcqytn4y-sys/mycaffe-client/actions/workflows/web-ci.yml/badge.svg)](https://github.com/s9mcqytn4y-sys/mycaffe-client/actions)
 
-Official multi-platform client applications for **MyCaffe by AzureDevID** (PT Azure Dev Indonesia, Jakarta Pusat, DKI Jakarta).
+Official multi-platform client applications for **Cassy by AzureDevID** (usaha perorangan AzureDevID, Jakarta Pusat, DKI Jakarta).
 
 ```
                       +-----------------------------+
@@ -82,7 +82,7 @@ cd apps/android
 ---
 
 ## Brand & Licensing
-Operated by **AzureDevID** (PT Azure Dev Indonesia). All rights reserved.
+Operated by **AzureDevID** (usaha perorangan AzureDevID). All rights reserved.
 Legal Package Identifier: `com.azuredevid.cassy`.
 Visual System: *Espresso & Crema* (`#FAF6F1`, `#2C1A12`, `#C68B59`, `#8A4F22`).
 

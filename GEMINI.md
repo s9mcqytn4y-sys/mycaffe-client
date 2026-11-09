@@ -1,7 +1,7 @@
-# MyCaffe & Cassy Client Monorepo: GEMINI.md
+# Cassy Client Monorepo: GEMINI.md
 
 ## Ecosystem Context & Architecture
-`MyCaffeClient` is the official client monorepo for **MyCaffe by AzureDevID** (PT Azure Dev Indonesia / AzureDevID, Jakarta Pusat, DKI Jakarta).
+`MyCaffeClient` is the official client monorepo for **Cassy by AzureDevID** (usaha perorangan AzureDevID, Jakarta Pusat, DKI Jakarta).
 It provides the complete front-facing suite for multi-tenant hospitality businesses:
 - `apps/android`: **Cassy POS** native tablet application in Jetpack Compose (`com.azuredevid.cassy`) with CameraX store pairing, ESC/POS Port 9100 KDS ticket routing, dynamic ZXing QRIS generation, and Biometric Keystore security.
 - `apps/web`: **Guest Table Ordering & Management PWA** in Next.js 15 App Router, React 19, Tailwind CSS v4, and real-time WebSocket connection.
@@ -10,7 +10,6 @@ It provides the complete front-facing suite for multi-tenant hospitality busines
 
 ### The 7 Ecosystem Directories
 1. `C:\Projects\myCaffe-backend`: Core POS engine in Go 1.24 and PostgreSQL 18 RLS (`mycaffe_app`).
-2. `C:\Projects\mycaffe-wt-sc`: Git worktree for loyalty stamp card engine (`feat/v011-stamp-card`).
 3. `C:\Projects\MyCaffeClient`: Client monorepo root (this workspace).
 4. `C:\Projects\MyCaffeClient\apps\android`: Cassy POS Native Android Tablet application (`com.azuredevid.cassy`).
 5. `C:\Projects\MyCaffeClient\apps\web`: Next.js 15 PWA Guest Table Ordering & Owner Backoffice web client.
@@ -22,7 +21,7 @@ It provides the complete front-facing suite for multi-tenant hospitality busines
 - **Money & Precision**: Currency amounts are integer Indonesian Rupiah (`int64` / `BIGINT`). Never use floating-point arithmetic.
 - **Fail-Closed Security**: In the absence of an authenticated store binding, active session, or valid token, apps must fail-closed (`503` / locked screen).
 - **Anti-Emoji Policy**: Zero emojis in source code, user interface copy, logs, or Git commit messages.
-- **Brand Consistency**: Official brand name `MyCaffe` (core engine) and `Cassy` (client apps by AzureDevID). Visual tokens *Espresso & Crema* (`#FAF6F1`, `#2C1A12`, `#C68B59`, `#8A4F22`).
+- **Brand Consistency**: Product brand is `Cassy` by AzureDevID. `MyCaffe` is the former name and survives only in technical identifiers. Visual tokens *Espresso & Crema* (`#FAF6F1`, `#2C1A12`, `#C68B59`, `#8A4F22`).
 - **Clean & DRY Principle**: Modularize UI components into dedicated files. Follow SOLID principles.
 
 <!-- antislop:start -->
