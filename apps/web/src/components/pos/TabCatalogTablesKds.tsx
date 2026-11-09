@@ -7,6 +7,8 @@ import {
   CatalogCategory,
   CatalogProduct,
   KdsTicket,
+  fetchKdsTickets,
+  normalizeCatalogProducts,
   StoreTable
 } from "@/lib/api";
 import { formatIdr } from "@/lib/format";
@@ -62,15 +64,13 @@ export function TabCatalogTablesKds({
           { bearerToken: token }
         ),
         apiFetch<{ tables?: StoreTable[] }>("/api/v1/pos/tables", { bearerToken: token }),
-        apiFetch<{ tickets?: KdsTicket[] }>("/api/v1/kds/tickets", { bearerToken: token }).catch(
-          () => ({ tickets: [] as KdsTicket[] })
-        )
+        fetchKdsTickets(token).catch(() => [] as KdsTicket[])
       ]);
 
       const cats = Array.isArray(catRes.categories) ? catRes.categories : [];
-      const prods = Array.isArray(catRes.products) ? catRes.products : [];
+      const prods = normalizeCatalogProducts(catRes.products);
       const tbls = Array.isArray(tblRes.tables) ? tblRes.tables : [];
-      const tks = Array.isArray(kdsRes.tickets) ? kdsRes.tickets : [];
+      const tks = kdsRes;
 
       setCategories(cats);
       setProducts(prods);
@@ -617,13 +617,13 @@ export function TabCatalogTablesKds({
                   />
                 </div>
 
-                {Array.isArray(tk.items) && tk.items.length > 0 ? (
+                {Array.isArray(tk.lines) && tk.lines.length > 0 ? (
                   <ul className="space-y-1 text-sm text-ink">
-                    {tk.items.map((it, i) => (
+                    {tk.lines.map((it, i) => (
                       <li key={i} className="flex justify-between gap-2">
                         <span>
                           <strong className="tabular-nums">{it.quantity}x</strong>{" "}
-                          {it.name || it.product_name || "Item"}
+                          {it.name || "Item"}
                         </span>
                         {it.notes ? <span className="text-xs text-subink">({it.notes})</span> : null}
                       </li>

@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { apiFetch, KdsTicket } from "@/lib/api";
+import { apiFetch, fetchKdsTickets as loadKdsTickets, KdsTicket, realtimeUrl } from "@/lib/api";
 import { useTenantWebSocket } from "@/lib/useTenantWebSocket";
 import { DataStateBox, StatusBadge } from "@/components/Shell";
 
@@ -21,6 +21,7 @@ export default function DedicatedKdsPage() {
       const savedSlug = localStorage.getItem("mycaffe_store_slug") || "";
       setToken(savedToken);
       setStoreSlug(savedSlug);
+      if (!savedToken) setLoading(false);
     }
   }, []);
 
@@ -30,15 +31,7 @@ export default function DedicatedKdsPage() {
       return;
     }
     try {
-      const res = await apiFetch<{ tickets?: KdsTicket[] }>(
-        "/api/v1/pos/kds/tickets?status=active",
-        {
-          bearerToken: token
-        }
-      ).catch(() => ({ tickets: [] }));
-
-      const list = Array.isArray(res.tickets) ? res.tickets : [];
-      setTickets(list);
+      setTickets(await loadKdsTickets(token));
       setLastUpdated(new Date().toLocaleTimeString("id-ID"));
       setError(null);
     } catch (err) {
@@ -48,9 +41,11 @@ export default function DedicatedKdsPage() {
     }
   }, [token]);
 
-  const wsUrl = typeof window !== "undefined" && token
-    ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/api/v1/realtime/ws?channels=kds&token=${encodeURIComponent(token)}`
-    : "";
+  useEffect(() => {
+    if (token) fetchKdsTickets();
+  }, [token, fetchKdsTickets]);
+
+  const wsUrl = useCallback(() => realtimeUrl("/api/v1/pos/ws-ticket", { bearerToken: token }), [token]);
 
   const { status: wsStatus } = useTenantWebSocket({
     url: wsUrl,
@@ -62,7 +57,8 @@ export default function DedicatedKdsPage() {
     fallbackPollingIntervalMs: 5000
   });
 
-  const handleBumpTicket = async (ticketId: string, nextStatus: "preparing" | "ready" | "served") => {
+  const handleBumpTicket = async (ticket: KdsTicket, nextStatus: "preparing" | "ready" | "served") => {
+    const ticketId = ticket.id;
     try {
       // Optimistic update
       setTickets((prev) =>
@@ -71,10 +67,10 @@ export default function DedicatedKdsPage() {
           .filter((t) => nextStatus !== "served" || t.id !== ticketId)
       );
 
-      await apiFetch(`/api/v1/pos/kds/tickets/${encodeURIComponent(ticketId)}/status`, {
-        method: "PUT",
+      await apiFetch(`/api/v1/kds/tickets/${encodeURIComponent(ticketId)}/transition`, {
+        method: "POST",
         bearerToken: token,
-        body: { status: nextStatus }
+        body: { to: nextStatus, expected_status: ticket.status }
       });
     } catch {
       // Rollback on failure
@@ -219,16 +215,16 @@ export default function DedicatedKdsPage() {
 
                   {/* Order Item List */}
                   <div className="my-4 space-y-2">
-                    {Array.isArray(tk.items) && tk.items.length > 0 ? (
+                    {Array.isArray(tk.lines) && tk.lines.length > 0 ? (
                       <ul className="divide-y divide-subtle">
-                        {tk.items.map((item, idx) => (
+                        {tk.lines.map((item, idx) => (
                           <li key={idx} className="py-2 first:pt-0 last:pb-0">
                             <div className="flex items-start justify-between gap-2">
                               <span className="font-display text-sm font-bold text-ink">
                                 <span className="font-mono text-base font-black text-accent mr-1.5">
                                   {item.quantity}x
                                 </span>
-                                {item.name || item.product_name || "Item Menu"}
+                                {item.name || "Item Menu"}
                               </span>
                             </div>
                             {item.notes && (
@@ -247,10 +243,18 @@ export default function DedicatedKdsPage() {
 
                 {/* Bump Action Buttons (>=56px touch target for busy kitchen staff) */}
                 <div className="pt-3 border-t border-subtle flex gap-2">
-                  {!isReady ? (
+                  {tk.status === "queued" ? (
                     <button
                       type="button"
-                      onClick={() => handleBumpTicket(tk.id, "ready")}
+                      onClick={() => handleBumpTicket(tk, "preparing")}
+                      className="btn-primary min-h-[56px] w-full py-3 text-sm font-bold shadow"
+                    >
+                      Mulai Siapkan
+                    </button>
+                  ) : !isReady ? (
+                    <button
+                      type="button"
+                      onClick={() => handleBumpTicket(tk, "ready")}
                       className="btn-primary min-h-[56px] w-full py-3 text-sm font-bold shadow"
                     >
                       Pesanan Siap Saji
@@ -258,7 +262,7 @@ export default function DedicatedKdsPage() {
                   ) : (
                     <button
                       type="button"
-                      onClick={() => handleBumpTicket(tk.id, "served")}
+                      onClick={() => handleBumpTicket(tk, "served")}
                       className="btn-secondary min-h-[56px] w-full py-3 text-sm font-bold text-emerald-700 border-emerald-400 bg-emerald-50 hover:bg-emerald-100 shadow"
                     >
                       Selesai Disajikan
