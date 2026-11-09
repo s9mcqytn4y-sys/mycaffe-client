@@ -132,3 +132,87 @@ test("nilai warna yang tidak valid diabaikan", async ({ page }) => {
   await page.goto("/order/T1");
   await expect(page.getByRole("button", { name: "Tambah Croissant" })).toHaveCSS("background-color", "rgb(44, 26, 18)");
 });
+
+async function addAndOpenCart(page: Page) {
+  await page.goto("/order/T1");
+  await page.getByRole("button", { name: "Tambah Croissant" }).click();
+  await page.getByRole("button", { name: /Lihat keranjang/ }).click();
+  await expect(page.getByRole("dialog")).toContainText("Rp 28.750");
+}
+
+test("reload di layar bayar menampilkan QR yang sama tanpa pesanan baru", async ({ page }) => {
+  await mockStore(page);
+  let orderPosts = 0;
+  let paymentPosts = 0;
+  let sessionPosts = 0;
+  await page.route("**/api/v1/public/qr/T1/session", (r) => {
+    sessionPosts += 1;
+    return r.fulfill(json({ table_number: "A1" }, 201));
+  });
+  await page.route("**/api/v1/public/guest/orders", (r) => {
+    if (r.request().method() === "GET") return r.fulfill(json({ orders: [{ id: "o1" }] }));
+    orderPosts += 1;
+    return r.fulfill(json({ order: { id: "o1", order_number: "A-015" }, tracking_token: "trk" }, 201));
+  });
+  await page.route("**/api/v1/public/guest/orders/o1/payments", (r) => {
+    paymentPosts += 1;
+    return r.fulfill(json({ payment: { id: "p1", qr_string: "00020101", amount: 28750 } }, 201));
+  });
+  await page.route("**/api/v1/public/guest/ws-ticket", (r) => r.fulfill(json({}, 503)));
+  await page.route("**/api/v1/public/orders/track/trk", (r) => r.fulfill(json({ status: "pending_payment", payment_status: "unpaid" })));
+
+  await addAndOpenCart(page);
+  await page.getByRole("button", { name: "Bayar Rp 28.750" }).click();
+  await expect(page.getByRole("heading", { name: "Pindai QRIS" })).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Pindai QRIS" })).toBeVisible();
+  await expect(page.locator("svg").first()).toBeVisible();
+  expect(orderPosts).toBe(1);
+  expect(paymentPosts).toBe(1);
+  expect(sessionPosts).toBe(1);
+
+  await page.getByRole("button", { name: "Kembali ke menu" }).click();
+  await expect(page.getByRole("button", { name: /Lihat keranjang/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Lanjutkan pembayaran" }).click();
+  await expect(page.getByRole("heading", { name: "Pindai QRIS" })).toBeVisible();
+});
+
+for (const [code, status, message] of [
+  ["QUOTE_CHANGED", 409, "Harga berubah"],
+  ["UNAVAILABLE", 409, "baru saja habis"],
+  ["UNPAID_ORDER_LIMIT", 409, "pesanan sebelumnya"],
+  ["QR_ORDERING_PAUSED", 409, "dihentikan"],
+  ["STORE_CLOSED", 409, "Gerai sedang tutup"],
+  ["GUEST_SESSION_EXPIRED", 401, "Tekan Bayar sekali lagi"]
+] as const) {
+  test(`kode ${code} memberi pesan yang tepat dan keranjang tetap utuh`, async ({ page }) => {
+    await mockStore(page);
+    await page.route("**/api/v1/public/guest/orders", (r) => r.fulfill(json({ code, error: "x" }, status)));
+    await addAndOpenCart(page);
+    await page.getByRole("button", { name: "Bayar Rp 28.750" }).click();
+    await expect(page.getByRole("dialog").getByRole("alert")).toContainText(message);
+    await expect(page.getByRole("dialog")).toContainText("Croissant");
+  });
+}
+
+test("pesanan batal tidak tampil sebagai diterima", async ({ page }) => {
+  await mockStore(page);
+  await page.route("**/api/v1/public/guest/orders", (r) => r.fulfill(json({ order: { id: "o1", order_number: "A-016" }, tracking_token: "trk" }, 201)));
+  await page.route("**/api/v1/public/guest/orders/o1/payments", (r) => r.fulfill(json({ payment: { id: "p1", qr_string: "00020101", amount: 28750 } }, 201)));
+  await page.route("**/api/v1/public/guest/ws-ticket", (r) => r.fulfill(json({}, 503)));
+  await page.route("**/api/v1/public/orders/track/trk", (r) => r.fulfill(json({ status: "cancelled", payment_status: "paid", order_number: "A-016" })));
+  await addAndOpenCart(page);
+  await page.getByRole("button", { name: "Bayar Rp 28.750" }).click();
+  await expect(page.getByRole("heading", { name: "Pesanan dibatalkan" })).toBeVisible();
+  await expect(page.getByText("pengembalian dana")).toBeVisible();
+  await expect(page.getByText("Pesanan diterima")).toHaveCount(0);
+});
+
+test("field nama menjelaskan tujuan data dan menaut privasi", async ({ page }) => {
+  await mockStore(page);
+  await addAndOpenCart(page);
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText("memanggil pesanan")).toBeVisible();
+  await expect(dialog.getByRole("link", { name: "Ketentuan dan privasi" })).toHaveAttribute("href", "/legal");
+});
