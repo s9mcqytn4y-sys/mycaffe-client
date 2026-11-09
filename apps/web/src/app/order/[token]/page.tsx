@@ -11,10 +11,6 @@ import {
 import { formatIdr } from "@/lib/format";
 import { QrCodeSvg } from "@/components/QrCodeSvg";
 import { DataStateBox, StatusBadge } from "@/components/Shell";
-import {
-  detectWalletCapabilities,
-  WalletCapabilityReport
-} from "@/lib/walletCapability";
 
 interface TableInfo {
   store_slug: string;
@@ -70,7 +66,6 @@ export default function GuestOrderPage() {
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
   const [orderStatus, setOrderStatus] = useState<string>("unpaid");
   const [submittingOrder, setSubmittingOrder] = useState<boolean>(false);
-  const [walletCap, setWalletCap] = useState<WalletCapabilityReport | null>(null);
 
   // Digital Receipt state
   const [receiptEmail, setReceiptEmail] = useState<string>("");
@@ -80,10 +75,6 @@ export default function GuestOrderPage() {
 
   // Privacy info modal state
   const [showPrivacyModal, setShowPrivacyModal] = useState<boolean>(false);
-
-  useEffect(() => {
-    detectWalletCapabilities().then(setWalletCap).catch(() => null);
-  }, []);
 
   const initTable = useCallback(async () => {
     if (!token) return;
@@ -373,20 +364,6 @@ export default function GuestOrderPage() {
             />
           </div>
         </div>
-
-        {/* W3C Wallet Advisory */}
-        {walletCap && (walletCap.applePayReady || walletCap.googlePayReady) && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5 text-[11px] text-subink">
-            <span>Kompatibilitas Dompet Digital:</span>
-            {walletCap.applePayReady && (
-              <span className="font-semibold text-ink">Apple Pay Tersedia</span>
-            )}
-            {walletCap.googlePayReady && (
-              <span className="font-semibold text-ink">Google Pay Tersedia</span>
-            )}
-            <span>(Didukung via QRIS Nasional & Midtrans SDK)</span>
-          </div>
-        )}
       </div>
 
       {/* Main Order Layout: Menu Catalog & Cart */}
