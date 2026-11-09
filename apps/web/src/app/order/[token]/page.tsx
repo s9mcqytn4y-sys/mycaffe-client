@@ -5,7 +5,8 @@ import { useParams } from "next/navigation";
 import {
   apiFetch,
   CatalogCategory,
-  CatalogProduct
+  CatalogProduct,
+  normalizeCatalogProducts
 } from "@/lib/api";
 import { formatIdr } from "@/lib/format";
 import { QrCodeSvg } from "@/components/QrCodeSvg";
@@ -49,7 +50,6 @@ export default function GuestOrderPage() {
   const token = typeof params?.token === "string" ? params.token : "";
 
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
-  const [guestToken, setGuestToken] = useState<string>("");
   const [guestName, setGuestName] = useState<string>("Pelanggan Meja");
 
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
@@ -95,17 +95,11 @@ export default function GuestOrderPage() {
       setTableInfo(qrRes);
 
       // 2. Start guest session
-      const sessRes = await apiFetch<{ token?: string; guest_token?: string }>(
-        `/api/v1/public/qr/${encodeURIComponent(token)}/session`,
-        {
-          method: "POST",
-          body: {
-            customer_name: guestName || "Pelanggan Meja"
-          }
-        }
-      );
-      const gTok = sessRes.token || sessRes.guest_token || "";
-      setGuestToken(gTok);
+      // The session lives in an HttpOnly cookie, so there is no token to keep here.
+      await apiFetch(`/api/v1/public/qr/${encodeURIComponent(token)}/session`, {
+        method: "POST",
+        body: {}
+      });
 
       // 3. Load Store Catalog
       const catRes = await apiFetch<{
@@ -114,7 +108,7 @@ export default function GuestOrderPage() {
       }>(`/api/v1/public/stores/${encodeURIComponent(qrRes.store_slug)}/catalog`);
 
       setCategories(Array.isArray(catRes.categories) ? catRes.categories : []);
-      setProducts(Array.isArray(catRes.products) ? catRes.products : []);
+      setProducts(normalizeCatalogProducts(catRes.products));
     } catch (err) {
       setError(
         err instanceof Error
@@ -124,7 +118,7 @@ export default function GuestOrderPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, guestName]);
+  }, [token]);
 
   useEffect(() => {
     initTable();
@@ -140,6 +134,7 @@ export default function GuestOrderPage() {
     try {
       const itemsPayload = cart.map((item) => ({
         product_id: item.product.id,
+        variant_id: item.product.variant_id,
         quantity: item.quantity,
         notes: item.notes || ""
       }));
@@ -148,18 +143,17 @@ export default function GuestOrderPage() {
         `/api/v1/public/stores/${encodeURIComponent(tableInfo.store_slug)}/orders/quote`,
         {
           method: "POST",
-          guestToken,
-          body: { items: itemsPayload }
+          body: { order_type: "dine_in", items: itemsPayload }
         }
       );
 
       setQuote({
-        subtotal: Number(res.subtotal ?? 0),
-        tax: Number(res.tax ?? res.tax_amount ?? 0),
-        service: Number(res.service ?? res.service_charge ?? 0),
-        discount: Number(res.discount ?? res.discount_amount ?? 0),
-        total: Number(res.total ?? res.grand_total ?? res.gross_amount ?? 0),
-        quote_fingerprint: String(res.quote_fingerprint ?? res.fingerprint ?? "")
+        subtotal: Number(res.subtotal_amount ?? 0),
+        tax: Number(res.tax_amount ?? 0),
+        service: Number(res.service_charge_amount ?? 0),
+        discount: Number(res.discount_amount ?? 0),
+        total: Number(res.total_amount ?? 0),
+        quote_fingerprint: String(res.quote_fingerprint ?? "")
       });
     } catch {
       // Fallback local estimation if offline or temporary quote failure
@@ -175,7 +169,7 @@ export default function GuestOrderPage() {
     } finally {
       setQuoteLoading(false);
     }
-  }, [tableInfo, cart, guestToken]);
+  }, [tableInfo, cart]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -224,57 +218,46 @@ export default function GuestOrderPage() {
       // 1. Create Guest Order with quote fingerprint
       const itemsPayload = cart.map((item) => ({
         product_id: item.product.id,
+        variant_id: item.product.variant_id,
         quantity: item.quantity,
         notes: item.notes || ""
       }));
 
       const orderRes = await apiFetch<{
-        order_id?: string;
-        id?: string;
-        order_number?: string;
+        order: { id: string; order_number?: string };
         tracking_token?: string;
       }>("/api/v1/public/guest/orders", {
         method: "POST",
-        guestToken,
-        idempotencyKey,
         body: {
+          idempotency_key: idempotencyKey,
           items: itemsPayload,
           customer_name: guestName,
           expected_quote_fingerprint: quote?.quote_fingerprint || undefined
         }
       });
 
-      const confirmedOrderId = orderRes.order_id || orderRes.id || "";
+      const confirmedOrderId = orderRes.order.id;
       const trackTok = orderRes.tracking_token || "";
       setOrderId(confirmedOrderId);
       setTrackingToken(trackTok);
-      if (orderRes.order_number) {
-        setOrderNumber(orderRes.order_number);
+      if (orderRes.order.order_number) {
+        setOrderNumber(orderRes.order.order_number);
       }
 
       // 2. Initiate Midtrans QRIS Payment
-      const payRes = await apiFetch<{
-        payment_id?: string;
-        id?: string;
-        qr_string?: string;
-        qr_url?: string;
-        expires_at?: string;
-        gross_amount?: number;
+      const { payment } = await apiFetch<{
+        payment: { id: string; qr_string?: string; expires_at?: string; amount?: number };
       }>(`/api/v1/public/guest/orders/${encodeURIComponent(confirmedOrderId)}/payments`, {
         method: "POST",
-        guestToken,
-        idempotencyKey: `pay_${idempotencyKey}`,
-        body: {
-          payment_method: "qris"
-        }
+        body: { idempotency_key: `pay_${idempotencyKey}` }
       });
 
       setPaymentInfo({
-        payment_id: payRes.payment_id || payRes.id || "",
-        qr_string: payRes.qr_string || "",
-        qr_url: payRes.qr_url || "",
-        expires_at: payRes.expires_at,
-        gross_amount: payRes.gross_amount || payableTotal
+        payment_id: payment.id,
+        qr_string: payment.qr_string || "",
+        qr_url: "",
+        expires_at: payment.expires_at,
+        gross_amount: payment.amount || payableTotal
       });
       setOrderStatus("awaiting_payment");
     } catch (err) {
@@ -291,7 +274,6 @@ export default function GuestOrderPage() {
     try {
       await apiFetch(`/api/v1/public/guest/orders/${encodeURIComponent(orderId)}/receipt/send`, {
         method: "POST",
-        guestToken,
         body: {
           channel: "email",
           to: receiptEmail

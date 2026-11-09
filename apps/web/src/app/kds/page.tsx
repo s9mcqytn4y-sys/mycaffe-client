@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { apiFetch, KdsTicket, realtimeUrl } from "@/lib/api";
+import { apiFetch, fetchKdsTickets as loadKdsTickets, KdsTicket, realtimeUrl } from "@/lib/api";
 import { useTenantWebSocket } from "@/lib/useTenantWebSocket";
 import { DataStateBox, StatusBadge } from "@/components/Shell";
 
@@ -31,12 +31,7 @@ export default function DedicatedKdsPage() {
       return;
     }
     try {
-      const res = await apiFetch<{ tickets?: KdsTicket[] }>("/api/v1/kds/tickets", {
-        bearerToken: token
-      });
-
-      const list = Array.isArray(res.tickets) ? res.tickets : [];
-      setTickets(list);
+      setTickets(await loadKdsTickets(token));
       setLastUpdated(new Date().toLocaleTimeString("id-ID"));
       setError(null);
     } catch (err) {

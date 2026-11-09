@@ -33,6 +33,9 @@ export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Prom
   if (opts.body !== undefined) {
     headers["Content-Type"] = "application/json";
   }
+  if ((opts.method ?? "GET") !== "GET") {
+    headers["X-CSRF-Protection"] = "1";
+  }
   if (opts.bearerToken) {
     headers["Authorization"] = `Bearer ${opts.bearerToken}`;
   }
@@ -254,6 +257,7 @@ export interface CatalogProduct {
   name: string;
   description?: string;
   price: number;
+  variant_id?: string;
   sku?: string;
   is_available: boolean;
   stock_quantity?: number;
@@ -374,4 +378,37 @@ export async function realtimeUrl(ticketPath: string, opts: RequestOptions): Pro
   const { ticket } = await apiFetch<{ ticket: string }>(ticketPath, { ...opts, method: "POST" });
   const scheme = window.location.protocol === "https:" ? "wss:" : "ws:";
   return `${scheme}//${window.location.host}/ws?ticket=${encodeURIComponent(ticket)}`;
+}
+
+interface RawCatalogProduct extends Omit<CatalogProduct, "price" | "variant_id" | "is_available"> {
+  available?: boolean;
+  variants?: Array<{ id: string; price: number; is_default?: boolean; available?: boolean }>;
+}
+
+/** The catalog API prices products per variant; screens without a variant picker sell the default one. */
+export function normalizeCatalogProducts(raw: unknown): CatalogProduct[] {
+  if (!Array.isArray(raw)) return [];
+  return (raw as RawCatalogProduct[]).map((p) => {
+    const variant = p.variants?.find((v) => v.is_default) ?? p.variants?.[0];
+    return {
+      ...p,
+      price: variant?.price ?? 0,
+      variant_id: variant?.id,
+      is_available: p.available !== false && variant?.available !== false
+    };
+  });
+}
+
+/** KDS tickets are listed per station; a role may see only one of them. */
+export async function fetchKdsTickets(token: string): Promise<KdsTicket[]> {
+  const results = await Promise.allSettled(
+    ["bar", "kitchen"].map((station) =>
+      apiFetch<{ tickets?: KdsTicket[] }>(`/api/v1/kds/tickets?station=${station}`, { bearerToken: token })
+    )
+  );
+  const loaded = results.filter((r) => r.status === "fulfilled");
+  if (loaded.length === 0) throw (results[0] as PromiseRejectedResult).reason;
+  return loaded
+    .flatMap((r) => r.value.tickets ?? [])
+    .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
 }

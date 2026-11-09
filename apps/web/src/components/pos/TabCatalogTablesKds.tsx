@@ -7,6 +7,8 @@ import {
   CatalogCategory,
   CatalogProduct,
   KdsTicket,
+  fetchKdsTickets,
+  normalizeCatalogProducts,
   StoreTable
 } from "@/lib/api";
 import { formatIdr } from "@/lib/format";
@@ -62,15 +64,13 @@ export function TabCatalogTablesKds({
           { bearerToken: token }
         ),
         apiFetch<{ tables?: StoreTable[] }>("/api/v1/pos/tables", { bearerToken: token }),
-        apiFetch<{ tickets?: KdsTicket[] }>("/api/v1/kds/tickets", { bearerToken: token }).catch(
-          () => ({ tickets: [] as KdsTicket[] })
-        )
+        fetchKdsTickets(token).catch(() => [] as KdsTicket[])
       ]);
 
       const cats = Array.isArray(catRes.categories) ? catRes.categories : [];
-      const prods = Array.isArray(catRes.products) ? catRes.products : [];
+      const prods = normalizeCatalogProducts(catRes.products);
       const tbls = Array.isArray(tblRes.tables) ? tblRes.tables : [];
-      const tks = Array.isArray(kdsRes.tickets) ? kdsRes.tickets : [];
+      const tks = kdsRes;
 
       setCategories(cats);
       setProducts(prods);
