@@ -1,6 +1,6 @@
 "use client";
 
-import { useThemeLocale } from "@/components/Providers";
+import { useLocale } from "@/components/Providers";
 import { DataStateBox } from "@/components/Shell";
 import { apiFetch, LegalDocument, normalizeLegalDoc } from "@/lib/api";
 import Link from "next/link";
@@ -8,7 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 
 function LegalPageInner() {
-  const { locale } = useThemeLocale();
+  const { locale } = useLocale();
   const searchParams = useSearchParams();
   const initialDocParam = searchParams.get("doc") || "terms_of_service";
 

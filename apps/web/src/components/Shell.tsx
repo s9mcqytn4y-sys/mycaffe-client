@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 export type BadgeTone = "ok" | "warn" | "err" | "info";
 
 const BADGE_CLASS: Record<BadgeTone, string> = {
@@ -40,18 +38,5 @@ export function DataStateBox({
         </button>
       ) : null}
     </div>
-  );
-}
-
-export function SiteFooter() {
-  return (
-    <footer className="mt-12 border-t border-subtle px-6 py-6 text-xs text-subink">
-      <p>
-        Ditenagai Cassy oleh AzureDevID.{" "}
-        <Link href="/legal" className="underline">
-          Ketentuan dan privasi
-        </Link>
-      </p>
-    </footer>
   );
 }
