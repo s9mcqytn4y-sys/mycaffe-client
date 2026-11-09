@@ -269,7 +269,7 @@ export function OrderApp({ token }: { token: string }) {
       </div>
 
       {itemCount > 0 ? (
-        <div className="fixed inset-x-0 bottom-0 z-20 bg-surface p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="fixed inset-x-0 bottom-0 z-20 flex justify-center bg-surface p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <button type="button" onClick={() => setCartOpen(true)} className="btn-primary mx-auto flex min-h-[56px] w-full max-w-lg items-center justify-between px-5 text-base font-bold">
             <span>{t.viewCart} ({itemCount} {t.items})</span>
             <span>{quote ? formatIdr(quote.total_amount) : ""}</span>

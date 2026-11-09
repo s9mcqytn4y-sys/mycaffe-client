@@ -4,7 +4,7 @@ import React from "react";
 import { useLocale } from "@/components/Providers";
 import { Sheet } from "@/components/Sheet";
 import { formatIdr } from "@/lib/format";
-import type { CartAction, CartLine } from "./cart";
+import { optionNames, type CartAction, type CartLine } from "./cart";
 import type { Quote } from "./types";
 
 function Row({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
@@ -54,15 +54,14 @@ export function CartSheet({
       <ul>
         {lines.map((line, index) => {
           const priced = quote?.lines[index];
+          const details = [priced?.variant_name, ...optionNames(priced?.selected_options)].filter(Boolean);
           return (
             <li key={line.key} className="py-3">
               <div className="flex justify-between gap-3 text-sm font-semibold">
                 <span>{line.name}</span>
                 {priced ? <span>{formatIdr(priced.subtotal_amount)}</span> : null}
               </div>
-              {priced?.variant_name || priced?.selected_options ? (
-                <p className="text-xs text-subink">{[priced.variant_name, priced.selected_options].filter(Boolean).join(", ")}</p>
-              ) : null}
+              {details.length > 0 ? <p className="text-xs text-subink">{details.join(", ")}</p> : null}
               {line.notes ? <p className="text-xs text-subink">{line.notes}</p> : null}
               <div className="mt-2 flex items-center gap-3">
                 <button

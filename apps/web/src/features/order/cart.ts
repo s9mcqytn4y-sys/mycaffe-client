@@ -48,6 +48,23 @@ export function cartReducer(state: CartLine[], action: CartAction): CartLine[] {
   }
 }
 
+interface OptionSnapshot {
+  option_name?: string;
+  sub_addons?: OptionSnapshot[];
+}
+
+// The quote returns selected_options as a JSON string of option snapshots.
+export function optionNames(raw?: string): string[] {
+  if (!raw) return [];
+  try {
+    const flatten = (list: OptionSnapshot[]): string[] =>
+      list.flatMap((o) => [o.option_name ?? "", ...flatten(o.sub_addons ?? [])]);
+    return flatten(JSON.parse(raw) as OptionSnapshot[]).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 export function toOrderItems(lines: CartLine[]) {
   return lines.map((l) => ({
     product_id: l.productId,
