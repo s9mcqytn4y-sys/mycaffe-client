@@ -1,81 +1,59 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { MESSAGES, type Messages } from "@/lib/messages";
 
-export type AppTheme = "light" | "dark";
-export type AppLocale = "id-ID" | "en-US";
+export type AppLocale = keyof typeof MESSAGES;
 
-interface ThemeLocaleContextValue {
-  theme: AppTheme;
+const STORAGE_KEY = "cassy_locale";
+
+interface LocaleContextValue {
   locale: AppLocale;
-  toggleTheme: () => void;
-  setLocale: (loc: AppLocale) => void;
+  t: Messages;
+  toggleLocale: () => void;
 }
 
-const ThemeLocaleContext = createContext<ThemeLocaleContextValue>({
-  theme: "light",
+const LocaleContext = createContext<LocaleContextValue>({
   locale: "id-ID",
-  toggleTheme: () => undefined,
-  setLocale: () => undefined
+  t: MESSAGES["id-ID"],
+  toggleLocale: () => undefined
 });
 
-export function ThemeLocaleProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<AppTheme>("light");
-  const [locale, setLocaleState] = useState<AppLocale>("id-ID");
+export function LocaleProvider({ children }: { children: React.ReactNode }) {
+  const [locale, setLocale] = useState<AppLocale>("id-ID");
 
   useEffect(() => {
     try {
-      const savedTheme = localStorage.getItem("mycaffe_theme");
-      if (savedTheme === "dark" || savedTheme === "light") {
-        setTheme(savedTheme);
-        document.documentElement.setAttribute("data-theme", savedTheme);
-      } else {
-        document.documentElement.setAttribute("data-theme", "light");
-      }
-
-      const savedLocale = localStorage.getItem("mycaffe_locale");
-      if (savedLocale === "id-ID" || savedLocale === "en-US") {
-        setLocaleState(savedLocale);
-        document.documentElement.lang = savedLocale === "en-US" ? "en" : "id";
-      }
+      if (localStorage.getItem(STORAGE_KEY) === "en-US") setLocale("en-US");
     } catch {
-      document.documentElement.setAttribute("data-theme", "light");
+      // Storage can be blocked in private browsing; the default language still works.
     }
   }, []);
 
-  const toggleTheme = () => {
-    setTheme((prev) => {
-      const next: AppTheme = prev === "light" ? "dark" : "light";
-      document.documentElement.setAttribute("data-theme", next);
-      try {
-        localStorage.setItem("mycaffe_theme", next);
-      } catch {
-        // Ignore storage quota errors in private browsing
+  useEffect(() => {
+    document.documentElement.lang = locale === "en-US" ? "en" : "id";
+  }, [locale]);
+
+  const value = useMemo(
+    () => ({
+      locale,
+      t: MESSAGES[locale],
+      toggleLocale: () => {
+        const next: AppLocale = locale === "id-ID" ? "en-US" : "id-ID";
+        setLocale(next);
+        try {
+          localStorage.setItem(STORAGE_KEY, next);
+        } catch {
+          // See above.
+        }
       }
-      return next;
-    });
-  };
-
-  const setLocale = (next: AppLocale) => {
-    setLocaleState(next);
-    if (typeof document !== "undefined") {
-      document.documentElement.lang = next === "en-US" ? "en" : "id";
-    }
-    try {
-      localStorage.setItem("mycaffe_locale", next);
-    } catch {
-      // Ignore storage quota errors
-    }
-  };
-
-  return (
-    <ThemeLocaleContext.Provider value={{ theme, locale, toggleTheme, setLocale }}>
-      {children}
-    </ThemeLocaleContext.Provider>
+    }),
+    [locale]
   );
+
+  return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }
 
-export function useThemeLocale() {
-  return useContext(ThemeLocaleContext);
+export function useLocale() {
+  return useContext(LocaleContext);
 }
-

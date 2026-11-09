@@ -72,39 +72,3 @@ export function normalizeLegalDoc(raw: Record<string, unknown>): LegalDocument {
     content: String(raw.content_markdown ?? raw.content ?? raw.body ?? "")
   };
 }
-
-export interface CatalogCategory {
-  id: string;
-  name: string;
-  display_order?: number;
-}
-
-export interface CatalogProduct {
-  id: string;
-  category_id: string;
-  name: string;
-  description?: string;
-  price: number;
-  variant_id?: string;
-  is_available: boolean;
-  prep_station?: string;
-}
-
-interface RawCatalogProduct extends Omit<CatalogProduct, "price" | "variant_id" | "is_available"> {
-  available?: boolean;
-  variants?: Array<{ id: string; price: number; is_default?: boolean; available?: boolean }>;
-}
-
-/** The catalog API prices products per variant; until the variant picker exists the default one is sold. */
-export function normalizeCatalogProducts(raw: unknown): CatalogProduct[] {
-  if (!Array.isArray(raw)) return [];
-  return (raw as RawCatalogProduct[]).map((p) => {
-    const variant = p.variants?.find((v) => v.is_default) ?? p.variants?.[0];
-    return {
-      ...p,
-      price: variant?.price ?? 0,
-      variant_id: variant?.id,
-      is_available: p.available !== false && variant?.available !== false
-    };
-  });
-}

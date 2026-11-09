@@ -1,7 +1,10 @@
-import { ThemeLocaleProvider } from "@/components/Providers";
-import { SiteFooter } from "@/components/Shell";
+import { LocaleProvider } from "@/components/Providers";
+import { SiteFooter } from "@/components/SiteFooter";
 import type { Metadata, Viewport } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+
+const font = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "600", "700"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://abbdullaziz.online"),
@@ -29,8 +32,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" data-theme="light" suppressHydrationWarning>
-      <body className="flex min-h-dvh flex-col bg-canvas text-ink antialiased">
-        <ThemeLocaleProvider>
+      <body
+        className={`${font.className} flex min-h-dvh flex-col bg-canvas text-ink antialiased`}
+        style={{ "--font-display": font.style.fontFamily } as React.CSSProperties}
+      >
+        <LocaleProvider>
           <a
             href="#main-content"
             className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-brand focus:px-4 focus:py-2 focus:text-brand-fg"
@@ -41,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
           <SiteFooter />
-        </ThemeLocaleProvider>
+        </LocaleProvider>
       </body>
     </html>
   );
