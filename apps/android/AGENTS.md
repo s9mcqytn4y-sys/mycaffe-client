@@ -49,3 +49,6 @@ For UI, copy, people, mobile layout, or code comments work, read `antislop.md` (
 - Code comments: `skills/antislop-code/SKILL.md`
 <!-- antislop:end -->
 
+
+## Rilis pertama
+Baca `apps/android/docs/ReleaseOnePlan.md` sebelum mengerjakan layar baru. Semua operasional tenant berada di aplikasi ini, dan cakupan serta urutan PR ada di dokumen itu.
