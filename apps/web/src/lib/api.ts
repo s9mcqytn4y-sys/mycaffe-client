@@ -24,7 +24,49 @@ export interface RequestOptions {
   includeCredentials?: boolean;
 }
 
-export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+const STAFF_TOKEN_KEY = "mycaffe_store_token";
+let currentStaffToken = "";
+const retiredStaffTokens = new Set<string>();
+let renewing: Promise<string | null> | null = null;
+
+// The backend revokes a session when a rotated refresh cookie is replayed, so only one renewal may run:
+// shared within this page by `renewing`, across tabs by the Web Lock.
+async function renewStaffToken(expired: string): Promise<string | null> {
+  const run = async (): Promise<string | null> => {
+    const stored = localStorage.getItem(STAFF_TOKEN_KEY);
+    if (stored && stored !== expired) return stored;
+    const res = await fetch("/api/v1/auth/staff/refresh", {
+      method: "POST",
+      headers: { Accept: "application/json", "X-CSRF-Protection": "1" },
+      credentials: "same-origin",
+      cache: "no-store"
+    });
+    if (!res.ok) return null;
+    const { access_token: token } = (await res.json()) as { access_token?: string };
+    if (!token) return null;
+    localStorage.setItem(STAFF_TOKEN_KEY, token);
+    return token;
+  };
+  renewing ??= (async () => {
+    try {
+      const token = navigator.locks ? await navigator.locks.request("cassy-staff-refresh", run) : await run();
+      if (token) {
+        retiredStaffTokens.add(expired);
+        currentStaffToken = token;
+      }
+      return token;
+    } catch {
+      return null;
+    } finally {
+      renewing = null;
+    }
+  })();
+  return renewing;
+}
+
+export async function apiFetch<T>(path: string, opts: RequestOptions = {}, renewed = false): Promise<T> {
+  // Screens keep the token from login in state, so swap in the renewed one here.
+  const bearer = opts.bearerToken && retiredStaffTokens.has(opts.bearerToken) ? currentStaffToken : opts.bearerToken;
   const headers: Record<string, string> = {
     Accept: "application/json",
     "X-Request-ID": opts.requestId || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `req_${Date.now()}`)
@@ -36,8 +78,8 @@ export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Prom
   if ((opts.method ?? "GET") !== "GET") {
     headers["X-CSRF-Protection"] = "1";
   }
-  if (opts.bearerToken) {
-    headers["Authorization"] = `Bearer ${opts.bearerToken}`;
+  if (bearer) {
+    headers["Authorization"] = `Bearer ${bearer}`;
   }
   if (opts.displayToken) {
     headers["Authorization"] = `Display ${opts.displayToken}`;
@@ -75,6 +117,11 @@ export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Prom
     } catch {
       parsed = { raw: rawText };
     }
+  }
+
+  if (res.status === 401 && bearer && !renewed && !path.startsWith("/api/v1/auth/")) {
+    const fresh = await renewStaffToken(bearer);
+    if (fresh) return apiFetch<T>(path, { ...opts, bearerToken: fresh }, true);
   }
 
   if (!res.ok) {
