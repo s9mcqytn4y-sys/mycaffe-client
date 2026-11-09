@@ -20,9 +20,7 @@ test.describe("Guest QR Table Order Flow (PRD G1-G8)", () => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({
-          guest_token: "mock-guest-token-123"
-        })
+        body: JSON.stringify({ table_number: "T-01", expires_at: "2026-11-09T12:00:00Z" })
       });
     });
 
@@ -42,8 +40,8 @@ test.describe("Guest QR Table Order Flow (PRD G1-G8)", () => {
               category_id: "cat-coffee",
               name: "Caffe Latte",
               description: "Espresso ganda dengan susu segar steamed",
-              price: 32000,
-              is_available: true,
+              available: true,
+              variants: [{ id: "var-latte", name: "Reguler", price: 32000, is_default: true, available: true }],
               prep_station: "bar"
             },
             {
@@ -51,8 +49,8 @@ test.describe("Guest QR Table Order Flow (PRD G1-G8)", () => {
               category_id: "cat-pastry",
               name: "Butter Croissant",
               description: "Pastry renyah dengan mentega Prancis",
-              price: 25000,
-              is_available: true,
+              available: true,
+              variants: [{ id: "var-croissant", name: "Reguler", price: 25000, is_default: true, available: true }],
               prep_station: "kitchen"
             }
           ]
@@ -66,11 +64,11 @@ test.describe("Guest QR Table Order Flow (PRD G1-G8)", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          subtotal: 32000,
-          tax: 3200,
-          service: 1600,
-          discount: 0,
-          total: 36800,
+          subtotal_amount: 32000,
+          tax_amount: 3200,
+          service_charge_amount: 1600,
+          discount_amount: 0,
+          total_amount: 36800,
           quote_fingerprint: "mock-fingerprint-abc"
         })
       });
