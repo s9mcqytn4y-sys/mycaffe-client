@@ -1,7 +1,7 @@
 "use client";
 
 import { useThemeLocale } from "@/components/Providers";
-import { DataStateBox, StatusBadge } from "@/components/Shell";
+import { DataStateBox } from "@/components/Shell";
 import { apiFetch, LegalDocument, normalizeLegalDoc } from "@/lib/api";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -52,33 +52,13 @@ function LegalPageInner() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6">
-      {/* AzureDevID Corporate Governance Banner */}
       <section className="rounded-xl border border-subtle bg-[#07111F] p-6 text-[#F8FAFC]">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-2">
-            <span className="inline-block rounded bg-[#0A4DA2] px-2.5 py-1 font-mono text-xs font-bold text-white">
-              AZUREDEVID LEGAL &amp; COMPLIANCE PLANE
-            </span>
-            <h1 className="font-display text-2xl font-extrabold sm:text-3xl">
-              Pusat Ketentuan Layanan, Kebijakan Privasi UU PDP &amp; Pengembalian Dana
-            </h1>
-            <p className="max-w-3xl text-sm leading-relaxed text-slate-300">
-              Dokumen hukum resmi untuk peninjauan kepatuhan merchant Midtrans Payment Gateway, pelindungan data pribadi berdasarkan UU No. 27 Tahun 2022 (UU PDP), dan perjanjian pemrosesan data tenant MyCaffe.
-            </p>
-          </div>
-          <Link
-            href="/onboarding"
-            className="btn-azure min-h-[44px] px-4 py-2 text-xs font-bold"
-          >
-            Lanjut Daftar Gerai
-          </Link>
-        </div>
+        <h1 className="font-display text-2xl font-extrabold sm:text-3xl">Ketentuan layanan, privasi, dan pengembalian dana</h1>
 
         <div className="mt-5 grid grid-cols-1 gap-4 border-t border-slate-800 pt-4 text-xs text-slate-200 sm:grid-cols-3">
           <div>
             <p className="font-semibold text-[#00AEEF]">Penyelenggara Sistem Elektronik</p>
-            <p className="mt-0.5">AzureDevID (Unit Produk MyCaffe POS)</p>
-            <p className="font-mono text-[11px] text-slate-400">ID Paket: com.azuredevid.cassy</p>
+            <p className="mt-0.5">AzureDevID (usaha perorangan), produk Cassy</p>
           </div>
           <div>
             <p className="font-semibold text-[#00AEEF]">Domisili &amp; Wilayah Hukum</p>
@@ -158,7 +138,6 @@ function LegalPageInner() {
                     {activeDoc.effective_date ? ` | Berlaku: ${activeDoc.effective_date}` : ""}
                   </p>
                 </div>
-                <StatusBadge tone="ok" prefix="SHA-256" label="Integritas Terverifikasi" />
               </div>
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-subtle bg-muted p-3">
