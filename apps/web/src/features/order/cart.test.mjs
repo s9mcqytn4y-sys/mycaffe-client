@@ -1,7 +1,7 @@
 // Run with: node --experimental-strip-types src/features/order/cart.test.mjs
 import assert from "node:assert/strict";
 import { cartReducer, optionNames, toOrderItems } from "./cart.ts";
-import { checkoutMessageKey, moneyTaken, orderPhase } from "./status.ts";
+import { checkoutMessageKey, isFinal, moneyTaken, orderPhase, readActiveOrder, reconnectDelay, writeActiveOrder } from "./status.ts";
 
 const latte = { productId: "p1", variantId: "v1", name: "Latte", options: [], quantity: 1, notes: "" };
 const oat = { ...latte, options: [{ optionId: "oat", subOptionIds: ["b", "a"] }] };
@@ -47,4 +47,25 @@ assert.equal(checkoutMessageKey("UNAVAILABLE"), "itemUnavailable");
 assert.equal(checkoutMessageKey("GUEST_SESSION_EXPIRED"), "sessionExpired");
 assert.equal(checkoutMessageKey("SOMETHING_NEW"), "checkoutFailed");
 assert.equal(checkoutMessageKey(undefined), "checkoutFailed");
+
+assert.equal(isFinal({ status: "served", payment_status: "paid" }), true);
+assert.equal(isFinal({ status: "cancelled", payment_status: "expired" }), true);
+assert.equal(isFinal({ status: "queued", payment_status: "refunded" }), true);
+assert.equal(isFinal({ status: "preparing", payment_status: "paid" }), false, "the kitchen is still working");
+assert.equal(isFinal(null), false);
+assert.deepEqual([0, 1, 2, 3, 4, 5, 9].map(reconnectDelay), [1000, 2000, 4000, 8000, 16000, 30000, 30000]);
+
+const store = new Map();
+globalThis.localStorage = {
+  getItem: (k) => store.get(k) ?? null,
+  setItem: (k, v) => store.set(k, v),
+  removeItem: (k) => store.delete(k)
+};
+const active = { order: { id: "o1", tracking: "trk", payKey: "pay_1" }, payment: null };
+writeActiveOrder("T1", active, 0);
+assert.deepEqual(readActiveOrder("T1", 3 * 60 * 60 * 1000), active, "still valid at exactly three hours");
+assert.equal(readActiveOrder("T1", 3 * 60 * 60 * 1000 + 1), null, "older than the guest session is dropped");
+assert.equal(store.size, 0, "an expired record is removed");
+store.set("cassy_active_order_T2", JSON.stringify(active));
+assert.equal(readActiveOrder("T2"), null, "a record without savedAt is ignored");
 console.log("cart ok");

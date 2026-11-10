@@ -1,5 +1,6 @@
 import { LocaleProvider } from "@/components/Providers";
 import { SiteFooter } from "@/components/SiteFooter";
+import { SkipLink } from "@/components/SkipLink";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -38,12 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         style={{ "--font-display": font.style.fontFamily } as React.CSSProperties}
       >
         <LocaleProvider>
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-brand focus:px-4 focus:py-2 focus:text-brand-fg"
-          >
-            Lewati ke konten utama
-          </a>
+          <SkipLink />
           <main id="main-content" className="flex-1">
             {children}
           </main>

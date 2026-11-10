@@ -138,8 +138,10 @@ export function OrderApp({ token }: { token: string }) {
   }, [data]);
 
   useEffect(() => {
-    if (state === "ready") writeActiveOrder(token, order ? { order, payment } : null);
-  }, [state, token, order, payment]);
+    // A served order is done; a cancelled one stays so a guest who paid still sees where to ask for the refund.
+    const served = tracked?.status === "served" || tracked?.status === "completed";
+    if (state === "ready") writeActiveOrder(token, order && !served ? { order, payment } : null);
+  }, [state, token, order, payment, tracked?.status]);
 
   const products = useMemo(
     () => (data?.products ?? []).filter((p) => category === "all" || p.category_id === category),
@@ -150,7 +152,7 @@ export function OrderApp({ token }: { token: string }) {
   if (state === "loading") return <div className="p-5"><DataStateBox state="loading" title={t.loadingTitle} description={t.loadingBody} /></div>;
   if (state === "missing") return <div className="p-5"><DataStateBox state="error" title={t.tableMissingTitle} description={t.tableMissingBody} /></div>;
   if (state === "failed" || !data) {
-    return <div className="p-5"><DataStateBox state="error" title={t.loadFailedTitle} description={t.loadFailedBody} onRetry={reload} retryLabel={t.retry} /></div>;
+    return <div className="p-5"><DataStateBox state="error" title={t.loadFailedTitle} description={t.loadFailedBody} onRetry={reload} /></div>;
   }
 
   const { table, cms, categories } = data;

@@ -43,26 +43,42 @@ export function checkoutMessageKey(code: unknown): keyof Messages {
   return (typeof code === "string" && CHECKOUT_MESSAGES[code]) || "checkoutFailed";
 }
 
+// After these the tracker has nothing left to report.
+export function isFinal(progress?: OrderProgress | null): boolean {
+  return ["served", "completed", "cancelled"].includes(progress?.status ?? "") || orderPhase(progress) === "refunded";
+}
+
+export const reconnectDelay = (attempt: number) => Math.min(30_000, 1000 * 2 ** attempt);
+
 export interface ActiveOrder {
   order: { id: string; number?: string; tracking: string | null; payKey: string };
   payment: PaymentInfo | null;
 }
 
+// Matches the backend guest session TTL; the server still has to confirm ownership on every load.
+const ACTIVE_ORDER_TTL_MS = 3 * 60 * 60 * 1000;
 const activeKey = (token: string) => `cassy_active_order_${token}`;
 
-export function readActiveOrder(token: string): ActiveOrder | null {
+export function readActiveOrder(token: string, now = Date.now()): ActiveOrder | null {
   try {
-    const saved = sessionStorage.getItem(activeKey(token));
-    return saved ? (JSON.parse(saved) as ActiveOrder) : null;
+    const saved = localStorage.getItem(activeKey(token));
+    if (!saved) return null;
+    const { savedAt, ...active } = JSON.parse(saved) as ActiveOrder & { savedAt?: number };
+    if (typeof savedAt !== "number" || now - savedAt > ACTIVE_ORDER_TTL_MS) {
+      localStorage.removeItem(activeKey(token));
+      return null;
+    }
+    return active;
   } catch {
     return null;
   }
 }
 
-export function writeActiveOrder(token: string, active: ActiveOrder | null) {
+// Kept in localStorage so closing the tab before paying does not lose the order.
+export function writeActiveOrder(token: string, active: ActiveOrder | null, now = Date.now()) {
   try {
-    if (active) sessionStorage.setItem(activeKey(token), JSON.stringify(active));
-    else sessionStorage.removeItem(activeKey(token));
+    if (active) localStorage.setItem(activeKey(token), JSON.stringify({ ...active, savedAt: now }));
+    else localStorage.removeItem(activeKey(token));
   } catch {
     // Without storage a reload simply starts from the menu.
   }
