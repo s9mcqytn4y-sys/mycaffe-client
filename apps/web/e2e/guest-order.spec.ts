@@ -208,6 +208,16 @@ test("menu satu daftar: tap kategori melompat ke bagiannya", async ({ page }) =>
   await expect(nav.getByRole("button", { name: "Roti" })).toHaveAttribute("aria-current", "true");
 });
 
+test("judul tab tetap nama gerai dan meja setelah tamu berinteraksi", async ({ page }) => {
+  await mockStore(page);
+  await page.goto("/order/T1");
+  await expect(page).toHaveTitle("Kopi Senja | Meja A1");
+  await page.getByRole("button", { name: "Tambah Croissant" }).click();
+  await page.getByRole("button", { name: /Lihat keranjang/ }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page).toHaveTitle("Kopi Senja | Meja A1");
+});
+
 test("keranjang tidak menampilkan varian tunggal", async ({ page }) => {
   await mockStore(page);
   await addAndOpenCart(page);
