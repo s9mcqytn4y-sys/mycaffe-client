@@ -81,7 +81,12 @@ const id = {
   orderAgain: "Pesan lagi",
   footerPowered: "Ditenagai Cassy",
   legal: "Ketentuan dan privasi",
-  language: "English"
+  language: "English",
+  skipToContent: "Lewati ke konten utama",
+  notFoundTitle: "Halaman tidak ditemukan",
+  notFoundBody: "Untuk memesan, pindai ulang kode QR di meja Anda atau minta bantuan staf gerai.",
+  errorTitle: "Ada yang tidak berjalan",
+  errorBody: "Halaman ini gagal dimuat. Pesanan yang sudah dibayar tetap aman. Coba lagi, atau minta bantuan staf gerai."
 };
 
 export type Messages = typeof id;
@@ -169,7 +174,12 @@ const en: Messages = {
   orderAgain: "Order again",
   footerPowered: "Powered by Cassy",
   legal: "Terms and privacy",
-  language: "Bahasa Indonesia"
+  language: "Bahasa Indonesia",
+  skipToContent: "Skip to main content",
+  notFoundTitle: "Page not found",
+  notFoundBody: "To order, scan the QR code on your table again or ask the staff for help.",
+  errorTitle: "Something went wrong",
+  errorBody: "This page failed to load. Orders you already paid for are safe. Try again, or ask the staff for help."
 };
 
 export const MESSAGES = { "id-ID": id, "en-US": en };

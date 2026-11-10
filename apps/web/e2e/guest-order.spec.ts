@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { json, mockStore } from "./mocks";
+import { json, mockCheckout, mockStore } from "./mocks";
 
 test("tamu memesan, membayar QRIS, dan melihat status", async ({ page }) => {
   await mockStore(page);
@@ -159,6 +159,33 @@ test("pesanan batal tidak tampil sebagai diterima", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Pesanan dibatalkan" })).toBeVisible();
   await expect(page.getByText("pengembalian dana")).toBeVisible();
   await expect(page.getByText("Pesanan diterima")).toHaveCount(0);
+});
+
+test("tab ditutup sebelum bayar: membuka URL meja lagi menampilkan QR yang sama", async ({ context, page }) => {
+  await mockStore(page);
+  await mockCheckout(page);
+  await addAndOpenCart(page);
+  await page.getByRole("button", { name: "Bayar Rp 28.750" }).click();
+  await expect(page.getByRole("heading", { name: "Pindai QRIS" })).toBeVisible();
+  await page.close();
+
+  const again = await context.newPage();
+  await mockStore(again);
+  let orderPosts = 0;
+  await mockCheckout(again);
+  await again.route("**/api/v1/public/guest/orders", (r) => {
+    if (r.request().method() === "GET") return r.fulfill(json({ orders: [{ id: "o1" }] }));
+    orderPosts += 1;
+    return r.fulfill(json({ order: { id: "o2" } }, 201));
+  });
+  await again.goto("/order/T1");
+  await expect(again.getByRole("heading", { name: "Pindai QRIS" })).toBeVisible();
+  expect(orderPosts).toBe(0);
+});
+
+test("URL yang tidak ada menampilkan arahan pindai ulang", async ({ page }) => {
+  await page.goto("/tidak-ada");
+  await expect(page.getByRole("heading", { name: "Halaman tidak ditemukan" })).toBeVisible();
 });
 
 test("field nama menjelaskan tujuan data dan menaut privasi", async ({ page }) => {

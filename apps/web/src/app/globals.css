@@ -118,30 +118,6 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.receipt-perforation {
-  border-top: 2px dashed var(--border-subtle);
-}
-
-.badge-ok {
-  background-color: var(--state-ok-bg);
-  color: var(--state-ok-fg);
-}
-
-.badge-warn {
-  background-color: var(--state-warn-bg);
-  color: var(--state-warn-fg);
-}
-
-.badge-err {
-  background-color: var(--state-err-bg);
-  color: var(--state-err-fg);
-}
-
-.badge-info {
-  background-color: var(--state-info-bg);
-  color: var(--state-info-fg);
-}
-
 .btn-primary {
   display: inline-flex;
   align-items: center;
