@@ -143,6 +143,10 @@ export function OrderApp({ token }: { token: string }) {
     if (state === "ready") writeActiveOrder(token, order && !served ? { order, payment } : null);
   }, [state, token, order, payment, tracked?.status]);
 
+  useEffect(() => {
+    if (data) document.title = `${data.table.store_name} | ${data.table.label || `${t.table} ${data.table.table_number}`}`;
+  }, [data, t.table]);
+
   const products = useMemo(
     () => (data?.products ?? []).filter((p) => category === "all" || p.category_id === category),
     [data, category]

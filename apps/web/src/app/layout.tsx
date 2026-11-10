@@ -1,6 +1,7 @@
 import { LocaleProvider } from "@/components/Providers";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SkipLink } from "@/components/SkipLink";
+import { siteUrl } from "@/lib/site";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -9,7 +10,7 @@ import "./globals.css";
 const font = localFont({ src: "./fonts/PlusJakartaSans-latin-wght.woff2", weight: "200 800", display: "swap" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://abbdullaziz.online"),
+  metadataBase: new URL(siteUrl),
   title: { default: "Pesan dari meja", template: "%s | Cassy" },
   description: "Pesan dan bayar dari meja gerai lewat kode QR.",
   manifest: "/manifest.webmanifest",

@@ -86,7 +86,22 @@ const id = {
   notFoundTitle: "Halaman tidak ditemukan",
   notFoundBody: "Untuk memesan, pindai ulang kode QR di meja Anda atau minta bantuan staf gerai.",
   errorTitle: "Ada yang tidak berjalan",
-  errorBody: "Halaman ini gagal dimuat. Pesanan yang sudah dibayar tetap aman. Coba lagi, atau minta bantuan staf gerai."
+  errorBody: "Halaman ini gagal dimuat. Pesanan yang sudah dibayar tetap aman. Coba lagi, atau minta bantuan staf gerai.",
+  legalGuestTitle: "Ketentuan dan privasi tamu",
+  legalGuestIntro:
+    "Berlaku saat Anda memesan dari meja lewat kode QR. Gerai adalah penjual dan pengendali data Anda; Cassy oleh AzureDevID menyediakan perangkat lunaknya.",
+  legalTenantTitle: "Dokumen untuk mitra gerai",
+  legalTenantIntro: "Ketentuan langganan Cassy bagi pemilik gerai. Dokumen ini hanya tersedia dalam bahasa Indonesia.",
+  legalToTenant: "Dokumen untuk mitra gerai",
+  legalToGuest: "Ketentuan dan privasi tamu",
+  legalDocs: "Daftar dokumen",
+  legalVersion: "Versi",
+  legalEffective: "Berlaku sejak",
+  legalContact: "Pertanyaan tentang dokumen ini: legal@abbdullaziz.online",
+  legalLoading: "Memuat dokumen",
+  legalFailed: "Dokumen belum bisa dimuat",
+  legalFailedBody: "Periksa koneksi Anda, lalu coba lagi.",
+  legalEmpty: "Belum ada dokumen yang diterbitkan"
 };
 
 export type Messages = typeof id;
@@ -179,7 +194,22 @@ const en: Messages = {
   notFoundTitle: "Page not found",
   notFoundBody: "To order, scan the QR code on your table again or ask the staff for help.",
   errorTitle: "Something went wrong",
-  errorBody: "This page failed to load. Orders you already paid for are safe. Try again, or ask the staff for help."
+  errorBody: "This page failed to load. Orders you already paid for are safe. Try again, or ask the staff for help.",
+  legalGuestTitle: "Guest terms and privacy",
+  legalGuestIntro:
+    "These apply when you order from a table by QR code. The outlet is the seller and controls your data; Cassy by AzureDevID provides the software.",
+  legalTenantTitle: "Documents for outlet partners",
+  legalTenantIntro: "Cassy subscription terms for outlet owners. These documents are available in Indonesian only.",
+  legalToTenant: "Documents for outlet partners",
+  legalToGuest: "Guest terms and privacy",
+  legalDocs: "Documents",
+  legalVersion: "Version",
+  legalEffective: "Effective from",
+  legalContact: "Questions about these documents: legal@abbdullaziz.online",
+  legalLoading: "Loading documents",
+  legalFailed: "The documents could not load",
+  legalFailedBody: "Check your connection and try again.",
+  legalEmpty: "No documents have been published yet"
 };
 
 export const MESSAGES = { "id-ID": id, "en-US": en };
