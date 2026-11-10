@@ -127,11 +127,17 @@ export function useOrderProgress(trackingToken: string | null) {
     let retry: ReturnType<typeof setTimeout> | undefined;
     let attempt = 0;
     let timer: ReturnType<typeof setInterval> | undefined;
+    // Coming back from an e-wallet app (or a hidden tab) checks at once instead of waiting for the next poll.
+    const onVisible = () => {
+      if (!document.hidden) void poll();
+    };
     const stop = () => {
       stopped = true;
       clearInterval(timer);
       clearTimeout(retry);
       socket?.close();
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", onVisible);
     };
     const poll = async () => {
       try {
@@ -162,6 +168,8 @@ export function useOrderProgress(trackingToken: string | null) {
       }
     };
     timer = setInterval(() => void poll(), POLL_MS);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", onVisible);
     void poll();
     void connect();
     return stop;

@@ -6,8 +6,9 @@ import { QrCodeSvg } from "@/components/QrCodeSvg";
 import { apiFetch } from "@/lib/api";
 import { formatIdr } from "@/lib/format";
 import type { Messages } from "@/lib/messages";
-import { progressStep, type OrderPhase } from "./status";
-import type { PaymentInfo } from "./types";
+import { METHOD_LABEL } from "./CartSheet";
+import { progressStep, safeDeeplink, type OrderPhase } from "./status";
+import type { PaymentInfo, PayMethod } from "./types";
 
 const stepLabels = (t: Messages) => [t.statusReceived, t.statusPreparing, t.statusReady, t.statusServed];
 
@@ -43,7 +44,10 @@ export function PaymentView({
   orderNumber,
   status,
   retrying,
+  error,
+  methods,
   onNewQr,
+  onSwitch,
   onBack,
   onOrderAgain
 }: {
@@ -54,7 +58,10 @@ export function PaymentView({
   orderNumber?: string;
   status?: string;
   retrying: boolean;
+  error: string | null;
+  methods: PayMethod[];
   onNewQr: () => void;
+  onSwitch: (method: PayMethod) => void;
   onBack: () => void;
   onOrderAgain: () => void;
 }) {
@@ -151,10 +158,15 @@ export function PaymentView({
     );
   }
 
+  const via = payment.method ?? "qris";
+  const wallet = via !== "qris";
+  const deeplink = wallet ? safeDeeplink(payment.deeplink_url) : null;
+  const others = methods.filter((m) => m !== via);
+
   return (
     <section className="mx-auto flex max-w-md flex-col items-center px-5 py-8 text-center">
-      <h1 className="text-2xl font-bold">{t.scanToPay}</h1>
-      <p className="mt-2 text-sm text-subink">{t.scanHint}</p>
+      <h1 className="text-2xl font-bold">{wallet ? METHOD_LABEL[via] : t.scanToPay}</h1>
+      <p className="mt-2 text-sm text-subink">{wallet ? t.walletHint : t.scanHint}</p>
       <p className="mt-5 text-3xl font-bold">{formatIdr(payment.amount)}</p>
 
       {expired ? (
@@ -166,9 +178,19 @@ export function PaymentView({
         </div>
       ) : (
         <>
-          <div className="mt-6 rounded-xl bg-white p-4">
-            {payment.qr_string ? <QrCodeSvg value={payment.qr_string} size={240} /> : null}
-          </div>
+          {wallet ? (
+            deeplink ? (
+              <a href={deeplink} className="btn-primary mt-6 inline-flex min-h-[56px] w-full items-center justify-center px-6 text-base font-bold">
+                {t.openWallet}
+              </a>
+            ) : (
+              <p role="alert" className="mt-6 text-sm font-semibold">{t.methodUnavailable}</p>
+            )
+          ) : (
+            <div className="mt-6 rounded-xl bg-white p-4">
+              {payment.qr_string ? <QrCodeSvg value={payment.qr_string} size={240} /> : null}
+            </div>
+          )}
           {payment.expires_at ? (
             <p className="mt-4 text-sm">
               {t.payBefore}{" "}
@@ -180,6 +202,27 @@ export function PaymentView({
           <p aria-live="polite" className="mt-2 text-sm text-subink">{t.waiting}</p>
         </>
       )}
+
+      {error ? <p role="alert" className="mt-4 text-sm font-semibold text-[var(--state-err-fg)]">{error}</p> : null}
+
+      {others.length > 0 ? (
+        <div className="mt-6 w-full">
+          <p className="text-sm font-bold">{t.payOther}</p>
+          <div className="mt-2 flex flex-wrap justify-center gap-2">
+            {others.map((m) => (
+              <button
+                key={m}
+                type="button"
+                disabled={retrying}
+                onClick={() => onSwitch(m)}
+                className="btn-secondary min-h-[44px] px-4 text-sm font-semibold"
+              >
+                {METHOD_LABEL[m]}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <button type="button" onClick={onBack} className="btn-secondary mt-8 min-h-[44px] px-5 font-semibold">
         {t.back}

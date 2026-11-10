@@ -5,7 +5,9 @@ import { useLocale } from "@/components/Providers";
 import { Sheet } from "@/components/Sheet";
 import { formatIdr } from "@/lib/format";
 import { optionNames, type CartAction, type CartLine } from "./cart";
-import type { Quote } from "./types";
+import type { PayMethod, Quote } from "./types";
+
+export const METHOD_LABEL: Record<PayMethod, string> = { qris: "QRIS", gopay: "GoPay", shopeepay: "ShopeePay" };
 
 function Row({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
   return (
@@ -29,6 +31,9 @@ export function CartSheet({
   placing,
   error,
   canOrder,
+  methods,
+  method,
+  onMethod,
   onPay,
   onClose
 }: {
@@ -44,6 +49,9 @@ export function CartSheet({
   placing: boolean;
   error: string | null;
   canOrder: boolean;
+  methods: PayMethod[];
+  method: PayMethod;
+  onMethod: (method: PayMethod) => void;
   onPay: () => void;
   onClose: () => void;
 }) {
@@ -130,6 +138,25 @@ export function CartSheet({
             {t.guestNameHint}{" "}
             <a href="/legal" target="_blank" rel="noopener" className="underline">{t.legal}</a>
           </p>
+
+          {methods.length > 1 ? (
+            <fieldset className="mt-4">
+              <legend className="text-sm font-bold">{t.payMethod}</legend>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {methods.map((m) => (
+                  <label
+                    key={m}
+                    className={`flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm font-semibold has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
+                      method === m ? "border-brand bg-brand text-brand-fg" : "border-subtle"
+                    }`}
+                  >
+                    <input type="radio" name="pay-method" value={m} checked={method === m} onChange={() => onMethod(m)} className="sr-only" />
+                    {METHOD_LABEL[m]}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ) : null}
 
           {error ? (
             <p role="alert" className="mt-3 text-sm font-semibold text-[var(--state-err-fg)]">

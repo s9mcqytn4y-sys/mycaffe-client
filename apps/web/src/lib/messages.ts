@@ -102,7 +102,12 @@ const id = {
   legalFailedBody: "Periksa koneksi Anda, lalu coba lagi.",
   legalEmpty: "Belum ada dokumen yang diterbitkan",
   otherMenu: "Lainnya",
-  progressLabel: "Perjalanan pesanan"
+  progressLabel: "Perjalanan pesanan",
+  payMethod: "Metode pembayaran",
+  openWallet: "Buka aplikasi untuk membayar",
+  walletHint: "Setelah membayar di aplikasi, kembali ke halaman ini. Status diperbarui otomatis.",
+  payOther: "Bayar dengan metode lain",
+  methodUnavailable: "Metode ini sedang tidak tersedia di gerai. Pilih metode lain."
 };
 
 export type Messages = typeof id;
@@ -211,7 +216,12 @@ const en: Messages = {
   legalFailedBody: "Check your connection and try again.",
   legalEmpty: "No documents have been published yet",
   otherMenu: "Other",
-  progressLabel: "Order progress"
+  progressLabel: "Order progress",
+  payMethod: "Payment method",
+  openWallet: "Open the app to pay",
+  walletHint: "After paying in the app, come back to this page. The status updates on its own.",
+  payOther: "Pay another way",
+  methodUnavailable: "This method is not available at the outlet right now. Choose another one."
 };
 
 export const MESSAGES = { "id-ID": id, "en-US": en };
