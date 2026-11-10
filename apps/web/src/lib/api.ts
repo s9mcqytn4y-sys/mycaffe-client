@@ -52,23 +52,3 @@ export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Prom
 
   return (parsed ?? {}) as T;
 }
-
-export interface LegalDocument {
-  doc_type: string;
-  title: string;
-  version: string;
-  effective_date: string;
-  content_sha256: string;
-  content: string;
-}
-
-export function normalizeLegalDoc(raw: Record<string, unknown>): LegalDocument {
-  return {
-    doc_type: String(raw.doc_type ?? raw.code ?? raw.slug ?? "document"),
-    title: String(raw.title ?? "Dokumen Hukum"),
-    version: String(raw.version ?? "1.0"),
-    effective_date: String(raw.effective_date ?? raw.updated_at ?? ""),
-    content_sha256: String(raw.content_sha256 ?? raw.sha256 ?? ""),
-    content: String(raw.content_markdown ?? raw.content ?? raw.body ?? "")
-  };
-}

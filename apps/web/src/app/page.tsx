@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: { absolute: "Cassy: pesan dan bayar dari meja" },
+  description: "Pindai kode QR di meja gerai untuk melihat menu, memesan, dan membayar dengan QRIS dari ponsel Anda.",
+  alternates: { canonical: "/" },
+  robots: { index: true, follow: true }
+};
 
 export default function ScanPromptPage() {
   return (
