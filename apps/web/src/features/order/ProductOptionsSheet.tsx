@@ -5,6 +5,7 @@ import { useLocale } from "@/components/Providers";
 import { Sheet } from "@/components/Sheet";
 import { formatIdr } from "@/lib/format";
 import type { CartLine, SelectedOption } from "./cart";
+import { ProductImage } from "./ProductImage";
 import type { CatalogGroup, CatalogProduct } from "./types";
 
 type Selection = Record<string, string[]>;
@@ -103,6 +104,9 @@ export function ProductOptionsSheet({
 
   return (
     <Sheet title={product.name} onClose={onClose}>
+      {product.image_url ? (
+        <ProductImage src={product.image_url} alt={product.name} width={640} height={480} className="mb-4 aspect-[4/3] w-full" />
+      ) : null}
       {product.description ? <p className="text-sm text-subink">{product.description}</p> : null}
 
       {product.variants.length > 1 ? (

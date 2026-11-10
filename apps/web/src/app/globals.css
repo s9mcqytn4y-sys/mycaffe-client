@@ -118,6 +118,15 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Horizontal chip strips still scroll by touch, wheel and keyboard; only the bar is hidden. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .btn-primary {
   display: inline-flex;
   align-items: center;

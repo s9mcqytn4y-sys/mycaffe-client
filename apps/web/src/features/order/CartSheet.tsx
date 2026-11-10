@@ -18,6 +18,7 @@ function Row({ label, value, strong }: { label: string; value: number; strong?: 
 
 export function CartSheet({
   lines,
+  multiVariant,
   dispatch,
   quote,
   quoteLoading,
@@ -32,6 +33,7 @@ export function CartSheet({
   onClose
 }: {
   lines: CartLine[];
+  multiVariant: Set<string>;
   dispatch: (action: CartAction) => void;
   quote: Quote | null;
   quoteLoading: boolean;
@@ -54,7 +56,9 @@ export function CartSheet({
       <ul>
         {lines.map((line, index) => {
           const priced = quote?.lines[index];
-          const details = [priced?.variant_name, ...optionNames(priced?.selected_options)].filter(Boolean);
+          // "Reguler" says nothing when the product has no other size.
+          const variant = multiVariant.has(line.productId) ? priced?.variant_name : undefined;
+          const details = [variant, ...optionNames(priced?.selected_options)].filter(Boolean);
           return (
             <li key={line.key} className="py-3">
               <div className="flex justify-between gap-3 text-sm font-semibold">

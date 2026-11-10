@@ -8,7 +8,10 @@ import { brandVariables } from "@/lib/brand";
 import { formatIdr } from "@/lib/format";
 import { CartSheet } from "./CartSheet";
 import { cartReducer, toOrderItems, type CartLine } from "./cart";
+import { CategoryNav, sectionId } from "./CategoryNav";
+import { menuSections } from "./menu";
 import { PaymentView } from "./PaymentView";
+import { ProductImage } from "./ProductImage";
 import { ProductOptionsSheet } from "./ProductOptionsSheet";
 import { checkoutMessageKey, moneyTaken, orderPhase, writeActiveOrder, type ActiveOrder } from "./status";
 import type { CatalogProduct, PaymentInfo } from "./types";
@@ -37,16 +40,7 @@ function ProductRow({
 
   return (
     <li className="flex gap-4 py-4">
-      {product.image_url ? (
-        <img
-          src={product.image_url}
-          alt={product.name}
-          width={96}
-          height={96}
-          loading="lazy"
-          className="h-24 w-24 shrink-0 rounded-lg object-cover"
-        />
-      ) : null}
+      {product.image_url ? <ProductImage src={product.image_url} alt={product.name} width={96} height={96} className="h-24 w-24" /> : null}
       <div className="min-w-0 flex-1">
         <h3 className="text-base font-bold">{product.name}</h3>
         {product.description ? <p className="mt-0.5 line-clamp-2 text-sm text-subink">{product.description}</p> : null}
@@ -76,7 +70,6 @@ export function OrderApp({ token }: { token: string }) {
   const { t, locale } = useLocale();
   const { state, data, reload } = useOrderData(token);
   const [lines, dispatch] = useReducer(cartReducer, [] as CartLine[]);
-  const [category, setCategory] = useState("all");
   const [optionsFor, setOptionsFor] = useState<CatalogProduct | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [guestName, setGuestName] = useState("");
@@ -147,10 +140,8 @@ export function OrderApp({ token }: { token: string }) {
     if (data) document.title = `${data.table.store_name} | ${data.table.label || `${t.table} ${data.table.table_number}`}`;
   }, [data, t.table]);
 
-  const products = useMemo(
-    () => (data?.products ?? []).filter((p) => category === "all" || p.category_id === category),
-    [data, category]
-  );
+  const sections = useMemo(() => menuSections(data?.categories ?? [], data?.products ?? [], t.otherMenu), [data, t.otherMenu]);
+  const multiVariant = useMemo(() => new Set((data?.products ?? []).filter((p) => p.variants.length > 1).map((p) => p.id)), [data]);
   const itemCount = lines.reduce((sum, l) => sum + l.quantity, 0);
 
   if (state === "loading") return <div className="p-5"><DataStateBox state="loading" title={t.loadingTitle} description={t.loadingBody} /></div>;
@@ -159,7 +150,7 @@ export function OrderApp({ token }: { token: string }) {
     return <div className="p-5"><DataStateBox state="error" title={t.loadFailedTitle} description={t.loadFailedBody} onRetry={reload} /></div>;
   }
 
-  const { table, cms, categories } = data;
+  const { table, cms } = data;
   const announcement = locale === "en-US" ? cms.announcement_banner_en : cms.announcement_banner_id;
   const brand = brandVariables(cms.primary_hex) as React.CSSProperties;
 
@@ -286,42 +277,36 @@ export function OrderApp({ token }: { token: string }) {
         </div>
       ) : null}
 
-      <nav aria-label={t.categories} className="sticky top-0 z-10 mt-3 flex gap-2 overflow-x-auto bg-canvas px-5 py-2">
-        {[{ id: "all", name: t.allMenu }, ...categories].map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            aria-pressed={category === c.id}
-            onClick={() => setCategory(c.id)}
-            className={`min-h-[44px] shrink-0 rounded-lg px-3 text-sm font-semibold ${
-              category === c.id ? "bg-brand text-brand-fg" : "text-ink"
-            }`}
-          >
-            {c.name}
-          </button>
-        ))}
-      </nav>
+      {sections.length > 1 ? <CategoryNav sections={sections} /> : null}
 
       <div className="px-5">
-        {products.length === 0 ? (
+        {sections.length === 0 ? (
           <div className="mt-4"><DataStateBox state="empty" title={t.emptyTitle} description={t.emptyBody} /></div>
         ) : (
-          <ul>
-            {products.map((product) => (
-              <ProductRow
-                key={product.id}
-                product={product}
-                canOrder={table.ordering_open}
-                onChoose={() => setOptionsFor(product)}
-                onQuickAdd={() =>
-                  dispatch({
-                    type: "add",
-                    line: { productId: product.id, variantId: defaultVariant(product)?.id, name: product.name, options: [], quantity: 1, notes: "" }
-                  })
-                }
-              />
-            ))}
-          </ul>
+          sections.map((section) => (
+            <section key={section.id} aria-labelledby={sectionId(section.id)} className="mt-4">
+              {/* scroll-mt keeps the heading clear of the sticky category strip after a jump. */}
+              <h2 id={sectionId(section.id)} className="scroll-mt-16 text-lg font-bold">
+                {section.name}
+              </h2>
+              <ul>
+                {section.products.map((product) => (
+                  <ProductRow
+                    key={product.id}
+                    product={product}
+                    canOrder={table.ordering_open}
+                    onChoose={() => setOptionsFor(product)}
+                    onQuickAdd={() =>
+                      dispatch({
+                        type: "add",
+                        line: { productId: product.id, variantId: defaultVariant(product)?.id, name: product.name, options: [], quantity: 1, notes: "" }
+                      })
+                    }
+                  />
+                ))}
+              </ul>
+            </section>
+          ))
         )}
       </div>
 
@@ -348,6 +333,7 @@ export function OrderApp({ token }: { token: string }) {
       {cartOpen ? (
         <CartSheet
           lines={lines}
+          multiVariant={multiVariant}
           dispatch={dispatch}
           quote={quote}
           quoteLoading={loading}

@@ -141,3 +141,19 @@ test.describe("reflow pada lebar 320 px", () => {
     await expectNoHorizontalScroll(page);
   });
 });
+
+test.describe("kartu QR pada layar 360 x 640", () => {
+  test.use({ viewport: { width: 360, height: 640 } });
+
+  test("nominal dan batas bayar terlihat tanpa gulir", async ({ page }) => {
+    await mockStore(page);
+    await mockCheckout(page);
+    await page.goto("/order/T1");
+    await page.getByRole("button", { name: "Tambah Croissant" }).click();
+    await page.getByRole("button", { name: /Lihat keranjang/ }).click();
+    await page.getByRole("button", { name: "Bayar Rp 28.750" }).click();
+    await expect(page.getByRole("heading", { name: "Pindai QRIS" })).toBeVisible();
+    await expect(page.getByText("Rp 28.750", { exact: true })).toBeInViewport({ ratio: 1 });
+    await expect(page.getByText(/Bayar sebelum/)).toBeInViewport({ ratio: 1 });
+  });
+});
