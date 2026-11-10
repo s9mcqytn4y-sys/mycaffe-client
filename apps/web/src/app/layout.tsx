@@ -1,10 +1,11 @@
 import { LocaleProvider } from "@/components/Providers";
 import { SiteFooter } from "@/components/SiteFooter";
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const font = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "600", "700"] });
+// Self-hosted (OFL, see fonts/OFL.txt) so a build never depends on reaching Google Fonts.
+const font = localFont({ src: "./fonts/PlusJakartaSans-latin-wght.woff2", weight: "200 800", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://abbdullaziz.online"),
