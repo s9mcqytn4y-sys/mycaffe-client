@@ -17,28 +17,19 @@
   --color-accent: var(--brand-accent);
   --color-accent-ink: var(--brand-accent-text);
 
-  --color-azd-primary: var(--azd-primary);
-  --color-azd-cyan: var(--azd-cyan);
-  --color-azd-obsidian: var(--azd-obsidian);
-  --color-azd-ink: var(--azd-ink);
-
-  --font-display: var(--font-display), "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
-  --font-sans: var(--font-sans), "Inter", system-ui, sans-serif;
-  --font-mono: var(--font-mono), "JetBrains Mono", Consolas, monospace;
+  /* --font-jakarta is the self-hosted Plus Jakarta Sans that layout.tsx puts on <body>. */
+  --font-display: var(--font-jakarta), system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-jakarta), system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
 /*
- * Design Read: Multi-tenant hospitality POS, QR Table Order PWA, and SaaS Governance Console
- * for Indonesian cafe owners, staff, and guests, in the Espresso & Crema + AzureDevID Control Plane
- * visual language, dial ENERGY 2 / RHYTHM 2 / MOTION 1.
+ * Design Read: QR table ordering for cafe guests on their phones. The outlet's brand leads;
+ * Espresso & Crema is the fallback palette. Dial ENERGY 2 / RHYTHM 1 / MOTION 1 (DESIGN.md).
  */
 
 :root,
 [data-theme="light"] {
-  --font-display: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
-
   --bg-canvas: #FAF6F1;
   --bg-surface: #FFFFFF;
   --bg-muted: #F2EBE2;
@@ -51,11 +42,6 @@
   --brand-accent: #C68B59;
   --brand-accent-text: #7C4318;
 
-  --azd-primary: #0A4DA2;
-  --azd-cyan: #00AEEF;
-  --azd-obsidian: #07111F;
-  --azd-ink: #0B192C;
-
   --state-ok-bg: #DCFCE7;
   --state-ok-fg: #166534;
   --state-warn-bg: #FFEDD5;
@@ -65,7 +51,8 @@
   --state-info-bg: #DBEAFE;
   --state-info-fg: #1E40AF;
 
-  --focus-ring: #0A4DA2;
+  /* Ink, not the outlet colour: a ring must stay visible whatever --brand-primary the outlet sets. */
+  --focus-ring: #2C1A12;
 }
 
 [data-theme="dark"] {
@@ -90,7 +77,7 @@
   --state-info-bg: #1E3A8A;
   --state-info-fg: #BFDBFE;
 
-  --focus-ring: #38BDF8;
+  --focus-ring: #F0CFAF;
 }
 
 html,
@@ -127,6 +114,8 @@ body {
   display: none;
 }
 
+/* In the components layer so utilities such as rounded-full or h-11 on the element win (Tailwind v4 layers). */
+@layer components {
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -169,27 +158,6 @@ body {
   cursor: not-allowed;
 }
 
-.btn-azure {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border-radius: 0.5rem;
-  background-color: #0A4DA2;
-  color: #F8FAFC;
-  border: 1px solid #0A4DA2;
-  transition: opacity 150ms ease;
-}
-
-.btn-azure:hover:not(:disabled) {
-  opacity: 0.92;
-}
-
-.btn-azure:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
 .input-field {
   width: 100%;
   min-height: 44px;
@@ -205,4 +173,5 @@ body {
 .input-field::placeholder {
   color: var(--text-secondary);
   opacity: 0.8;
+}
 }

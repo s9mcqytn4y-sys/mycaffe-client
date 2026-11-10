@@ -105,7 +105,7 @@ export function ProductOptionsSheet({
   return (
     <Sheet title={product.name} onClose={onClose}>
       {product.image_url ? (
-        <ProductImage src={product.image_url} alt={product.name} width={640} height={480} className="mb-4 aspect-[4/3] w-full" />
+        <ProductImage src={product.image_url} alt={product.name} width={640} height={480} className="mb-4 aspect-[4/3] w-full rounded-lg" />
       ) : null}
       {product.description ? <p className="text-sm text-subink">{product.description}</p> : null}
 

@@ -7,15 +7,9 @@ interface QrCodeSvgProps {
   value: string;
   size?: number;
   label?: string;
-  showCenterBadge?: boolean;
 }
 
-export function QrCodeSvg({
-  value,
-  size = 180,
-  label = "Kode QR dapat dipindai",
-  showCenterBadge = true,
-}: QrCodeSvgProps) {
+export function QrCodeSvg({ value, size = 180, label = "Kode QR dapat dipindai" }: QrCodeSvgProps) {
   const [svgMarkup, setSvgMarkup] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
@@ -26,12 +20,13 @@ export function QrCodeSvg({
       return;
     }
 
-    // Level H (High ~30% recovery tolerance): resistant to table stains, smudges, and camera reflections
+    // M, not H: this QR is shown on a screen with nothing over it, and fewer, larger modules scan more
+    // reliably from a screenshot uploaded to an e-wallet (W1).
     QRCode.toString(value, {
       type: "svg",
       margin: 2,
       width: size,
-      errorCorrectionLevel: "H",
+      errorCorrectionLevel: "M",
       color: {
         dark: "#140E0B",
         light: "#FFFFFF",
@@ -76,8 +71,6 @@ export function QrCodeSvg({
     );
   }
 
-  const badgeSize = Math.round(size * 0.22);
-
   return (
     <div
       role="img"
@@ -89,23 +82,6 @@ export function QrCodeSvg({
         className="h-full w-full"
         dangerouslySetInnerHTML={{ __html: svgMarkup }}
       />
-      {showCenterBadge && (
-        <div
-          style={{
-            width: badgeSize,
-            height: badgeSize,
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-          className="pointer-events-none absolute flex items-center justify-center rounded-md border border-[#0A4DA2]/20 bg-white shadow-sm"
-          aria-hidden="true"
-        >
-          <span className="font-mono text-[10px] font-bold tracking-tight text-[#0A4DA2]">
-            AD
-          </span>
-        </div>
-      )}
     </div>
   );
 }
