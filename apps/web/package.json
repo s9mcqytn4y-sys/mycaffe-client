@@ -8,6 +8,7 @@
     "start": "next start --port 3000",
     "typecheck": "tsc --noEmit",
     "codegen:api": "openapi-typescript ../../../myCaffe-backend/docs/Api/OpenApi.yaml -o src/types/api.generated.ts",
+    "test:unit": "node --experimental-strip-types src/features/order/cart.test.mjs",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -17,6 +18,7 @@
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.65.0",
     "@tailwindcss/postcss": "^4.3.5",
     "@types/node": "^22.13.0",

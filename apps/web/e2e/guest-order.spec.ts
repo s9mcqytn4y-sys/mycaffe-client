@@ -1,53 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-
-const json = (body: unknown, status = 200) => ({ status, contentType: "application/json", body: JSON.stringify(body) });
-
-const variant = (id: string, price: number) => ({ id, name: "Reguler", price, is_default: true, available: true });
-
-const CATALOG = {
-  categories: [{ id: "coffee", name: "Kopi" }],
-  products: [
-    { id: "croissant", category_id: "coffee", name: "Croissant", available: true, variants: [variant("v-c", 25000)], modifier_groups: [] },
-    {
-      id: "latte",
-      category_id: "coffee",
-      name: "Caffe Latte",
-      available: true,
-      variants: [variant("v-l", 32000)],
-      modifier_groups: [
-        {
-          id: "milk",
-          name: "Susu",
-          required: true,
-          min: 1,
-          max: 1,
-          options: [{ id: "oat", name: "Oat", price_delta: 6000, available: true }]
-        }
-      ]
-    },
-    { id: "gone", category_id: "coffee", name: "Americano", available: false, variants: [variant("v-g", 20000)], modifier_groups: [] }
-  ]
-};
-
-const QUOTE = {
-  subtotal_amount: 25000,
-  discount_amount: 0,
-  service_charge_amount: 1250,
-  tax_amount: 2500,
-  total_amount: 28750,
-  quote_fingerprint: "fp",
-  lines: [{ product_name: "Croissant", quantity: 1, subtotal_amount: 25000 }]
-};
-
-async function mockStore(page: Page, table: Record<string, unknown> = {}, cms: Record<string, unknown> = {}) {
-  await page.route("**/api/v1/public/qr/T1", (r) =>
-    r.fulfill(json({ store_name: "Kopi Senja", store_slug: "senja", table_number: "A1", label: "Meja A1", ordering_open: true, ...table }))
-  );
-  await page.route("**/api/v1/public/qr/T1/session", (r) => r.fulfill(json({ table_number: "A1" }, 201)));
-  await page.route("**/api/v1/public/stores/senja/catalog", (r) => r.fulfill(json(CATALOG)));
-  await page.route("**/api/v1/public/stores/senja/cms", (r) => r.fulfill(json({ cms })));
-  await page.route("**/api/v1/public/stores/senja/orders/quote", (r) => r.fulfill(json(QUOTE)));
-}
+import { json, mockStore } from "./mocks";
 
 test("tamu memesan, membayar QRIS, dan melihat status", async ({ page }) => {
   await mockStore(page);
