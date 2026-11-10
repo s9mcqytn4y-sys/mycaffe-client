@@ -14,7 +14,7 @@ import { PaymentView } from "./PaymentView";
 import { ProductImage } from "./ProductImage";
 import { ProductOptionsSheet } from "./ProductOptionsSheet";
 import { checkoutMessageKey, moneyTaken, orderPhase, writeActiveOrder, type ActiveOrder } from "./status";
-import type { CatalogProduct, PaymentInfo } from "./types";
+import type { CatalogProduct, PaymentInfo, PayMethod } from "./types";
 import { useOrderData, useOrderProgress, useQuote } from "./useOrderData";
 
 function defaultVariant(product: CatalogProduct) {
@@ -105,12 +105,17 @@ export function OrderApp({ token }: { token: string }) {
   const tracked = useOrderProgress(order?.tracking ?? null);
   const phase = orderPhase(tracked);
 
-  const initiatePayment = async (orderId: string, key: string) => {
+  const methods: PayMethod[] = data?.table.payment_methods?.length ? data.table.payment_methods : ["qris"];
+  const [picked, setPicked] = useState<PayMethod | null>(null);
+  const method = picked && methods.includes(picked) ? picked : methods[0];
+
+  // One key per method: retrying the same method replays, switching makes a new attempt.
+  const initiatePayment = async (orderId: string, key: string, via: PayMethod) => {
     const { payment: created } = await apiFetch<{ payment: PaymentInfo }>(
       `/api/v1/public/guest/orders/${encodeURIComponent(orderId)}/payments`,
-      { method: "POST", body: { idempotency_key: key } }
+      { method: "POST", body: { idempotency_key: `${key}_${via}`, method: via } }
     );
-    setPayment(created);
+    setPayment({ ...created, method: created.method ?? via });
     setViewingPayment(true);
   };
 
@@ -124,7 +129,7 @@ export function OrderApp({ token }: { token: string }) {
       setPayment(savedPayment);
       setViewingPayment(true);
     } else {
-      initiatePayment(saved.id, saved.payKey).catch(() => setCheckoutError(t.checkoutFailed));
+      initiatePayment(saved.id, saved.payKey, method).catch(() => setCheckoutError(t.checkoutFailed));
     }
     // initiatePayment only uses stable setters; the ref limits this to one run.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -177,7 +182,7 @@ export function OrderApp({ token }: { token: string }) {
       setOrder({ id: created.order.id, number: created.order.order_number, tracking: created.tracking_token ?? null, payKey });
       dispatch({ type: "clear" });
       setCartOpen(false);
-      await initiatePayment(created.order.id, payKey);
+      await initiatePayment(created.order.id, payKey, method);
     } catch (err) {
       const code = err instanceof ApiError ? (err.details as { code?: unknown } | undefined)?.code : undefined;
       setCheckoutError(t[checkoutMessageKey(code)]);
@@ -188,13 +193,17 @@ export function OrderApp({ token }: { token: string }) {
     }
   };
 
-  const newQr = async () => {
+  // A fresh attempt: a new QR after expiry, or another method; the server cancels the open one.
+  const newAttempt = async (via: PayMethod) => {
     if (!order) return;
+    setPicked(via);
     setPlacing(true);
+    setCheckoutError(null);
     try {
-      await initiatePayment(order.id, `pay_${crypto.randomUUID()}`);
-    } catch {
-      setCheckoutError(t.checkoutFailed);
+      await initiatePayment(order.id, `pay_${crypto.randomUUID()}`, via);
+    } catch (err) {
+      const code = err instanceof ApiError ? (err.details as { code?: unknown } | undefined)?.code : undefined;
+      setCheckoutError(t[checkoutMessageKey(code)]);
     } finally {
       setPlacing(false);
     }
@@ -209,7 +218,7 @@ export function OrderApp({ token }: { token: string }) {
     }
     setPlacing(true);
     try {
-      await initiatePayment(order.id, order.payKey);
+      await initiatePayment(order.id, order.payKey, method);
     } catch {
       setCheckoutError(t.checkoutFailed);
     } finally {
@@ -236,7 +245,10 @@ export function OrderApp({ token }: { token: string }) {
           orderNumber={tracked?.order_number ?? order.number}
           status={tracked?.status}
           retrying={placing}
-          onNewQr={newQr}
+          error={checkoutError}
+          methods={methods}
+          onNewQr={() => void newAttempt(payment.method ?? method)}
+          onSwitch={(via) => void newAttempt(via)}
           onBack={() => setViewingPayment(false)}
           onOrderAgain={startOver}
         />
@@ -344,6 +356,9 @@ export function OrderApp({ token }: { token: string }) {
           placing={placing}
           error={checkoutError}
           canOrder={table.ordering_open}
+          methods={methods}
+          method={method}
+          onMethod={setPicked}
           onPay={checkout}
           onClose={() => setCartOpen(false)}
         />

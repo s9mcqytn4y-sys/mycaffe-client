@@ -48,7 +48,11 @@ export interface TableInfo {
   label: string;
   ordering_open: boolean;
   closed_reason?: string;
+  // Guest methods the store enabled; older APIs omit it, which means QRIS only.
+  payment_methods?: PayMethod[];
 }
+
+export type PayMethod = "qris" | "gopay" | "shopeepay";
 
 export interface StoreCms {
   primary_hex?: string;
@@ -78,7 +82,9 @@ export interface Quote {
 
 export interface PaymentInfo {
   id: string;
+  method?: PayMethod;
   qr_string?: string;
+  deeplink_url?: string;
   expires_at?: string;
   amount: number;
 }

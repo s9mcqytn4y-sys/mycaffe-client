@@ -167,6 +167,10 @@ test("tab ditutup sebelum bayar: membuka URL meja lagi menampilkan QR yang sama"
   await addAndOpenCart(page);
   await page.getByRole("button", { name: "Bayar Rp 28.750" }).click();
   await expect(page.getByRole("heading", { name: "Pindai QRIS" })).toBeVisible();
+  // The record is written in an effect after paint; close the tab only once it is stored.
+  await expect
+    .poll(() => page.evaluate(() => Object.keys(localStorage).some((k) => k.startsWith("cassy_active_order_"))))
+    .toBe(true);
   await page.close();
 
   const again = await context.newPage();
@@ -208,6 +212,44 @@ test("keranjang tidak menampilkan varian tunggal", async ({ page }) => {
   await mockStore(page);
   await addAndOpenCart(page);
   await expect(page.getByRole("dialog")).not.toContainText("Reguler");
+});
+
+test("bayar dengan GoPay membuka aplikasi lalu bisa pindah ke QRIS", async ({ page }) => {
+  await mockStore(page, { payment_methods: ["qris", "gopay", "shopeepay"] });
+  await mockCheckout(page);
+  const bodies: { method?: string; idempotency_key?: string }[] = [];
+  await page.route("**/api/v1/public/guest/orders/o1/payments", (r) => {
+    const body = r.request().postDataJSON();
+    bodies.push(body);
+    return body.method === "gopay"
+      ? r.fulfill(json({ payment: { id: "p2", method: "gopay", amount: 28750, deeplink_url: "gojek://gopay/merchanttransfer?tref=1" } }, 201))
+      : r.fulfill(json({ payment: { id: "p3", method: "qris", qr_string: "00020101", amount: 28750 } }, 201));
+  });
+
+  await addAndOpenCart(page);
+  await page.getByRole("dialog").getByText("GoPay", { exact: true }).click();
+  await page.getByRole("button", { name: "Bayar Rp 28.750" }).click();
+  await expect(page.getByRole("link", { name: "Buka aplikasi untuk membayar" })).toHaveAttribute("href", "gojek://gopay/merchanttransfer?tref=1");
+  expect(bodies[0].method).toBe("gopay");
+
+  await page.getByRole("button", { name: "QRIS" }).click();
+  await expect(page.getByRole("heading", { name: "Pindai QRIS" })).toBeVisible();
+  expect(bodies[1].method).toBe("qris");
+  expect(bodies[1].idempotency_key).not.toBe(bodies[0].idempotency_key);
+});
+
+test("deeplink berbahaya tidak dijadikan tautan", async ({ page }) => {
+  await mockStore(page, { payment_methods: ["qris", "shopeepay"] });
+  await mockCheckout(page);
+  await page.route("**/api/v1/public/guest/orders/o1/payments", (r) =>
+    r.fulfill(json({ payment: { id: "p2", method: "shopeepay", amount: 28750, deeplink_url: "javascript:alert(1)" } }, 201))
+  );
+  await addAndOpenCart(page);
+  await page.getByRole("dialog").getByText("ShopeePay", { exact: true }).click();
+  await page.getByRole("button", { name: "Bayar Rp 28.750" }).click();
+  await expect(page.getByRole("heading", { name: "ShopeePay" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Buka aplikasi untuk membayar" })).toHaveCount(0);
+  await expect(page.getByText("Metode ini sedang tidak tersedia")).toBeVisible();
 });
 
 test("URL yang tidak ada menampilkan arahan pindai ulang", async ({ page }) => {

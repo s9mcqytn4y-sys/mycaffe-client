@@ -1,7 +1,7 @@
 // Run with: node --experimental-strip-types src/features/order/cart.test.mjs
 import assert from "node:assert/strict";
 import { cartReducer, optionNames, toOrderItems } from "./cart.ts";
-import { checkoutMessageKey, isFinal, moneyTaken, orderPhase, progressStep, readActiveOrder, reconnectDelay, writeActiveOrder } from "./status.ts";
+import { checkoutMessageKey, isFinal, moneyTaken, orderPhase, progressStep, readActiveOrder, reconnectDelay, safeDeeplink, writeActiveOrder } from "./status.ts";
 import { menuSections } from "./menu.ts";
 
 const latte = { productId: "p1", variantId: "v1", name: "Latte", options: [], quantity: 1, notes: "" };
@@ -82,4 +82,12 @@ assert.deepEqual(
   [["Makanan", ["toast"]], ["Minuman", ["tea"]], ["Lainnya", ["mystery", "old"]]],
   "category order kept, empty skipped, unknown last"
 );
+assert.equal(safeDeeplink("gojek://gopay/merchanttransfer?tref=1"), "gojek://gopay/merchanttransfer?tref=1");
+assert.equal(safeDeeplink("https://simulator.sandbox.midtrans.com/pay/1"), "https://simulator.sandbox.midtrans.com/pay/1");
+assert.equal(safeDeeplink("javascript:alert(1)"), null);
+assert.equal(safeDeeplink(" JavaScript:alert(1)"), null, "case and leading space do not slip through");
+assert.equal(safeDeeplink("data:text/html,x"), null);
+assert.equal(safeDeeplink("not a url"), null);
+assert.equal(safeDeeplink(undefined), null);
+assert.equal(checkoutMessageKey("INVALID_PAYMENT"), "methodUnavailable");
 console.log("cart ok");

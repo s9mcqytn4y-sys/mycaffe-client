@@ -36,8 +36,20 @@ const CHECKOUT_MESSAGES: Record<string, keyof Messages> = {
   STORE_CLOSED: "storeClosed",
   TABLE_INACTIVE: "tableInactive",
   UNPAID_ORDER_LIMIT: "unpaidLimit",
-  TOO_MANY_REQUESTS: "tooManyAttempts"
+  TOO_MANY_REQUESTS: "tooManyAttempts",
+  INVALID_PAYMENT: "methodUnavailable"
 };
+
+// The link comes from Midtrans through our API; still never hand a script or data URL to the browser.
+export function safeDeeplink(url?: string): string | null {
+  if (!url) return null;
+  try {
+    const scheme = new URL(url).protocol;
+    return ["javascript:", "data:", "file:", "vbscript:", "blob:"].includes(scheme) ? null : url;
+  } catch {
+    return null;
+  }
+}
 
 export function checkoutMessageKey(code: unknown): keyof Messages {
   return (typeof code === "string" && CHECKOUT_MESSAGES[code]) || "checkoutFailed";
