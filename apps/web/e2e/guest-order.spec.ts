@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { json, mockCheckout, mockStore } from "./mocks";
+import { CATALOG, json, mockCheckout, mockStore } from "./mocks";
 
 test("tamu memesan, membayar QRIS, dan melihat status", async ({ page }) => {
   await mockStore(page);
@@ -34,7 +34,7 @@ test("tamu memesan, membayar QRIS, dan melihat status", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "Pembayaran diterima" })).toBeVisible({ timeout: 15000 });
   await expect(page.getByText("A-014")).toBeVisible();
-  await expect(page.getByText("Sedang disiapkan")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Perjalanan pesanan" }).locator('[aria-current="step"]')).toHaveText("Sedang disiapkan");
 });
 
 test("pilihan wajib harus diisi sebelum masuk keranjang", async ({ page }) => {
@@ -181,6 +181,33 @@ test("tab ditutup sebelum bayar: membuka URL meja lagi menampilkan QR yang sama"
   await again.goto("/order/T1");
   await expect(again.getByRole("heading", { name: "Pindai QRIS" })).toBeVisible();
   expect(orderPosts).toBe(0);
+});
+
+test("menu satu daftar: tap kategori melompat ke bagiannya", async ({ page }) => {
+  await mockStore(page);
+  const breads = Array.from({ length: 8 }, (_, i) => ({
+    id: `b${i}`,
+    category_id: "bread",
+    name: `Roti ${i + 1}`,
+    available: true,
+    variants: [{ id: `vb${i}`, name: "Reguler", price: 18000, is_default: true, available: true }],
+    modifier_groups: []
+  }));
+  await page.route("**/api/v1/public/stores/senja/catalog", (r) =>
+    r.fulfill(json({ categories: [...CATALOG.categories, { id: "bread", name: "Roti" }], products: [...CATALOG.products, ...breads] }))
+  );
+  await page.goto("/order/T1");
+  await expect(page.getByRole("heading", { level: 2, name: "Kopi" })).toBeVisible();
+  const nav = page.getByRole("navigation", { name: "Kategori menu" });
+  await nav.getByRole("button", { name: "Roti" }).click();
+  await expect(page.getByRole("heading", { level: 2, name: "Roti" })).toBeInViewport();
+  await expect(nav.getByRole("button", { name: "Roti" })).toHaveAttribute("aria-current", "true");
+});
+
+test("keranjang tidak menampilkan varian tunggal", async ({ page }) => {
+  await mockStore(page);
+  await addAndOpenCart(page);
+  await expect(page.getByRole("dialog")).not.toContainText("Reguler");
 });
 
 test("URL yang tidak ada menampilkan arahan pindai ulang", async ({ page }) => {

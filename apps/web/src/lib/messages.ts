@@ -9,7 +9,6 @@ const id = {
   table: "Meja",
   closedTitle: "Pemesanan lewat QR sedang tutup",
   closedBody: "Anda tetap bisa melihat menu. Untuk memesan, hubungi staf gerai.",
-  allMenu: "Semua",
   categories: "Kategori menu",
   emptyTitle: "Menu belum tersedia",
   emptyBody: "Gerai belum menampilkan menu di kategori ini.",
@@ -101,7 +100,9 @@ const id = {
   legalLoading: "Memuat dokumen",
   legalFailed: "Dokumen belum bisa dimuat",
   legalFailedBody: "Periksa koneksi Anda, lalu coba lagi.",
-  legalEmpty: "Belum ada dokumen yang diterbitkan"
+  legalEmpty: "Belum ada dokumen yang diterbitkan",
+  otherMenu: "Lainnya",
+  progressLabel: "Perjalanan pesanan"
 };
 
 export type Messages = typeof id;
@@ -117,7 +118,6 @@ const en: Messages = {
   table: "Table",
   closedTitle: "QR ordering is closed right now",
   closedBody: "You can still read the menu. To order, please ask the staff.",
-  allMenu: "All",
   categories: "Menu categories",
   emptyTitle: "No menu yet",
   emptyBody: "This store has no items in this category.",
@@ -209,7 +209,9 @@ const en: Messages = {
   legalLoading: "Loading documents",
   legalFailed: "The documents could not load",
   legalFailedBody: "Check your connection and try again.",
-  legalEmpty: "No documents have been published yet"
+  legalEmpty: "No documents have been published yet",
+  otherMenu: "Other",
+  progressLabel: "Order progress"
 };
 
 export const MESSAGES = { "id-ID": id, "en-US": en };

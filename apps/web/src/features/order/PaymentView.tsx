@@ -6,14 +6,33 @@ import { QrCodeSvg } from "@/components/QrCodeSvg";
 import { apiFetch } from "@/lib/api";
 import { formatIdr } from "@/lib/format";
 import type { Messages } from "@/lib/messages";
-import type { OrderPhase } from "./status";
+import { progressStep, type OrderPhase } from "./status";
 import type { PaymentInfo } from "./types";
 
-function statusText(t: Messages, status: string | undefined): string {
-  if (status === "preparing") return t.statusPreparing;
-  if (status === "ready") return t.statusReady;
-  if (status === "served" || status === "completed") return t.statusServed;
-  return t.statusReceived;
+const stepLabels = (t: Messages) => [t.statusReceived, t.statusPreparing, t.statusReady, t.statusServed];
+
+function ProgressSteps({ status }: { status?: string }) {
+  const { t } = useLocale();
+  const step = progressStep(status);
+  const labels = stepLabels(t);
+  return (
+    <>
+      <p aria-live="polite" className="mt-4 text-base">
+        {t.statusLabel}: <strong>{labels[step]}</strong>
+      </p>
+      <ol aria-label={t.progressLabel} className="mt-4 flex gap-2">
+        {labels.slice(0, 3).map((label, i) => (
+          <li
+            key={label}
+            aria-current={i === Math.min(step, 2) && step < 3 ? "step" : undefined}
+            className={`flex-1 border-t-4 pt-2 text-xs font-semibold ${i <= step ? "border-brand text-ink" : "border-subtle text-subink"}`}
+          >
+            {label}
+          </li>
+        ))}
+      </ol>
+    </>
+  );
 }
 
 export function PaymentView({
@@ -96,9 +115,7 @@ export function PaymentView({
             <span className="block text-4xl font-bold text-ink">{orderNumber}</span>
           </p>
         ) : null}
-        <p aria-live="polite" className="mt-4 text-base">
-          {t.statusLabel}: <strong>{statusText(t, status)}</strong>
-        </p>
+        <ProgressSteps status={status} />
 
         <form onSubmit={sendReceipt} className="mt-8">
           <label htmlFor="receipt-email" className="block text-sm font-bold">

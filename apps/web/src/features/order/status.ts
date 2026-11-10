@@ -43,6 +43,14 @@ export function checkoutMessageKey(code: unknown): keyof Messages {
   return (typeof code === "string" && CHECKOUT_MESSAGES[code]) || "checkoutFailed";
 }
 
+/** 0 received, 1 preparing, 2 ready, 3 served: how far a paid order has moved through the kitchen. */
+export function progressStep(status?: string): number {
+  if (status === "preparing") return 1;
+  if (status === "ready") return 2;
+  if (status === "served" || status === "completed") return 3;
+  return 0;
+}
+
 // After these the tracker has nothing left to report.
 export function isFinal(progress?: OrderProgress | null): boolean {
   return ["served", "completed", "cancelled"].includes(progress?.status ?? "") || orderPhase(progress) === "refunded";

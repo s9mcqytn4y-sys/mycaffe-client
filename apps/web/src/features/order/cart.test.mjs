@@ -1,7 +1,8 @@
 // Run with: node --experimental-strip-types src/features/order/cart.test.mjs
 import assert from "node:assert/strict";
 import { cartReducer, optionNames, toOrderItems } from "./cart.ts";
-import { checkoutMessageKey, isFinal, moneyTaken, orderPhase, readActiveOrder, reconnectDelay, writeActiveOrder } from "./status.ts";
+import { checkoutMessageKey, isFinal, moneyTaken, orderPhase, progressStep, readActiveOrder, reconnectDelay, writeActiveOrder } from "./status.ts";
+import { menuSections } from "./menu.ts";
 
 const latte = { productId: "p1", variantId: "v1", name: "Latte", options: [], quantity: 1, notes: "" };
 const oat = { ...latte, options: [{ optionId: "oat", subOptionIds: ["b", "a"] }] };
@@ -68,4 +69,17 @@ assert.equal(readActiveOrder("T1", 3 * 60 * 60 * 1000 + 1), null, "older than th
 assert.equal(store.size, 0, "an expired record is removed");
 store.set("cassy_active_order_T2", JSON.stringify(active));
 assert.equal(readActiveOrder("T2"), null, "a record without savedAt is ignored");
+assert.deepEqual(["queued", "preparing", "ready", "served", "completed", undefined].map(progressStep), [0, 1, 2, 3, 3, 0]);
+
+const product = (id, category_id) => ({ id, category_id });
+const sections = menuSections(
+  [{ id: "food", name: "Makanan" }, { id: "empty", name: "Kosong" }, { id: "drink", name: "Minuman" }],
+  [product("tea", "drink"), product("toast", "food"), product("mystery", null), product("old", "archived")],
+  "Lainnya"
+);
+assert.deepEqual(
+  sections.map((s) => [s.name, s.products.map((p) => p.id)]),
+  [["Makanan", ["toast"]], ["Minuman", ["tea"]], ["Lainnya", ["mystery", "old"]]],
+  "category order kept, empty skipped, unknown last"
+);
 console.log("cart ok");
