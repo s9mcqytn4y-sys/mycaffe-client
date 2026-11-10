@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Icon } from "@/components/Icon";
 import { useLocale } from "@/components/Providers";
 import { Sheet } from "@/components/Sheet";
 import { formatIdr } from "@/lib/format";
@@ -80,18 +81,18 @@ export function CartSheet({
                   type="button"
                   aria-label={`${t.decrease} ${line.name}`}
                   onClick={() => dispatch({ type: "setQuantity", key: line.key, quantity: line.quantity - 1 })}
-                  className="btn-secondary h-11 w-11 text-lg font-bold"
+                  className="btn-secondary h-11 w-11 rounded-full"
                 >
-                  -
+                  <Icon name="minus" size={18} />
                 </button>
                 <span className="min-w-6 text-center font-bold">{line.quantity}</span>
                 <button
                   type="button"
                   aria-label={`${t.increase} ${line.name}`}
                   onClick={() => dispatch({ type: "setQuantity", key: line.key, quantity: line.quantity + 1 })}
-                  className="btn-secondary h-11 w-11 text-lg font-bold"
+                  className="btn-secondary h-11 w-11 rounded-full"
                 >
-                  +
+                  <Icon name="plus" size={18} />
                 </button>
               </div>
             </li>

@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="id" data-theme="light" suppressHydrationWarning>
       <body
         className={`${font.className} flex min-h-dvh flex-col bg-canvas text-ink antialiased`}
-        style={{ "--font-display": font.style.fontFamily } as React.CSSProperties}
+        style={{ "--font-jakarta": font.style.fontFamily } as React.CSSProperties}
       >
         <LocaleProvider>
           <SkipLink />

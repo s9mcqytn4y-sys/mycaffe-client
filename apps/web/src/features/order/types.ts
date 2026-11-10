@@ -57,6 +57,8 @@ export type PayMethod = "qris" | "gopay" | "shopeepay";
 export interface StoreCms {
   primary_hex?: string;
   hero_banner_url?: string;
+  hero_subtitle_id?: string;
+  hero_subtitle_en?: string;
   announcement_banner_id?: string;
   announcement_banner_en?: string;
   hide_powered_by_badge?: boolean;

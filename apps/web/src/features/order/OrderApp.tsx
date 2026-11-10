@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { Icon } from "@/components/Icon";
 import { useLocale } from "@/components/Providers";
 import { DataStateBox } from "@/components/Shell";
 import { ApiError, apiFetch } from "@/lib/api";
@@ -21,16 +22,27 @@ function defaultVariant(product: CatalogProduct) {
   return product.variants.find((v) => v.is_default && v.available) ?? product.variants.find((v) => v.available);
 }
 
-function ProductRow({
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0] ?? "")
+    .join("")
+    .toUpperCase();
+
+/** Photo-led card: the photo opens the details sheet, the round button adds or opens the choices. */
+function ProductCard({
   product,
   canOrder,
-  onChoose,
-  onQuickAdd
+  onOpen,
+  onQuickAdd,
+  eager
 }: {
   product: CatalogProduct;
   canOrder: boolean;
-  onChoose: () => void;
+  onOpen: () => void;
   onQuickAdd: () => void;
+  eager: boolean;
 }) {
   const { t } = useLocale();
   const variant = defaultVariant(product);
@@ -39,29 +51,37 @@ function ProductRow({
   const needsChoice = product.variants.length > 1 || product.modifier_groups.length > 0;
 
   return (
-    <li className="flex gap-4 py-4">
-      {product.image_url ? <ProductImage src={product.image_url} alt={product.name} width={96} height={96} className="h-24 w-24" /> : null}
-      <div className="min-w-0 flex-1">
-        <h3 className="text-base font-bold">{product.name}</h3>
-        {product.description ? <p className="mt-0.5 line-clamp-2 text-sm text-subink">{product.description}</p> : null}
-        <div className="mt-2 flex items-center justify-between gap-3">
-          <span className="font-bold">{variant ? formatIdr(variant.price) : ""}</span>
-          {soldOut ? (
-            <span className="text-sm font-semibold text-subink">{t.soldOut}</span>
-          ) : bundled ? (
-            <span className="text-sm text-subink">{t.askStaff}</span>
-          ) : canOrder ? (
-            <button
-              type="button"
-              aria-label={`${needsChoice ? t.choose : t.add} ${product.name}`}
-              onClick={needsChoice ? onChoose : onQuickAdd}
-              className="btn-primary min-h-[44px] px-4 text-sm font-bold"
-            >
-              {needsChoice ? t.choose : t.add}
-            </button>
-          ) : null}
-        </div>
+    <li className="min-w-0">
+      <div className="relative">
+        <button
+          type="button"
+          aria-label={`${t.details} ${product.name}`}
+          onClick={onOpen}
+          className={`block w-full overflow-hidden rounded-2xl ${soldOut ? "opacity-50" : ""}`}
+        >
+          {product.image_url ? (
+            <ProductImage src={product.image_url} alt="" width={320} height={320} eager={eager} className="aspect-square w-full" />
+          ) : (
+            <span aria-hidden="true" className="grid aspect-square w-full place-items-center bg-muted text-2xl font-bold text-subink">
+              {initials(product.name)}
+            </span>
+          )}
+        </button>
+        {!soldOut && !bundled && canOrder ? (
+          <button
+            type="button"
+            aria-label={`${needsChoice ? t.choose : t.add} ${product.name}`}
+            onClick={needsChoice ? onOpen : onQuickAdd}
+            className="btn-primary absolute bottom-2 right-2 h-11 w-11 rounded-full shadow-md"
+          >
+            <Icon name="plus" />
+          </button>
+        ) : null}
       </div>
+      <h3 className="mt-2 line-clamp-2 text-sm font-bold leading-snug">{product.name}</h3>
+      <p className="mt-0.5 text-base font-bold tabular-nums">{variant ? formatIdr(variant.price) : ""}</p>
+      {soldOut ? <p className="text-xs font-semibold text-subink">{t.soldOut}</p> : null}
+      {!soldOut && bundled ? <p className="text-xs text-subink">{t.askStaff}</p> : null}
     </li>
   );
 }
@@ -146,6 +166,8 @@ export function OrderApp({ token }: { token: string }) {
   }, [data, t.table]);
 
   const sections = useMemo(() => menuSections(data?.categories ?? [], data?.products ?? [], t.otherMenu), [data, t.otherMenu]);
+  // About the first screen at 360 to 390 px: two rows of the two-column grid.
+  const eagerIds = useMemo(() => new Set(sections.flatMap((s) => s.products).slice(0, 4).map((p) => p.id)), [sections]);
   const multiVariant = useMemo(() => new Set((data?.products ?? []).filter((p) => p.variants.length > 1).map((p) => p.id)), [data]);
   const itemCount = lines.reduce((sum, l) => sum + l.quantity, 0);
 
@@ -157,6 +179,7 @@ export function OrderApp({ token }: { token: string }) {
 
   const { table, cms } = data;
   const announcement = locale === "en-US" ? cms.announcement_banner_en : cms.announcement_banner_id;
+  const tagline = locale === "en-US" ? cms.hero_subtitle_en : cms.hero_subtitle_id;
   const brand = brandVariables(cms.primary_hex) as React.CSSProperties;
 
   const checkout = async () => {
@@ -257,7 +280,7 @@ export function OrderApp({ token }: { token: string }) {
   }
 
   return (
-    <div style={brand} className="mx-auto max-w-lg pb-28">
+    <div style={brand} className="mx-auto max-w-lg pb-28 md:max-w-3xl">
       {cms.hero_banner_url ? (
         <img
           src={cms.hero_banner_url}
@@ -269,9 +292,14 @@ export function OrderApp({ token }: { token: string }) {
         />
       ) : null}
       <header className="px-5 pt-5">
-        <h1 className="text-2xl font-bold">{table.store_name}</h1>
-        <p className="text-sm text-subink">{table.label || `${t.table} ${table.table_number}`}</p>
-        {announcement ? <p className="mt-2 text-sm">{announcement}</p> : null}
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-3xl font-extrabold leading-tight">{table.store_name}</h1>
+          <p className="mt-1 shrink-0 rounded-full bg-muted px-3 py-1 text-sm font-semibold">
+            {table.label || `${t.table} ${table.table_number}`}
+          </p>
+        </div>
+        {tagline ? <p className="mt-1 text-sm text-subink">{tagline}</p> : null}
+        {announcement ? <p className="mt-3 rounded-lg bg-muted px-3 py-2 text-sm">{announcement}</p> : null}
       </header>
 
       {order && !viewingPayment ? (
@@ -301,13 +329,14 @@ export function OrderApp({ token }: { token: string }) {
               <h2 id={sectionId(section.id)} className="scroll-mt-16 text-lg font-bold">
                 {section.name}
               </h2>
-              <ul>
+              <ul className="mt-3 grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3">
                 {section.products.map((product) => (
-                  <ProductRow
+                  <ProductCard
                     key={product.id}
                     product={product}
                     canOrder={table.ordering_open}
-                    onChoose={() => setOptionsFor(product)}
+                    eager={eagerIds.has(product.id)}
+                    onOpen={() => setOptionsFor(product)}
                     onQuickAdd={() =>
                       dispatch({
                         type: "add",
@@ -325,8 +354,11 @@ export function OrderApp({ token }: { token: string }) {
       {itemCount > 0 ? (
         <div className="fixed inset-x-0 bottom-0 z-20 flex justify-center bg-surface p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <button type="button" onClick={() => setCartOpen(true)} className="btn-primary mx-auto flex min-h-[56px] w-full max-w-lg items-center justify-between px-5 text-base font-bold">
-            <span>{t.viewCart} ({itemCount} {t.items})</span>
-            <span>{quote ? formatIdr(quote.total_amount) : ""}</span>
+            <span className="flex items-center gap-2">
+              <Icon name="bag" />
+              {t.viewCart} ({itemCount} {t.items})
+            </span>
+            <span className="tabular-nums">{quote ? formatIdr(quote.total_amount) : ""}</span>
           </button>
         </div>
       ) : null}
