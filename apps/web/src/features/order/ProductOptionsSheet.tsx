@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useLocale } from "@/components/Providers";
+import { Icon } from "@/components/Icon";
 import { Sheet } from "@/components/Sheet";
 import { formatIdr } from "@/lib/format";
 import type { CartLine, SelectedOption } from "./cart";
@@ -164,9 +165,9 @@ export function ProductOptionsSheet({
             aria-label={t.decrease}
             disabled={quantity <= 1}
             onClick={() => setQuantity((q) => q - 1)}
-            className="btn-secondary h-11 w-11 text-lg font-bold"
+            className="btn-secondary h-11 w-11 rounded-full"
           >
-            -
+            <Icon name="minus" size={18} />
           </button>
           <span aria-live="polite" className="min-w-6 text-center font-bold">
             {quantity}
@@ -175,9 +176,9 @@ export function ProductOptionsSheet({
             type="button"
             aria-label={t.increase}
             onClick={() => setQuantity((q) => q + 1)}
-            className="btn-secondary h-11 w-11 text-lg font-bold"
+            className="btn-secondary h-11 w-11 rounded-full"
           >
-            +
+            <Icon name="plus" size={18} />
           </button>
         </div>
       </div>

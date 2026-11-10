@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { Icon } from "@/components/Icon";
 import { useLocale } from "@/components/Providers";
 import { QrCodeSvg } from "@/components/QrCodeSvg";
 import { apiFetch } from "@/lib/api";
@@ -13,9 +14,17 @@ import type { PaymentInfo, PayMethod } from "./types";
 const stepLabels = (t: Messages) => [t.statusReceived, t.statusPreparing, t.statusReady, t.statusServed];
 
 function ProgressSteps({ status }: { status?: string }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const step = progressStep(status);
   const labels = stepLabels(t);
+  // Times are only for steps this page saw happen; a step already reached on load has no honest time.
+  const [reachedAt, setReachedAt] = useState<Record<number, string>>({});
+  const firstStep = useRef(step);
+  useEffect(() => {
+    if (step === firstStep.current) return;
+    const now = new Date().toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+    setReachedAt((prev) => (prev[step] ? prev : { ...prev, [step]: now }));
+  }, [step, locale]);
   return (
     <>
       <p aria-live="polite" className="mt-4 text-base">
@@ -26,9 +35,12 @@ function ProgressSteps({ status }: { status?: string }) {
           <li
             key={label}
             aria-current={i === Math.min(step, 2) && step < 3 ? "step" : undefined}
-            className={`flex-1 border-t-4 pt-2 text-xs font-semibold ${i <= step ? "border-brand text-ink" : "border-subtle text-subink"}`}
+            className={`flex-1 border-t-4 pt-2 text-xs font-semibold transition-colors duration-150 ${
+              i <= step ? "border-brand text-ink" : "border-subtle text-subink"
+            }`}
           >
             {label}
+            {reachedAt[i] ? <span className="block font-normal tabular-nums text-subink">{reachedAt[i]}</span> : null}
           </li>
         ))}
       </ol>
@@ -97,7 +109,10 @@ export function PaymentView({
     const body = phase === "refunded" ? t.refundedBody : moneyTaken ? t.cancelledPaidBody : t.cancelledBody;
     return (
       <section className="mx-auto max-w-md px-5 py-10">
-        <h1 className="text-2xl font-bold">{title}</h1>
+        <span className="inline-block text-[var(--state-err-fg)] motion-safe:animate-shake">
+          <Icon name="cross" size={56} />
+        </span>
+        <h1 className="mt-3 text-2xl font-bold">{title}</h1>
         {orderNumber ? (
           <p className="mt-6 text-sm text-subink">
             {t.orderNumber}
@@ -115,7 +130,10 @@ export function PaymentView({
   if (phase === "paid") {
     return (
       <section className="mx-auto max-w-md px-5 py-10">
-        <h1 className="text-2xl font-bold">{t.paidTitle}</h1>
+        <span className="inline-block text-[var(--state-ok-fg)] motion-safe:animate-pop">
+          <Icon name="check" size={56} />
+        </span>
+        <h1 className="mt-3 text-2xl font-bold">{t.paidTitle}</h1>
         {orderNumber ? (
           <p className="mt-6 text-sm text-subink">
             {t.orderNumber}
@@ -170,8 +188,11 @@ export function PaymentView({
       <p className="mt-5 text-3xl font-bold">{formatIdr(payment.amount)}</p>
 
       {expired ? (
-        <div role="alert" className="mt-6">
-          <p className="font-semibold">{t.expired}</p>
+        <div role="alert" className="mt-6 flex flex-col items-center">
+          <span className="text-[var(--state-err-fg)] motion-safe:animate-shake">
+            <Icon name="cross" size={40} />
+          </span>
+          <p className="mt-2 font-semibold">{t.expired}</p>
           <button type="button" disabled={retrying} onClick={onNewQr} className="btn-primary mt-3 min-h-[56px] px-6 font-bold">
             {t.newQr}
           </button>

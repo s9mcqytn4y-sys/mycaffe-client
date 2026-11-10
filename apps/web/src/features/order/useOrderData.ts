@@ -138,6 +138,7 @@ export function useOrderProgress(trackingToken: string | null) {
       socket?.close();
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("pageshow", onVisible);
+      window.removeEventListener("online", onVisible);
     };
     const poll = async () => {
       try {
@@ -170,6 +171,7 @@ export function useOrderProgress(trackingToken: string | null) {
     timer = setInterval(() => void poll(), POLL_MS);
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("pageshow", onVisible);
+    window.addEventListener("online", onVisible);
     void poll();
     void connect();
     return stop;
