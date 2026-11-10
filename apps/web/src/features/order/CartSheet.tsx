@@ -123,7 +123,8 @@ export function CartSheet({
             className="input-field mt-1 w-full"
           />
           <p id="guest-name-hint" className="mt-1 text-xs text-subink">
-            {t.guestNameHint}
+            {t.guestNameHint}{" "}
+            <a href="/legal" target="_blank" rel="noopener" className="underline">{t.legal}</a>
           </p>
 
           {error ? (

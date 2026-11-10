@@ -10,6 +10,7 @@ import { CartSheet } from "./CartSheet";
 import { cartReducer, toOrderItems, type CartLine } from "./cart";
 import { PaymentView } from "./PaymentView";
 import { ProductOptionsSheet } from "./ProductOptionsSheet";
+import { checkoutMessageKey, moneyTaken, orderPhase, writeActiveOrder, type ActiveOrder } from "./status";
 import type { CatalogProduct, PaymentInfo } from "./types";
 import { useOrderData, useOrderProgress, useQuote } from "./useOrderData";
 
@@ -81,8 +82,9 @@ export function OrderApp({ token }: { token: string }) {
   const [guestName, setGuestName] = useState("");
   const [placing, setPlacing] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [order, setOrder] = useState<{ id: string; number?: string; tracking: string | null } | null>(null);
+  const [order, setOrder] = useState<ActiveOrder["order"] | null>(null);
   const [payment, setPayment] = useState<PaymentInfo | null>(null);
+  const [viewingPayment, setViewingPayment] = useState(false);
   const attemptKey = useRef<string | null>(null);
 
   const storageKey = `cassy_cart_${token}`;
@@ -108,7 +110,36 @@ export function OrderApp({ token }: { token: string }) {
 
   const { quote, failed, loading, refresh } = useQuote(data?.table.store_slug, lines);
   const tracked = useOrderProgress(order?.tracking ?? null);
-  const paid = tracked?.payment_status === "paid";
+  const phase = orderPhase(tracked);
+
+  const initiatePayment = async (orderId: string, key: string) => {
+    const { payment: created } = await apiFetch<{ payment: PaymentInfo }>(
+      `/api/v1/public/guest/orders/${encodeURIComponent(orderId)}/payments`,
+      { method: "POST", body: { idempotency_key: key } }
+    );
+    setPayment(created);
+    setViewingPayment(true);
+  };
+
+  const resumed = useRef(false);
+  useEffect(() => {
+    if (resumed.current || !data?.resume) return;
+    resumed.current = true;
+    const { order: saved, payment: savedPayment } = data.resume;
+    setOrder(saved);
+    if (savedPayment) {
+      setPayment(savedPayment);
+      setViewingPayment(true);
+    } else {
+      initiatePayment(saved.id, saved.payKey).catch(() => setCheckoutError(t.checkoutFailed));
+    }
+    // initiatePayment only uses stable setters; the ref limits this to one run.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  useEffect(() => {
+    if (state === "ready") writeActiveOrder(token, order ? { order, payment } : null);
+  }, [state, token, order, payment]);
 
   const products = useMemo(
     () => (data?.products ?? []).filter((p) => category === "all" || p.category_id === category),
@@ -126,43 +157,35 @@ export function OrderApp({ token }: { token: string }) {
   const announcement = locale === "en-US" ? cms.announcement_banner_en : cms.announcement_banner_id;
   const brand = brandVariables(cms.primary_hex) as React.CSSProperties;
 
-  const initiatePayment = async (orderId: string, key: string) => {
-    const { payment: created } = await apiFetch<{ payment: PaymentInfo }>(
-      `/api/v1/public/guest/orders/${encodeURIComponent(orderId)}/payments`,
-      { method: "POST", body: { idempotency_key: key } }
-    );
-    setPayment(created);
-  };
-
   const checkout = async () => {
     if (!quote) return;
     setPlacing(true);
     setCheckoutError(null);
     // One key per cart state, so a retry after a dropped connection cannot create a second order.
-    attemptKey.current ??= crypto.randomUUID();
+    const key = (attemptKey.current ??= crypto.randomUUID());
     try {
       const created = await apiFetch<{ order: { id: string; order_number?: string }; tracking_token?: string }>(
         "/api/v1/public/guest/orders",
         {
           method: "POST",
           body: {
-            idempotency_key: attemptKey.current,
+            idempotency_key: key,
             customer_name: guestName.trim() || t.guestDefault,
             expected_quote_fingerprint: quote.quote_fingerprint,
             items: toOrderItems(lines)
           }
         }
       );
-      setOrder({ id: created.order.id, number: created.order.order_number, tracking: created.tracking_token ?? null });
-      await initiatePayment(created.order.id, `pay_${attemptKey.current}`);
+      const payKey = `pay_${key}`;
+      setOrder({ id: created.order.id, number: created.order.order_number, tracking: created.tracking_token ?? null, payKey });
+      dispatch({ type: "clear" });
       setCartOpen(false);
+      await initiatePayment(created.order.id, payKey);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        setCheckoutError(t.priceChanged);
-        void refresh();
-      } else {
-        setCheckoutError(t.checkoutFailed);
-      }
+      const code = err instanceof ApiError ? (err.details as { code?: unknown } | undefined)?.code : undefined;
+      setCheckoutError(t[checkoutMessageKey(code)]);
+      if (code === "GUEST_SESSION_EXPIRED") void reload();
+      else if (code === "QUOTE_CHANGED" || code === "UNAVAILABLE") void refresh();
     } finally {
       setPlacing(false);
     }
@@ -180,25 +203,44 @@ export function OrderApp({ token }: { token: string }) {
     }
   };
 
+  const resumePayment = async () => {
+    if (!order) return;
+    setCheckoutError(null);
+    if (payment) {
+      setViewingPayment(true);
+      return;
+    }
+    setPlacing(true);
+    try {
+      await initiatePayment(order.id, order.payKey);
+    } catch {
+      setCheckoutError(t.checkoutFailed);
+    } finally {
+      setPlacing(false);
+    }
+  };
+
   const startOver = () => {
     dispatch({ type: "clear" });
     setOrder(null);
     setPayment(null);
+    setViewingPayment(false);
     setCheckoutError(null);
   };
 
-  if (payment && order) {
+  if (payment && order && viewingPayment) {
     return (
       <div style={brand}>
         <PaymentView
           payment={payment}
-          paid={paid}
+          phase={phase}
+          moneyTaken={moneyTaken(tracked)}
           orderId={order.id}
           orderNumber={tracked?.order_number ?? order.number}
           status={tracked?.status}
           retrying={placing}
           onNewQr={newQr}
-          onBack={() => setPayment(null)}
+          onBack={() => setViewingPayment(false)}
           onOrderAgain={startOver}
         />
       </div>
@@ -222,6 +264,15 @@ export function OrderApp({ token }: { token: string }) {
         <p className="text-sm text-subink">{table.label || `${t.table} ${table.table_number}`}</p>
         {announcement ? <p className="mt-2 text-sm">{announcement}</p> : null}
       </header>
+
+      {order && !viewingPayment ? (
+        <div className="mt-4 px-5">
+          <button type="button" disabled={placing} onClick={resumePayment} className="btn-primary min-h-[56px] w-full text-base font-bold">
+            {t.resumePayment}
+          </button>
+          {checkoutError ? <p role="alert" className="mt-2 text-sm font-semibold text-[var(--state-err-fg)]">{checkoutError}</p> : null}
+        </div>
+      ) : null}
 
       {!table.ordering_open ? (
         <div className="mt-4 px-5">

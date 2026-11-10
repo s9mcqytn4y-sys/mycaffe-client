@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api";
 import { toOrderItems, type CartLine } from "./cart";
+import { readActiveOrder, writeActiveOrder, type ActiveOrder } from "./status";
 import type { CatalogCategory, CatalogProduct, Quote, StoreCms, TableInfo } from "./types";
 
 export type LoadState = "loading" | "ready" | "missing" | "failed";
@@ -12,6 +13,7 @@ export interface OrderData {
   cms: StoreCms;
   categories: CatalogCategory[];
   products: CatalogProduct[];
+  resume: ActiveOrder | null;
 }
 
 export function useOrderData(token: string) {
@@ -28,14 +30,24 @@ export function useOrderData(token: string) {
         apiFetch<{ categories?: CatalogCategory[]; products?: CatalogProduct[] }>(`/api/v1/public/stores/${slug}/catalog`),
         apiFetch<{ cms?: StoreCms }>(`/api/v1/public/stores/${slug}/cms`).catch(() => ({ cms: {} }))
       ]);
-      if (table.ordering_open) {
+      // A new session would orphan the saved order, so keep the cookie while this device still owns it.
+      let resume = readActiveOrder(token);
+      if (resume) {
+        const owned = await apiFetch<{ orders?: { id: string }[] }>("/api/v1/public/guest/orders").catch(() => null);
+        if (!owned?.orders?.some((o) => o.id === resume?.order.id)) {
+          writeActiveOrder(token, null);
+          resume = null;
+        }
+      }
+      if (table.ordering_open && !resume) {
         await apiFetch(`/api/v1/public/qr/${path}/session`, { method: "POST", body: {} });
       }
       setData({
         table,
         cms: cmsResponse.cms ?? {},
         categories: catalog.categories ?? [],
-        products: catalog.products ?? []
+        products: catalog.products ?? [],
+        resume
       });
       setState("ready");
     } catch (err) {
