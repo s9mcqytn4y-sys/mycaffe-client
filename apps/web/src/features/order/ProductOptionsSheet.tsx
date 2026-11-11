@@ -100,7 +100,18 @@ export function ProductOptionsSheet({
         )
       }))
     );
-    onAdd({ productId: product.id, variantId, name: product.name, options, quantity, notes: notes.trim() });
+    const nameOf = (groups: CatalogGroup[], id: string): string | undefined =>
+      groups.flatMap((g) => g.options).find((o) => o.id === id)?.name;
+    const details = [
+      product.variants.length > 1 ? product.variants.find((v) => v.id === variantId)?.name : undefined,
+      ...product.modifier_groups.flatMap((group) =>
+        (selection[group.id] ?? []).flatMap((optionId) => {
+          const subs = group.options.find((o) => o.id === optionId)?.sub_groups ?? [];
+          return [nameOf([group], optionId), ...subs.flatMap((sub) => (selection[sub.id] ?? []).map((id) => nameOf([sub], id)))];
+        })
+      )
+    ].filter((d): d is string => Boolean(d));
+    onAdd({ productId: product.id, variantId, name: product.name, options, quantity, notes: notes.trim(), details });
   };
 
   return (

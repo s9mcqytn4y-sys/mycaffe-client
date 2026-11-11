@@ -11,6 +11,9 @@ export interface CartLine {
   options: SelectedOption[];
   quantity: number;
   notes: string;
+  // Names of the chosen size and add-ons, kept for display so two lines of one product never look alike
+  // while the quote loads. Never sent to the API; carts saved before this field fall back to the quote.
+  details?: string[];
 }
 
 export type CartAction =

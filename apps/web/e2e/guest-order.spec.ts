@@ -338,3 +338,72 @@ test("field nama menjelaskan tujuan data dan menaut privasi", async ({ page }) =
   await expect(dialog.getByText("memanggil pesanan")).toBeVisible();
   await expect(dialog.getByRole("link", { name: "Ketentuan dan privasi" })).toHaveAttribute("href", "/legal");
 });
+
+test("keranjang: menu sama dengan pilihan beda jadi dua baris berlabel jelas sebelum total dihitung", async ({ page }) => {
+  await mockStore(page);
+  const latte = {
+    id: "latte",
+    category_id: "coffee",
+    name: "Caffe Latte",
+    available: true,
+    variants: [
+      { id: "v-r", name: "Reguler", price: 32000, is_default: true, available: true },
+      { id: "v-b", name: "Besar", price: 38000, is_default: false, available: true }
+    ],
+    modifier_groups: [
+      {
+        id: "milk",
+        name: "Susu",
+        required: true,
+        min: 1,
+        max: 1,
+        options: [
+          { id: "oat", name: "Oat", price_delta: 6000, available: true },
+          { id: "almond", name: "Almond", price_delta: 7000, available: true }
+        ]
+      }
+    ]
+  };
+  await page.route("**/api/v1/public/stores/senja/catalog", (r) => r.fulfill(json({ categories: CATALOG.categories, products: [latte] })));
+  // The quote never answers: the cart must still tell the two lines apart on its own.
+  await page.route("**/api/v1/public/stores/senja/orders/quote", () => {});
+  await page.goto("/order/T1");
+
+  for (const [size, milk] of [["Reguler", "Oat"], ["Besar", "Almond"]]) {
+    await page.getByRole("button", { name: "Pilih Caffe Latte" }).click();
+    await page.getByLabel(new RegExp(size)).check();
+    await page.getByLabel(new RegExp(milk)).check();
+    await page.getByRole("button", { name: "Masukkan keranjang" }).click();
+  }
+  await page.getByRole("button", { name: /Lihat keranjang/ }).click();
+  const rows = page.getByRole("dialog").getByRole("listitem");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0)).toContainText("Reguler, Oat");
+  await expect(rows.nth(1)).toContainText("Besar, Almond");
+  await expect(page.getByRole("button", { name: "Tambah Caffe Latte, Besar, Almond" })).toBeVisible();
+});
+
+test.describe("footer di dasar layar 390 x 844", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  const footerBottom = (page: import("@playwright/test").Page) =>
+    page.evaluate(() => Math.round(document.querySelector("footer")!.getBoundingClientRect().bottom + scrollY));
+
+  test("halaman pendek: footer menempel di bawah", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("footer")).toBeVisible();
+    expect(await footerBottom(page)).toBe(844);
+  });
+
+  test("bar keranjang tidak menutupi tautan footer", async ({ page }) => {
+    await mockStore(page);
+    await page.goto("/order/T1");
+    await page.getByRole("button", { name: "Tambah Croissant" }).click();
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const link = page.locator("footer").getByRole("link", { name: "Ketentuan dan privasi" });
+    const bar = page.locator("[data-cart-bar]");
+    const linkBox = (await link.boundingBox())!;
+    const barBox = (await bar.boundingBox())!;
+    expect(linkBox.y + linkBox.height).toBeLessThanOrEqual(barBox.y);
+  });
+});
