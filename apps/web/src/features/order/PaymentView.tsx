@@ -9,14 +9,21 @@ import { formatIdr } from "@/lib/format";
 import type { Messages } from "@/lib/messages";
 import { METHOD_LABEL } from "./CartSheet";
 import { progressStep, safeDeeplink, type OrderPhase } from "./status";
-import type { PaymentInfo, PayMethod } from "./types";
+import type { PaymentInfo, PayMethod, ServiceMode } from "./types";
 
-const stepLabels = (t: Messages) => [t.statusReceived, t.statusPreparing, t.statusReady, t.statusServed];
+// Status text per progressStep (0 received, 1 preparing, 2 ready, 3 served) and the steps drawn on the line.
+// Pickup ends when the order is ready at the bar; table service goes on until staff mark it delivered.
+function stepCopy(t: Messages, mode: ServiceMode) {
+  return mode === "table"
+    ? { status: [t.statusReceived, t.statusPreparing, t.statusOnTheWay, t.statusDelivered], line: 4 }
+    : { status: [t.statusReceived, t.statusPreparing, t.statusReady, t.statusServed], line: 3 };
+}
 
-function ProgressSteps({ status }: { status?: string }) {
+function ProgressSteps({ status, mode }: { status?: string; mode: ServiceMode }) {
   const { t, locale } = useLocale();
   const step = progressStep(status);
-  const labels = stepLabels(t);
+  const copy = stepCopy(t, mode);
+  const labels = copy.status;
   // Times are only for steps this page saw happen; a step already reached on load has no honest time.
   const [reachedAt, setReachedAt] = useState<Record<number, string>>({});
   const firstStep = useRef(step);
@@ -31,10 +38,10 @@ function ProgressSteps({ status }: { status?: string }) {
         {t.statusLabel}: <strong>{labels[step]}</strong>
       </p>
       <ol aria-label={t.progressLabel} className="mt-4 flex gap-2">
-        {labels.slice(0, 3).map((label, i) => (
+        {labels.slice(0, copy.line).map((label, i) => (
           <li
             key={label}
-            aria-current={i === Math.min(step, 2) && step < 3 ? "step" : undefined}
+            aria-current={i === step ? "step" : undefined}
             className={`flex-1 border-t-4 pt-2 text-xs font-semibold transition-colors duration-150 ${
               i <= step ? "border-brand text-ink" : "border-subtle text-subink"
             }`}
@@ -58,6 +65,9 @@ export function PaymentView({
   retrying,
   error,
   methods,
+  serviceMode,
+  muted,
+  onToggleSound,
   onNewQr,
   onSwitch,
   onBack,
@@ -72,6 +82,9 @@ export function PaymentView({
   retrying: boolean;
   error: string | null;
   methods: PayMethod[];
+  serviceMode: ServiceMode;
+  muted: boolean;
+  onToggleSound: () => void;
   onNewQr: () => void;
   onSwitch: (method: PayMethod) => void;
   onBack: () => void;
@@ -140,7 +153,10 @@ export function PaymentView({
             <span className="block text-4xl font-bold text-ink">{orderNumber}</span>
           </p>
         ) : null}
-        <ProgressSteps status={status} />
+        <ProgressSteps status={status} mode={serviceMode} />
+        <button type="button" onClick={onToggleSound} className="btn-secondary mt-4 min-h-[44px] px-4 text-sm font-semibold">
+          {muted ? t.unmuteSound : t.muteSound}
+        </button>
 
         <form onSubmit={sendReceipt} className="mt-8">
           <label htmlFor="receipt-email" className="block text-sm font-bold">

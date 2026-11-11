@@ -16,7 +16,8 @@ import { PaymentView } from "./PaymentView";
 import { ProductImage } from "./ProductImage";
 import { ProductOptionsSheet } from "./ProductOptionsSheet";
 import { checkoutMessageKey, moneyTaken, orderPhase, writeActiveOrder, type ActiveOrder } from "./status";
-import type { CatalogProduct, PaymentInfo, PayMethod } from "./types";
+import type { CatalogProduct, PaymentInfo, PayMethod, ServiceMode } from "./types";
+import { playBell, primeBell, readMuted, writeMuted } from "./bell";
 import { useOrderData, useOrderProgress, useQuote } from "./useOrderData";
 
 function defaultVariant(product: CatalogProduct) {
@@ -162,32 +163,49 @@ export function OrderApp({ token }: { token: string }) {
     if (state === "ready") writeActiveOrder(token, order && !served ? { order, payment } : null);
   }, [state, token, order, payment, tracked?.status]);
 
-  const ready = tracked?.status === "ready";
+  // The moment the guest waits for after paying: ready at the bar (pickup) or delivered to the table.
+  const serviceMode: ServiceMode = data?.table.service_mode ?? "pickup";
+  const arrived =
+    serviceMode === "table" ? tracked?.status === "served" || tracked?.status === "completed" : tracked?.status === "ready";
+  const arrivedText = serviceMode === "table" ? t.toastDelivered : t.toastReady;
+
   useEffect(() => {
     if (!data) return;
     const base = `${data.table.store_name} | ${data.table.label || `${t.table} ${data.table.table_number}`}`;
-    // A guest on another tab sees "ready" in the tab bar.
+    // A guest on another tab sees the news in the tab bar.
     const apply = () => {
-      document.title = ready && document.hidden ? `${t.toastReady} | ${base}` : base;
+      document.title = arrived && document.hidden ? `${arrivedText} | ${base}` : base;
     };
     apply();
     document.addEventListener("visibilitychange", apply);
     return () => document.removeEventListener("visibilitychange", apply);
-  }, [data, t.table, t.toastReady, ready]);
+  }, [data, t.table, arrived, arrivedText]);
 
-  // "Ready" is the moment a guest waits for after paying: toast plus a buzz on Android. Payment itself
-  // already gets its own heading and animated check, so it has no toast.
-  const [toast, setToast] = useState<string | null>(null);
-  const wasReady = useRef(ready);
+  const [muted, setMuted] = useState(false);
   useEffect(() => {
-    const changed = ready && !wasReady.current;
-    wasReady.current = ready;
+    setMuted(readMuted());
+    // Browsers allow sound only after a tap; the first tap anywhere unlocks the bell for later.
+    window.addEventListener("pointerdown", primeBell, { once: true });
+    return () => window.removeEventListener("pointerdown", primeBell);
+  }, []);
+  const toggleSound = () => {
+    writeMuted(!muted);
+    setMuted(!muted);
+  };
+
+  // Payment itself gets its own heading and animated check, so only this moment has a toast.
+  const [toast, setToast] = useState<string | null>(null);
+  const wasArrived = useRef(arrived);
+  useEffect(() => {
+    const changed = arrived && !wasArrived.current;
+    wasArrived.current = arrived;
     if (!changed) return;
     navigator.vibrate?.(200);
-    setToast(t.toastReady);
+    if (!muted && !document.hidden) playBell(serviceMode === "table" ? "delivered" : "ready");
+    setToast(arrivedText);
     const id = setTimeout(() => setToast(null), 5000);
     return () => clearTimeout(id);
-  }, [ready, t.toastReady]);
+  }, [arrived, arrivedText, muted, serviceMode]);
 
   // Offline banner; back online re-prices the cart (the tracker re-polls on its own).
   const [online, setOnline] = useState(true);
@@ -315,6 +333,9 @@ export function OrderApp({ token }: { token: string }) {
           methods={methods}
           onNewQr={() => void newAttempt(payment.method ?? method)}
           onSwitch={(via) => void newAttempt(via)}
+          serviceMode={serviceMode}
+          muted={muted}
+          onToggleSound={toggleSound}
           onBack={() => setViewingPayment(false)}
           onOrderAgain={startOver}
         />
