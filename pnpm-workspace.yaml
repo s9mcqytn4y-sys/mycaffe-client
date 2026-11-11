@@ -2,3 +2,7 @@ packages:
   - "apps/*"
   - "packages/*"
 
+
+# next pins postcss 8.4.31, which has known advisories (GHSA-r28c-9q8g-f849 and others); the patched 8.5 line is drop-in.
+overrides:
+  "next>postcss": "^8.5.32"
