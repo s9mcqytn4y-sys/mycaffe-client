@@ -50,7 +50,11 @@ export interface TableInfo {
   closed_reason?: string;
   // Guest methods the store enabled; older APIs omit it, which means QRIS only.
   payment_methods?: PayMethod[];
+  // How the order reaches the guest; older APIs omit it, which means pickup.
+  service_mode?: ServiceMode;
 }
+
+export type ServiceMode = "pickup" | "table";
 
 export type PayMethod = "qris" | "gopay" | "shopeepay";
 

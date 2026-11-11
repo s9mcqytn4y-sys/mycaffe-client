@@ -227,6 +227,31 @@ test("pesanan siap: toast muncul dan langkah siap diberi jam", async ({ page }) 
   await expect(page.getByRole("list", { name: "Perjalanan pesanan" }).locator("li").nth(2)).toContainText(/\d{2}[.:]\d{2}/);
 });
 
+test("mode antar meja: empat langkah, toast saat diantar, pilihan bunyi diingat", async ({ page }) => {
+  await mockStore(page, { service_mode: "table" });
+  let status = "ready";
+  await mockCheckout(page);
+  await page.route("**/api/v1/public/orders/track/trk", (r) =>
+    r.fulfill(json({ status, payment_status: "paid", order_number: "A-014" }))
+  );
+  await addAndOpenCart(page);
+  await page.getByRole("button", { name: "Bayar Rp 28.750" }).click();
+  const steps = page.getByRole("list", { name: "Perjalanan pesanan" }).locator("li");
+  await expect(steps).toHaveCount(4);
+  await expect(page.getByText("Status: Sedang diantar ke meja Anda")).toBeVisible();
+  // Ready means "on its way" here, so the pickup toast must not fire.
+  await expect(page.getByText("Pesanan Anda siap diambil")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Matikan bunyi" }).click();
+  await expect(page.getByRole("button", { name: "Nyalakan bunyi" })).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem("cassy_sound_off"))).toBe("1");
+
+  status = "served";
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect(page.getByRole("status").filter({ hasText: "Pesanan sudah diantar" })).toBeVisible();
+  await expect(steps.nth(3)).toHaveAttribute("aria-current", "step");
+});
+
 test("koneksi putus menampilkan banner dan hilang saat tersambung", async ({ page, context }) => {
   await mockStore(page);
   await page.goto("/order/T1");
