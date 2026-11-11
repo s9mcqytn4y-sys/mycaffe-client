@@ -67,7 +67,9 @@ export function CartSheet({
           const priced = quote?.lines[index];
           // "Reguler" says nothing when the product has no other size.
           const variant = multiVariant.has(line.productId) ? priced?.variant_name : undefined;
-          const details = [variant, ...optionNames(priced?.selected_options)].filter(Boolean);
+          const details = line.details ?? [variant, ...optionNames(priced?.selected_options)].filter(Boolean);
+          // Two lines of one product need distinct button names for screen readers too.
+          const label = [line.name, ...details].join(", ");
           return (
             <li key={line.key} className="py-3">
               <div className="flex justify-between gap-3 text-sm font-semibold">
@@ -79,7 +81,7 @@ export function CartSheet({
               <div className="mt-2 flex items-center gap-3">
                 <button
                   type="button"
-                  aria-label={`${t.decrease} ${line.name}`}
+                  aria-label={`${t.decrease} ${label}`}
                   onClick={() => dispatch({ type: "setQuantity", key: line.key, quantity: line.quantity - 1 })}
                   className="btn-secondary h-11 w-11 rounded-full"
                 >
@@ -88,7 +90,7 @@ export function CartSheet({
                 <span className="min-w-6 text-center font-bold">{line.quantity}</span>
                 <button
                   type="button"
-                  aria-label={`${t.increase} ${line.name}`}
+                  aria-label={`${t.increase} ${label}`}
                   onClick={() => dispatch({ type: "setQuantity", key: line.key, quantity: line.quantity + 1 })}
                   className="btn-secondary h-11 w-11 rounded-full"
                 >
