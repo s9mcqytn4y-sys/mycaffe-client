@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
+import { Notices } from "@/components/Toast";
 import { useLocale } from "@/components/Providers";
 import { DataStateBox } from "@/components/Shell";
 import { ApiError, apiFetch } from "@/lib/api";
@@ -161,9 +162,50 @@ export function OrderApp({ token }: { token: string }) {
     if (state === "ready") writeActiveOrder(token, order && !served ? { order, payment } : null);
   }, [state, token, order, payment, tracked?.status]);
 
+  const ready = tracked?.status === "ready";
   useEffect(() => {
-    if (data) document.title = `${data.table.store_name} | ${data.table.label || `${t.table} ${data.table.table_number}`}`;
-  }, [data, t.table]);
+    if (!data) return;
+    const base = `${data.table.store_name} | ${data.table.label || `${t.table} ${data.table.table_number}`}`;
+    // A guest on another tab sees "ready" in the tab bar.
+    const apply = () => {
+      document.title = ready && document.hidden ? `${t.toastReady} | ${base}` : base;
+    };
+    apply();
+    document.addEventListener("visibilitychange", apply);
+    return () => document.removeEventListener("visibilitychange", apply);
+  }, [data, t.table, t.toastReady, ready]);
+
+  // "Ready" is the moment a guest waits for after paying: toast plus a buzz on Android. Payment itself
+  // already gets its own heading and animated check, so it has no toast.
+  const [toast, setToast] = useState<string | null>(null);
+  const wasReady = useRef(ready);
+  useEffect(() => {
+    const changed = ready && !wasReady.current;
+    wasReady.current = ready;
+    if (!changed) return;
+    navigator.vibrate?.(200);
+    setToast(t.toastReady);
+    const id = setTimeout(() => setToast(null), 5000);
+    return () => clearTimeout(id);
+  }, [ready, t.toastReady]);
+
+  // Offline banner; back online re-prices the cart (the tracker re-polls on its own).
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    const up = () => {
+      setOnline(true);
+      void refresh();
+    };
+    const down = () => setOnline(false);
+    setOnline(navigator.onLine);
+    window.addEventListener("online", up);
+    window.addEventListener("offline", down);
+    return () => {
+      window.removeEventListener("online", up);
+      window.removeEventListener("offline", down);
+    };
+  }, [refresh]);
+  const notices = <Notices toast={toast} offline={!online} offlineText={t.offline} />;
 
   const sections = useMemo(() => menuSections(data?.categories ?? [], data?.products ?? [], t.otherMenu), [data, t.otherMenu]);
   // About the first screen at 360 to 390 px: two rows of the two-column grid.
@@ -260,6 +302,7 @@ export function OrderApp({ token }: { token: string }) {
   if (payment && order && viewingPayment) {
     return (
       <div style={brand}>
+        {notices}
         <PaymentView
           payment={payment}
           phase={phase}
@@ -281,6 +324,7 @@ export function OrderApp({ token }: { token: string }) {
 
   return (
     <div style={brand} className="mx-auto max-w-lg pb-28 md:max-w-3xl">
+      {notices}
       {cms.hero_banner_url ? (
         <img
           src={cms.hero_banner_url}

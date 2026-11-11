@@ -21,6 +21,34 @@
   --font-display: var(--font-jakarta), system-ui, -apple-system, sans-serif;
   --font-sans: var(--font-jakarta), system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  /* The two result moments (C7). Used through motion-safe: so reduced motion shows the end state at once. */
+  --animate-pop: pop 320ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  --animate-shake: shake 360ms ease-in-out both;
+
+  @keyframes pop {
+    from {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-6px);
+    }
+    75% {
+      transform: translateX(6px);
+    }
+  }
 }
 
 /*

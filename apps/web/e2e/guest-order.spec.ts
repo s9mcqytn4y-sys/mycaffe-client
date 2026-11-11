@@ -208,6 +208,45 @@ test("menu satu daftar: tap kategori melompat ke bagiannya", async ({ page }) =>
   await expect(nav.getByRole("button", { name: "Roti" })).toHaveAttribute("aria-current", "true");
 });
 
+test("pesanan siap: toast muncul dan langkah siap diberi jam", async ({ page }) => {
+  await mockStore(page);
+  let status = "preparing";
+  await mockCheckout(page);
+  await page.route("**/api/v1/public/orders/track/trk", (r) =>
+    r.fulfill(json({ status, payment_status: "paid", order_number: "A-014" }))
+  );
+  await addAndOpenCart(page);
+  await page.getByRole("button", { name: "Bayar Rp 28.750" }).click();
+  await expect(page.getByRole("heading", { name: "Pembayaran diterima" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pembayaran diterima" }).locator("xpath=preceding-sibling::span[1]")).toHaveCSS("animation-name", "pop");
+
+  status = "ready";
+  // Back online makes the tracker check at once instead of waiting for the 10 s poll.
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect(page.getByRole("status").filter({ hasText: "Pesanan Anda siap diambil" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Perjalanan pesanan" }).locator("li").nth(2)).toContainText(/\d{2}[.:]\d{2}/);
+});
+
+test("koneksi putus menampilkan banner dan hilang saat tersambung", async ({ page, context }) => {
+  await mockStore(page);
+  await page.goto("/order/T1");
+  await expect(page.getByRole("heading", { level: 1, name: "Kopi Senja" })).toBeVisible();
+  await context.setOffline(true);
+  await expect(page.getByRole("alert").filter({ hasText: "Koneksi terputus" })).toBeVisible();
+  await context.setOffline(false);
+  await expect(page.getByText("Koneksi terputus")).toHaveCount(0);
+});
+
+test("animasi hasil bayar mati saat reduced motion", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await mockStore(page);
+  await mockCheckout(page, { status: "queued", payment_status: "paid" });
+  await addAndOpenCart(page);
+  await page.getByRole("button", { name: "Bayar Rp 28.750" }).click();
+  const icon = page.getByRole("heading", { name: "Pembayaran diterima" }).locator("xpath=preceding-sibling::span[1]");
+  await expect(icon).toHaveCSS("animation-name", "none");
+});
+
 test("judul tab tetap nama gerai dan meja setelah tamu berinteraksi", async ({ page }) => {
   await mockStore(page);
   await page.goto("/order/T1");
