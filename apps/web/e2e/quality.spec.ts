@@ -51,6 +51,30 @@ test.describe("axe", () => {
     await expect(page.getByRole("heading", { level: 2, name: "Ketentuan Pemesanan Tamu" })).toBeVisible();
     await expectNoSeriousViolations(page);
   });
+
+  test("struk dari email", async ({ page }) => {
+    await page.route("**/api/v1/public/receipts/rt1", (r) =>
+      r.fulfill(
+        json({
+          store: { name: "Kopi Senja" },
+          order_number: "A-014",
+          status: "ready",
+          payment_status: "paid",
+          issued_at: "2026-11-11T03:00:00Z",
+          lines: [{ name: "Croissant", quantity: 1, amount: 25000 }],
+          subtotal_amount: 25000,
+          discount_amount: 0,
+          service_charge_amount: 0,
+          tax_amount: 0,
+          total_amount: 25000,
+          payments: [{ method: "qris" }]
+        })
+      )
+    );
+    await page.goto("/receipts/rt1");
+    await expect(page.getByText("Status: Pesanan siap")).toBeVisible();
+    await expectNoSeriousViolations(page);
+  });
 });
 
 const doc = (doc_type: string, title: string) => ({
@@ -99,6 +123,19 @@ test("sitemap memuat halaman publik saja", async ({ request }) => {
   expect(body).toContain("/legal/mitra");
   expect(body).not.toContain("/order");
   expect(await (await request.get("/robots.txt")).text()).toContain("Sitemap:");
+});
+
+test("ikon PWA: any dan maskable tersedia dengan ukuran yang dinyatakan", async ({ request }) => {
+  const manifest = await (await request.get("/manifest.webmanifest")).json();
+  const icons = manifest.icons as { src: string; sizes: string; purpose: string }[];
+  expect(icons.map((i) => i.purpose).sort()).toEqual(["any", "any", "maskable"]);
+  for (const icon of [...icons, { src: "/AppleTouchIcon180.png", sizes: "180x180" }, { src: "/Favicon32.png", sizes: "32x32" }]) {
+    const res = await request.get(icon.src);
+    expect(res.status(), icon.src).toBe(200);
+    const png = await res.body();
+    // PNG IHDR: width and height are big-endian at bytes 16 and 20.
+    expect(`${png.readUInt32BE(16)}x${png.readUInt32BE(20)}`, icon.src).toBe(icon.sizes);
+  }
 });
 
 test("tamu bisa memesan hanya dengan keyboard", async ({ page, browserName }) => {

@@ -115,7 +115,13 @@ const id = {
   openWallet: "Buka aplikasi untuk membayar",
   walletHint: "Setelah membayar di aplikasi, kembali ke halaman ini. Status diperbarui otomatis.",
   payOther: "Bayar dengan metode lain",
-  methodUnavailable: "Metode ini sedang tidak tersedia di gerai. Pilih metode lain."
+  methodUnavailable: "Metode ini sedang tidak tersedia di gerai. Pilih metode lain.",
+  receiptTitle: "Struk pesanan",
+  receiptLoading: "Memuat struk",
+  receiptMissingTitle: "Tautan struk tidak berlaku",
+  receiptMissingBody: "Tautan ini salah atau sudah lewat 90 hari. Minta struk baru ke staf gerai.",
+  paidWith: "Dibayar dengan",
+  statusReadyShort: "Pesanan siap"
 };
 
 export type Messages = typeof id;
@@ -237,7 +243,13 @@ const en: Messages = {
   openWallet: "Open the app to pay",
   walletHint: "After paying in the app, come back to this page. The status updates on its own.",
   payOther: "Pay another way",
-  methodUnavailable: "This method is not available at the outlet right now. Choose another one."
+  methodUnavailable: "This method is not available at the outlet right now. Choose another one.",
+  receiptTitle: "Order receipt",
+  receiptLoading: "Loading the receipt",
+  receiptMissingTitle: "This receipt link does not work",
+  receiptMissingBody: "The link is wrong or older than 90 days. Ask the outlet staff for a new receipt.",
+  paidWith: "Paid with",
+  statusReadyShort: "Order ready"
 };
 
 export const MESSAGES = { "id-ID": id, "en-US": en };
