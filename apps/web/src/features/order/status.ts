@@ -37,7 +37,8 @@ const CHECKOUT_MESSAGES: Record<string, keyof Messages> = {
   TABLE_INACTIVE: "tableInactive",
   UNPAID_ORDER_LIMIT: "unpaidLimit",
   TOO_MANY_REQUESTS: "tooManyAttempts",
-  INVALID_PAYMENT: "methodUnavailable"
+  INVALID_PAYMENT: "methodUnavailable",
+  MAINTENANCE: "maintenanceShort"
 };
 
 // The link comes from Midtrans through our API; still never hand a script or data URL to the browser.

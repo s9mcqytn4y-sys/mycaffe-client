@@ -233,6 +233,9 @@ export function OrderApp({ token }: { token: string }) {
 
   if (state === "loading") return <div className="p-5"><DataStateBox state="loading" title={t.loadingTitle} description={t.loadingBody} /></div>;
   if (state === "missing") return <div className="p-5"><DataStateBox state="error" title={t.tableMissingTitle} description={t.tableMissingBody} /></div>;
+  if (state === "maintenance") {
+    return <div className="p-5"><DataStateBox state="error" title={t.maintenanceTitle} description={t.maintenanceBody} onRetry={reload} /></div>;
+  }
   if (state === "failed" || !data) {
     return <div className="p-5"><DataStateBox state="error" title={t.loadFailedTitle} description={t.loadFailedBody} onRetry={reload} /></div>;
   }

@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError, apiFetch } from "@/lib/api";
+import { ApiError, apiFetch, isMaintenance } from "@/lib/api";
 import { toOrderItems, type CartLine } from "./cart";
 import { isFinal, readActiveOrder, reconnectDelay, writeActiveOrder, type ActiveOrder } from "./status";
 import type { CatalogCategory, CatalogProduct, Quote, StoreCms, TableInfo } from "./types";
 
-export type LoadState = "loading" | "ready" | "missing" | "failed";
+export type LoadState = "loading" | "ready" | "missing" | "maintenance" | "failed";
 
 export interface OrderData {
   table: TableInfo;
@@ -51,7 +51,7 @@ export function useOrderData(token: string) {
       });
       setState("ready");
     } catch (err) {
-      setState(err instanceof ApiError && err.status === 404 ? "missing" : "failed");
+      setState(err instanceof ApiError && err.status === 404 ? "missing" : isMaintenance(err) ? "maintenance" : "failed");
     }
   }, [token]);
 

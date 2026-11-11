@@ -19,7 +19,7 @@ export function Notices({ toast, offline, offlineText }: { toast: string | null;
       </div>
       <div role="status" aria-live="polite" className="w-full max-w-lg">
         {toast ? (
-          <p className="flex items-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-brand-fg shadow-md motion-safe:animate-pop">
+          <p className="flex items-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-brand-fg shadow-md motion-safe:animate-enter">
             <Icon name="check" size={18} />
             {toast}
           </p>

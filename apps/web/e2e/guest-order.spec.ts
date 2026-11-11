@@ -136,7 +136,8 @@ for (const [code, status, message] of [
   ["UNPAID_ORDER_LIMIT", 409, "pesanan sebelumnya"],
   ["QR_ORDERING_PAUSED", 409, "dihentikan"],
   ["STORE_CLOSED", 409, "Gerai sedang tutup"],
-  ["GUEST_SESSION_EXPIRED", 401, "Tekan Bayar sekali lagi"]
+  ["GUEST_SESSION_EXPIRED", 401, "Tekan Bayar sekali lagi"],
+  ["MAINTENANCE", 503, "pemeliharaan singkat"]
 ] as const) {
   test(`kode ${code} memberi pesan yang tepat dan keranjang tetap utuh`, async ({ page }) => {
     await mockStore(page);
@@ -218,12 +219,18 @@ test("pesanan siap: toast muncul dan langkah siap diberi jam", async ({ page }) 
   await addAndOpenCart(page);
   await page.getByRole("button", { name: "Bayar Rp 28.750" }).click();
   await expect(page.getByRole("heading", { name: "Pembayaran diterima" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Pembayaran diterima" }).locator("xpath=preceding-sibling::span[1]")).toHaveCSS("animation-name", "pop");
+  const result = page.getByRole("heading", { name: "Pembayaran diterima" }).locator("xpath=preceding-sibling::span[1]");
+  await expect(result).toHaveCSS("animation-name", "pop");
+  await expect(result).toHaveCSS("animation-duration", "0.3s");
 
   status = "ready";
   // Back online makes the tracker check at once instead of waiting for the 10 s poll.
   await page.evaluate(() => window.dispatchEvent(new Event("online")));
-  await expect(page.getByRole("status").filter({ hasText: "Pesanan Anda siap diambil" })).toBeVisible();
+  const toast = page.getByRole("status").filter({ hasText: "Pesanan Anda siap diambil" });
+  await expect(toast).toBeVisible();
+  // Feedback is 150 ms, the payment result 300 ms (N10).
+  await expect(toast.locator("p")).toHaveCSS("animation-name", "enter");
+  await expect(toast.locator("p")).toHaveCSS("animation-duration", "0.15s");
   await expect(page.getByRole("list", { name: "Perjalanan pesanan" }).locator("li").nth(2)).toContainText(/\d{2}[.:]\d{2}/);
 });
 
@@ -270,6 +277,7 @@ test("animasi hasil bayar mati saat reduced motion", async ({ page }) => {
   await page.getByRole("button", { name: "Bayar Rp 28.750" }).click();
   const icon = page.getByRole("heading", { name: "Pembayaran diterima" }).locator("xpath=preceding-sibling::span[1]");
   await expect(icon).toHaveCSS("animation-name", "none");
+  await expect(page.getByRole("button", { name: "Pesan lagi" })).toHaveCSS("transition-duration", "0s");
 });
 
 test("judul tab tetap nama gerai dan meja setelah tamu berinteraksi", async ({ page }) => {
@@ -445,4 +453,21 @@ test.describe("halaman struk dari email", () => {
     await expect(page.getByRole("heading", { name: "Tautan struk tidak berlaku" })).toBeVisible();
     await expect(page.getByText("Minta struk baru ke staf gerai.")).toBeVisible();
   });
+});
+
+test("pemeliharaan saat tamu sudah di halaman: coba lagi menampilkan pesan pemeliharaan", async ({ page }) => {
+  let maintenance = false;
+  await mockStore(page);
+  await page.route("**/api/v1/public/qr/T1", (r) =>
+    maintenance
+      ? r.fulfill(json({ code: "MAINTENANCE", error: "Sedang ada pemeliharaan singkat." }, 503))
+      : r.fulfill(json({ store_name: "Kopi Senja", store_slug: "senja", table_number: "A1", label: "Meja A1", ordering_open: true }))
+  );
+  await page.route("**/api/v1/public/stores/senja/catalog", (r) => r.abort());
+  await page.goto("/order/T1");
+  await expect(page.getByRole("button", { name: "Coba lagi" })).toBeVisible();
+  maintenance = true;
+  await page.getByRole("button", { name: "Coba lagi" }).click();
+  await expect(page.getByText("Sedang ada pemeliharaan singkat")).toBeVisible();
+  await expect(page.getByText("Pesanan yang sudah dibayar tetap aman")).toBeVisible();
 });

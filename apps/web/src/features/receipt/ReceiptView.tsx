@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useLocale } from "@/components/Providers";
-import { ApiError, apiFetch } from "@/lib/api";
+import { ApiError, apiFetch, isMaintenance } from "@/lib/api";
 import { formatIdr } from "@/lib/format";
 import type { Messages } from "@/lib/messages";
 import { isFinal, orderPhase, progressStep } from "@/features/order/status";
@@ -48,14 +48,14 @@ function Row({ label, value, strong }: { label: string; value: number; strong?: 
 export function ReceiptView({ token }: { token: string }) {
   const { t, locale } = useLocale();
   const [receipt, setReceipt] = useState<Receipt | null>(null);
-  const [state, setState] = useState<"loading" | "ready" | "missing" | "failed">("loading");
+  const [state, setState] = useState<"loading" | "ready" | "missing" | "maintenance" | "failed">("loading");
 
   const load = useCallback(async () => {
     try {
       setReceipt(await apiFetch<Receipt>(`/api/v1/public/receipts/${encodeURIComponent(token)}`));
       setState("ready");
     } catch (e) {
-      setState(e instanceof ApiError && e.status === 404 ? "missing" : "failed");
+      setState(e instanceof ApiError && e.status === 404 ? "missing" : isMaintenance(e) ? "maintenance" : "failed");
     }
   }, [token]);
 
@@ -76,12 +76,18 @@ export function ReceiptView({ token }: { token: string }) {
   if (state === "loading") {
     return <p className="mx-auto max-w-md px-5 py-10 text-subink">{t.receiptLoading}</p>;
   }
-  if (state === "missing" || state === "failed" || !receipt) {
+  if (state !== "ready" || !receipt) {
+    const [title, body] =
+      state === "missing"
+        ? [t.receiptMissingTitle, t.receiptMissingBody]
+        : state === "maintenance"
+          ? [t.maintenanceTitle, t.maintenanceBody]
+          : [t.loadFailedTitle, t.loadFailedBody];
     return (
       <section className="mx-auto max-w-md px-5 py-10">
-        <h1 className="text-2xl font-bold">{state === "missing" ? t.receiptMissingTitle : t.loadFailedTitle}</h1>
-        <p className="mt-2 text-base">{state === "missing" ? t.receiptMissingBody : t.loadFailedBody}</p>
-        {state === "failed" ? (
+        <h1 className="text-2xl font-bold">{title}</h1>
+        <p className="mt-2 text-base">{body}</p>
+        {state !== "missing" ? (
           <button type="button" onClick={() => void load()} className="btn-primary mt-6 min-h-[48px] px-6 font-bold">
             {t.retry}
           </button>

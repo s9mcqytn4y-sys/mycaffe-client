@@ -98,3 +98,10 @@ const ready = bellNotes("ready");
 assert.equal(ready.length, 2);
 assert.ok(ready[1][0] > ready[0][0] && ready[1][1] > ready[0][1]);
 assert.equal(bellNotes("delivered").length, 1);
+
+// Maintenance: only nginx's 503 with code MAINTENANCE counts, not every 503.
+const { ApiError, isMaintenance } = await import("../../lib/api.ts");
+assert.equal(isMaintenance(new ApiError(503, "x", { code: "MAINTENANCE" })), true);
+assert.equal(isMaintenance(new ApiError(503, "x", { code: "SERVICE_TEMPORARILY_UNAVAILABLE" })), false);
+assert.equal(isMaintenance(new ApiError(503, "x", null)), false);
+assert.equal(checkoutMessageKey("MAINTENANCE"), "maintenanceShort");
