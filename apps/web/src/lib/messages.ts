@@ -121,7 +121,10 @@ const id = {
   receiptMissingTitle: "Tautan struk tidak berlaku",
   receiptMissingBody: "Tautan ini salah atau sudah lewat 90 hari. Minta struk baru ke staf gerai.",
   paidWith: "Dibayar dengan",
-  statusReadyShort: "Pesanan siap"
+  statusReadyShort: "Pesanan siap",
+  maintenanceTitle: "Sedang ada pemeliharaan singkat",
+  maintenanceBody: "Pesanan yang sudah dibayar tetap aman dan tetap diproses gerai. Coba lagi dalam beberapa menit, atau pesan langsung ke staf.",
+  maintenanceShort: "Sedang ada pemeliharaan singkat. Pesanan yang sudah dibayar tetap aman; coba lagi dalam beberapa menit."
 };
 
 export type Messages = typeof id;
@@ -249,7 +252,10 @@ const en: Messages = {
   receiptMissingTitle: "This receipt link does not work",
   receiptMissingBody: "The link is wrong or older than 90 days. Ask the outlet staff for a new receipt.",
   paidWith: "Paid with",
-  statusReadyShort: "Order ready"
+  statusReadyShort: "Order ready",
+  maintenanceTitle: "Short maintenance in progress",
+  maintenanceBody: "Orders you already paid for are safe and the outlet still prepares them. Try again in a few minutes, or order with the staff.",
+  maintenanceShort: "Short maintenance in progress. Orders you already paid for are safe; try again in a few minutes."
 };
 
 export const MESSAGES = { "id-ID": id, "en-US": en };

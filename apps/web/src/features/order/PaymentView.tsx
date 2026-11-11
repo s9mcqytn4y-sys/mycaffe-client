@@ -42,7 +42,7 @@ function ProgressSteps({ status, mode }: { status?: string; mode: ServiceMode })
           <li
             key={label}
             aria-current={i === step ? "step" : undefined}
-            className={`flex-1 border-t-4 pt-2 text-xs font-semibold transition-colors duration-150 ${
+            className={`flex-1 border-t-4 pt-2 text-xs font-semibold motion-safe:transition-colors motion-safe:duration-150 ${
               i <= step ? "border-brand text-ink" : "border-subtle text-subink"
             }`}
           >

@@ -10,6 +10,11 @@ export class ApiError extends Error {
   }
 }
 
+/** nginx answers 503 {"code":"MAINTENANCE"} while the maintenance switch is on (PRD v3 N3). */
+export function isMaintenance(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 503 && (err.details as { code?: unknown } | null)?.code === "MAINTENANCE";
+}
+
 export interface RequestOptions {
   method?: "GET" | "POST";
   body?: unknown;
