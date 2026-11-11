@@ -407,3 +407,42 @@ test.describe("footer di dasar layar 390 x 844", () => {
     expect(linkBox.y + linkBox.height).toBeLessThanOrEqual(barBox.y);
   });
 });
+
+test.describe("halaman struk dari email", () => {
+  const RECEIPT = {
+    store: { name: "Kopi Senja" },
+    order_number: "A-014",
+    status: "preparing",
+    payment_status: "paid",
+    issued_at: "2026-11-11T03:00:00Z",
+    lines: [{ name: "Caffe Latte", variant: "Besar", options: ["Oat"], quantity: 2, amount: 76000 }],
+    subtotal_amount: 76000,
+    discount_amount: 0,
+    service_charge_amount: 3800,
+    tax_amount: 7600,
+    total_amount: 87400,
+    payments: [{ method: "gopay" }, { method: "gopay" }]
+  };
+
+  test("menampilkan rincian dan status pesanan, tanpa diindeks", async ({ page }) => {
+    await page.route("**/api/v1/public/receipts/rt1", (r) => r.fulfill(json(RECEIPT)));
+    await page.goto("/receipts/rt1");
+    await expect(page.getByRole("heading", { level: 1, name: "Kopi Senja" })).toBeVisible();
+    await expect(page.getByText("A-014")).toBeVisible();
+    await expect(page.getByText("Status: Sedang disiapkan")).toBeVisible();
+    await expect(page.getByText("2 x Caffe Latte")).toBeVisible();
+    await expect(page.getByText("Besar, Oat")).toBeVisible();
+    await expect(page.getByText("Rp 87.400")).toBeVisible();
+    await expect(page.getByText("Dibayar dengan: GoPay", { exact: true })).toBeVisible();
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+  });
+
+  test("tautan salah atau kedaluwarsa memberi arahan ke staf", async ({ page }) => {
+    await page.route("**/api/v1/public/receipts/old", (r) =>
+      r.fulfill(json({ code: "RECEIPT_LINK_INVALID", error: "Tautan struk tidak valid atau sudah kedaluwarsa." }, 404))
+    );
+    await page.goto("/receipts/old");
+    await expect(page.getByRole("heading", { name: "Tautan struk tidak berlaku" })).toBeVisible();
+    await expect(page.getByText("Minta struk baru ke staf gerai.")).toBeVisible();
+  });
+});
