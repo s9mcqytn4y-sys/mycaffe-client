@@ -124,7 +124,27 @@ const id = {
   statusReadyShort: "Pesanan siap",
   maintenanceTitle: "Sedang ada pemeliharaan singkat",
   maintenanceBody: "Pesanan yang sudah dibayar tetap aman dan tetap diproses gerai. Coba lagi dalam beberapa menit, atau pesan langsung ke staf.",
-  maintenanceShort: "Sedang ada pemeliharaan singkat. Pesanan yang sudah dibayar tetap aman; coba lagi dalam beberapa menit."
+  maintenanceShort: "Sedang ada pemeliharaan singkat. Pesanan yang sudah dibayar tetap aman; coba lagi dalam beberapa menit.",
+  splitToggle: "Bagi rata",
+  splitPeople: "Jumlah orang",
+  splitHint: "Tiap orang membayar bagiannya dengan QRIS lewat tautan masing-masing. Semua bagian harus lunas dalam 15 menit.",
+  splitPay: "Bagi tagihan",
+  splitTitle: "Bagi tagihan",
+  splitIntro: "Kirim tautan ke tiap orang atau tunjukkan kode QR-nya. Pesanan diproses setelah semua bagian lunas, paling lambat 15 menit.",
+  share: "Bagian",
+  shareShowQr: "Tampilkan QR",
+  shareHideQr: "Sembunyikan QR",
+  shareSend: "Bagikan tautan",
+  shareCopied: "Tautan disalin.",
+  shareOpen: "Bayar bagian ini",
+  sharePaid: "Lunas",
+  shareWaiting: "Belum dibayar",
+  sharePageTitle: "Bayar bagian Anda",
+  sharePayCta: "Bayar dengan QRIS",
+  sharePaidTitle: "Bagian Anda sudah lunas",
+  sharePaidBody: "Terima kasih. Pesanan diproses setelah semua bagian lunas.",
+  shareMissingTitle: "Tautan bagian tidak berlaku",
+  shareMissingBody: "Tautan ini salah atau sudah kedaluwarsa. Minta tautan baru ke pemesan atau staf gerai."
 };
 
 export type Messages = typeof id;
@@ -255,7 +275,27 @@ const en: Messages = {
   statusReadyShort: "Order ready",
   maintenanceTitle: "Short maintenance in progress",
   maintenanceBody: "Orders you already paid for are safe and the outlet still prepares them. Try again in a few minutes, or order with the staff.",
-  maintenanceShort: "Short maintenance in progress. Orders you already paid for are safe; try again in a few minutes."
+  maintenanceShort: "Short maintenance in progress. Orders you already paid for are safe; try again in a few minutes.",
+  splitToggle: "Split equally",
+  splitPeople: "Number of people",
+  splitHint: "Each person pays their share by QRIS through their own link. All shares must be paid within 15 minutes.",
+  splitPay: "Split the bill",
+  splitTitle: "Split the bill",
+  splitIntro: "Send each person their link or show them the QR code. The order is prepared once every share is paid, within 15 minutes.",
+  share: "Share",
+  shareShowQr: "Show QR",
+  shareHideQr: "Hide QR",
+  shareSend: "Share link",
+  shareCopied: "Link copied.",
+  shareOpen: "Pay this share",
+  sharePaid: "Paid",
+  shareWaiting: "Not paid yet",
+  sharePageTitle: "Pay your share",
+  sharePayCta: "Pay with QRIS",
+  sharePaidTitle: "Your share is paid",
+  sharePaidBody: "Thank you. The order is prepared once every share is paid.",
+  shareMissingTitle: "This share link does not work",
+  shareMissingBody: "The link is wrong or has expired. Ask the person who ordered or the outlet staff for a new one."
 };
 
 export const MESSAGES = { "id-ID": id, "en-US": en };

@@ -471,3 +471,80 @@ test("pemeliharaan saat tamu sudah di halaman: coba lagi menampilkan pesan pemel
   await expect(page.getByText("Sedang ada pemeliharaan singkat")).toBeVisible();
   await expect(page.getByText("Pesanan yang sudah dibayar tetap aman")).toBeVisible();
 });
+
+test.describe("bagi tagihan (W13, di belakang split_enabled)", () => {
+  test("tanpa flag, keranjang tidak menawarkan bagi rata", async ({ page }) => {
+    await mockStore(page);
+    await addAndOpenCart(page);
+    await expect(page.getByRole("checkbox", { name: "Bagi rata" })).toHaveCount(0);
+  });
+
+  test("dengan flag: bagi tiga, tanpa membuat QR pembayaran, status per bagian terlihat", async ({ page }) => {
+    await mockStore(page, { split_enabled: true });
+    await mockCheckout(page);
+    let paymentCalls = 0;
+    await page.route("**/api/v1/public/guest/orders/o1/payments", (r) => {
+      paymentCalls += 1;
+      return r.fulfill(json({}, 500));
+    });
+    let splitBody: unknown = null;
+    let firstPaid = false;
+    await page.route("**/api/v1/public/guest/orders/o1/splits", (r) => {
+      if (r.request().method() === "POST") {
+        splitBody = r.request().postDataJSON();
+        return r.fulfill(
+          json({
+            links: [1, 2, 3].map((n) => ({ split_number: n, label: `Split ${n}/3`, amount: n === 1 ? 9584 : 9583, token: `tok${n}` }))
+          }, 201)
+        );
+      }
+      return r.fulfill(json({ splits: [1, 2, 3].map((n) => ({ split_number: n, status: n === 1 && firstPaid ? "paid" : "unpaid" })) }));
+    });
+    await addAndOpenCart(page);
+    await page.getByRole("checkbox", { name: "Bagi rata" }).check();
+    await page.getByRole("button", { name: "Tambah Jumlah orang" }).click();
+    await page.getByRole("button", { name: "Bagi tagihan Rp 28.750" }).click();
+
+    await expect(page.getByRole("heading", { name: "Bagi tagihan" })).toBeVisible();
+    expect(splitBody).toEqual({ strategy: "equal", split_count: 3 });
+    expect(paymentCalls).toBe(0);
+    const shares = page.getByRole("listitem");
+    await expect(shares).toHaveCount(3);
+    await expect(shares.nth(0)).toContainText("Rp 9.584");
+    await expect(shares.nth(1).getByRole("link", { name: "Bayar bagian ini" })).toHaveAttribute("href", /\/bagian\/tok2$/);
+
+    await shares.nth(2).getByRole("button", { name: "Tampilkan QR" }).click();
+    await expect(shares.nth(2).locator("svg")).toBeVisible();
+
+    firstPaid = true;
+    await expect(shares.nth(0)).toContainText("Lunas", { timeout: 8000 });
+  });
+
+  test("pemegang tautan membayar bagiannya dengan QRIS sampai lunas", async ({ page }) => {
+    let status = "unpaid";
+    let body: unknown = null;
+    await page.route("**/api/v1/public/split-shares/tok2", (r) =>
+      r.fulfill(json({ store_name: "Kopi Senja", label: "Split 2/3", amount: 9583, status }))
+    );
+    await page.route("**/api/v1/public/split-shares/tok2/payments", (r) => {
+      body = r.request().postDataJSON();
+      return r.fulfill(json({ id: "sp2", qr_string: "00020101", amount: 9583, status: "pending", expires_at: new Date(Date.now() + 15 * 60_000).toISOString() }));
+    });
+    await page.goto("/bagian/tok2");
+    await expect(page.getByRole("heading", { name: "Bayar bagian Anda" })).toBeVisible();
+    await expect(page.getByText("Rp 9.583")).toBeVisible();
+    await page.getByRole("button", { name: "Bayar dengan QRIS" }).click();
+    await expect(page.getByText("Menunggu pembayaran")).toBeVisible();
+    expect(typeof (body as { idempotency_key?: unknown }).idempotency_key).toBe("string");
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+
+    status = "paid";
+    await expect(page.getByRole("heading", { name: "Bagian Anda sudah lunas" })).toBeVisible({ timeout: 8000 });
+  });
+
+  test("tautan bagian yang salah memberi arahan", async ({ page }) => {
+    await page.route("**/api/v1/public/split-shares/nope", (r) => r.fulfill(json({ code: "NOT_FOUND", error: "x" }, 404)));
+    await page.goto("/bagian/nope");
+    await expect(page.getByRole("heading", { name: "Tautan bagian tidak berlaku" })).toBeVisible();
+  });
+});

@@ -35,6 +35,9 @@ export function CartSheet({
   methods,
   method,
   onMethod,
+  splitEnabled,
+  splitCount,
+  onSplitCount,
   onPay,
   onClose
 }: {
@@ -53,6 +56,10 @@ export function CartSheet({
   methods: PayMethod[];
   method: PayMethod;
   onMethod: (method: PayMethod) => void;
+  splitEnabled: boolean;
+  // null pays the whole bill alone; 2 to 20 splits it equally (W13).
+  splitCount: number | null;
+  onSplitCount: (count: number | null) => void;
   onPay: () => void;
   onClose: () => void;
 }) {
@@ -142,7 +149,48 @@ export function CartSheet({
             <a href="/legal" target="_blank" rel="noopener" className="underline">{t.legal}</a>
           </p>
 
-          {methods.length > 1 ? (
+          {splitEnabled ? (
+            <div className="mt-4">
+              <label className="flex min-h-[44px] cursor-pointer items-center gap-3 text-sm font-bold">
+                <input
+                  type="checkbox"
+                  checked={splitCount !== null}
+                  onChange={(e) => onSplitCount(e.target.checked ? 2 : null)}
+                  className="h-5 w-5 accent-[var(--brand-primary)]"
+                />
+                {t.splitToggle}
+              </label>
+              {splitCount !== null ? (
+                <>
+                  <div className="mt-1 flex items-center gap-3">
+                    <span className="text-sm">{t.splitPeople}</span>
+                    <button
+                      type="button"
+                      aria-label={`${t.decrease} ${t.splitPeople}`}
+                      disabled={splitCount <= 2}
+                      onClick={() => onSplitCount(splitCount - 1)}
+                      className="btn-secondary h-11 w-11 rounded-full"
+                    >
+                      <Icon name="minus" size={18} />
+                    </button>
+                    <span aria-live="polite" className="min-w-6 text-center font-bold">{splitCount}</span>
+                    <button
+                      type="button"
+                      aria-label={`${t.increase} ${t.splitPeople}`}
+                      disabled={splitCount >= 20}
+                      onClick={() => onSplitCount(splitCount + 1)}
+                      className="btn-secondary h-11 w-11 rounded-full"
+                    >
+                      <Icon name="plus" size={18} />
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-subink">{t.splitHint}</p>
+                </>
+              ) : null}
+            </div>
+          ) : null}
+
+          {methods.length > 1 && splitCount === null ? (
             <fieldset className="mt-4">
               <legend className="text-sm font-bold">{t.payMethod}</legend>
               <div className="mt-1 flex flex-wrap gap-2">
@@ -174,7 +222,13 @@ export function CartSheet({
               onClick={onPay}
               className="btn-primary mt-4 min-h-[56px] w-full text-base font-bold"
             >
-              {placing ? t.placing : quote ? `${t.pay} ${formatIdr(quote.total_amount)}` : t.calculating}
+              {placing
+                ? t.placing
+                : !quote
+                  ? t.calculating
+                  : splitCount !== null
+                    ? `${t.splitPay} ${formatIdr(quote.total_amount)}`
+                    : `${t.pay} ${formatIdr(quote.total_amount)}`}
             </button>
           ) : null}
         </>
