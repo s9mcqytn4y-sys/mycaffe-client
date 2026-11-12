@@ -66,9 +66,11 @@ private fun parseHexColor(hex: String, fallback: Color): Color {
     }
 }
 
+// Neutral ink shown for an outlet without its own colour (PRD v4 Q9).
+private val NeutralInk = Color(0xFF17211E)
+
 private val COLOR_PRESETS = listOf(
-    Pair("Espresso", "#2C1A12"),
-    Pair("Crema", "#C68B59"),
+    Pair("Netral", ""),
     Pair("Charcoal", "#1F2937"),
     Pair("Forest", "#1B4D3E"),
     Pair("Amber", "#B45309"),
@@ -241,7 +243,7 @@ fun StoreBrandCmsTab(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         COLOR_PRESETS.forEach { (name, hex) ->
-                            val presetColor = parseHexColor(hex, LightInk)
+                            val presetColor = parseHexColor(hex, NeutralInk)
                             val isSelected = state.primaryHex.equals(hex, ignoreCase = true)
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
@@ -289,7 +291,7 @@ fun StoreBrandCmsTab(
                                     modifier = Modifier
                                         .size(20.dp)
                                         .clip(CircleShape)
-                                        .background(parseHexColor(state.primaryHex, LightInk))
+                                        .background(parseHexColor(state.primaryHex, NeutralInk))
                                         .border(1.dp, LightBorder, CircleShape)
                                 )
                             },
@@ -575,7 +577,7 @@ fun StoreBrandCmsTab(
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = state.heroSubtitleId.ifBlank { "Pindai QR, pilih sajian kopi favorit Anda" },
+                                text = state.heroSubtitleId.ifBlank { "Pindai QR, pilih menu, lalu bayar dari meja" },
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = accentColor,
                                     fontSize = 11.sp

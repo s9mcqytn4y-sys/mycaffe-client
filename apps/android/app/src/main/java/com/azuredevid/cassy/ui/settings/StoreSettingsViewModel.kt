@@ -41,11 +41,12 @@ data class StoreSettingsUiState(
     // Brand CMS Form
     val heroTitleId: String = "Pesan & Bayar dari Meja",
     val heroTitleEn: String = "Order & Pay at Table",
-    val heroSubtitleId: String = "Pindai QR, pilih sajian kopi dan makanan favorit Anda",
-    val heroSubtitleEn: String = "Scan QR, browse our signature coffee & freshly baked pastry",
+    val heroSubtitleId: String = "Pindai QR, pilih menu, lalu bayar dari meja",
+    val heroSubtitleEn: String = "Scan the QR, pick from the menu, and pay at your table",
     val heroBannerUrl: String = "",
-    val primaryHex: String = "#2C1A12",
-    val accentHex: String = "#C68B59",
+    // Empty means no outlet colour: guests see the neutral ink fallback (PRD v4 Q9).
+    val primaryHex: String = "",
+    val accentHex: String = "",
     val hidePoweredByBadge: Boolean = false,
     val isUploadingBanner: Boolean = false,
     val isSavingCms: Boolean = false,
