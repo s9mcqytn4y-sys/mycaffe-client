@@ -16,7 +16,8 @@ import { PaymentView } from "./PaymentView";
 import { ProductImage } from "./ProductImage";
 import { ProductOptionsSheet } from "./ProductOptionsSheet";
 import { checkoutMessageKey, moneyTaken, orderPhase, writeActiveOrder, type ActiveOrder } from "./status";
-import type { CatalogProduct, PaymentInfo, PayMethod, ServiceMode } from "./types";
+import type { CatalogProduct, PaymentInfo, PayMethod, ServiceMode, SplitShareLink } from "./types";
+import { SplitView } from "./SplitView";
 import { playBell, primeBell, readMuted, writeMuted } from "./bell";
 import { useOrderData, useOrderProgress, useQuote } from "./useOrderData";
 
@@ -100,6 +101,8 @@ export function OrderApp({ token }: { token: string }) {
   const [order, setOrder] = useState<ActiveOrder["order"] | null>(null);
   const [payment, setPayment] = useState<PaymentInfo | null>(null);
   const [viewingPayment, setViewingPayment] = useState(false);
+  const [splitCount, setSplitCount] = useState<number | null>(null);
+  const [shares, setShares] = useState<SplitShareLink[] | null>(null);
   const attemptKey = useRef<string | null>(null);
 
   const storageKey = `cassy_cart_${token}`;
@@ -145,9 +148,12 @@ export function OrderApp({ token }: { token: string }) {
   useEffect(() => {
     if (resumed.current || !data?.resume) return;
     resumed.current = true;
-    const { order: saved, payment: savedPayment } = data.resume;
+    const { order: saved, payment: savedPayment, shares: savedShares } = data.resume;
     setOrder(saved);
-    if (savedPayment) {
+    if (savedShares?.length) {
+      setShares(savedShares);
+      setViewingPayment(true);
+    } else if (savedPayment) {
       setPayment(savedPayment);
       setViewingPayment(true);
     } else {
@@ -160,8 +166,8 @@ export function OrderApp({ token }: { token: string }) {
   useEffect(() => {
     // A served order is done; a cancelled one stays so a guest who paid still sees where to ask for the refund.
     const served = tracked?.status === "served" || tracked?.status === "completed";
-    if (state === "ready") writeActiveOrder(token, order && !served ? { order, payment } : null);
-  }, [state, token, order, payment, tracked?.status]);
+    if (state === "ready") writeActiveOrder(token, order && !served ? { order, payment, shares: shares ?? undefined } : null);
+  }, [state, token, order, payment, shares, tracked?.status]);
 
   // The moment the guest waits for after paying: ready at the bar (pickup) or delivered to the table.
   const serviceMode: ServiceMode = data?.table.service_mode ?? "pickup";
@@ -268,7 +274,17 @@ export function OrderApp({ token }: { token: string }) {
       setOrder({ id: created.order.id, number: created.order.order_number, tracking: created.tracking_token ?? null, payKey });
       dispatch({ type: "clear" });
       setCartOpen(false);
-      await initiatePayment(created.order.id, payKey, method);
+      if (splitCount !== null) {
+        // Splitting only works before any QR exists, so it replaces the first payment (W13).
+        const { links } = await apiFetch<{ links: SplitShareLink[] }>(
+          `/api/v1/public/guest/orders/${encodeURIComponent(created.order.id)}/splits`,
+          { method: "POST", body: { strategy: "equal", split_count: splitCount } }
+        );
+        setShares(links.map(({ split_number, amount, token: shareToken }) => ({ split_number, amount, token: shareToken })));
+        setViewingPayment(true);
+      } else {
+        await initiatePayment(created.order.id, payKey, method);
+      }
     } catch (err) {
       const code = err instanceof ApiError ? (err.details as { code?: unknown } | undefined)?.code : undefined;
       setCheckoutError(t[checkoutMessageKey(code)]);
@@ -298,7 +314,7 @@ export function OrderApp({ token }: { token: string }) {
   const resumePayment = async () => {
     if (!order) return;
     setCheckoutError(null);
-    if (payment) {
+    if (payment || shares) {
       setViewingPayment(true);
       return;
     }
@@ -316,16 +332,28 @@ export function OrderApp({ token }: { token: string }) {
     dispatch({ type: "clear" });
     setOrder(null);
     setPayment(null);
+    setShares(null);
+    setSplitCount(null);
     setViewingPayment(false);
     setCheckoutError(null);
   };
 
-  if (payment && order && viewingPayment) {
+  if (shares && order && viewingPayment && phase === "awaiting") {
+    return (
+      <div style={brand}>
+        {notices}
+        <SplitView orderId={order.id} shares={shares} onBack={() => setViewingPayment(false)} />
+      </div>
+    );
+  }
+
+  if ((payment || shares) && order && viewingPayment) {
     return (
       <div style={brand}>
         {notices}
         <PaymentView
-          payment={payment}
+          // A split order reaches here only once paid or cancelled, where PaymentView does not read the payment.
+          payment={payment ?? { id: "split", amount: 0 }}
           phase={phase}
           moneyTaken={moneyTaken(tracked)}
           orderId={order.id}
@@ -334,7 +362,7 @@ export function OrderApp({ token }: { token: string }) {
           retrying={placing}
           error={checkoutError}
           methods={methods}
-          onNewQr={() => void newAttempt(payment.method ?? method)}
+          onNewQr={() => void newAttempt(payment?.method ?? method)}
           onSwitch={(via) => void newAttempt(via)}
           serviceMode={serviceMode}
           muted={muted}
@@ -459,6 +487,10 @@ export function OrderApp({ token }: { token: string }) {
           methods={methods}
           method={method}
           onMethod={setPicked}
+          // Shares are paid by QRIS only, so the outlet must have QRIS on as well.
+          splitEnabled={table.split_enabled === true && methods.includes("qris")}
+          splitCount={splitCount}
+          onSplitCount={setSplitCount}
           onPay={checkout}
           onClose={() => setCartOpen(false)}
         />

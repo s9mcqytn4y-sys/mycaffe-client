@@ -52,6 +52,15 @@ export interface TableInfo {
   payment_methods?: PayMethod[];
   // How the order reaches the guest; older APIs omit it, which means pickup.
   service_mode?: ServiceMode;
+  // True only when the API has bill splitting on (W13); older APIs omit it.
+  split_enabled?: boolean;
+}
+
+/** One person's share of a split order; the token is shown once and never readable again. */
+export interface SplitShareLink {
+  split_number: number;
+  amount: number;
+  token: string;
 }
 
 export type ServiceMode = "pickup" | "table";

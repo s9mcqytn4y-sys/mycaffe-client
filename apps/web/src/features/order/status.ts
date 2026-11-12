@@ -1,5 +1,5 @@
 import type { Messages } from "@/lib/messages";
-import type { PaymentInfo } from "./types";
+import type { PaymentInfo, SplitShareLink } from "./types";
 
 export type OrderPhase = "awaiting" | "paid" | "cancelled" | "refunded";
 
@@ -74,6 +74,8 @@ export const reconnectDelay = (attempt: number) => Math.min(30_000, 1000 * 2 ** 
 export interface ActiveOrder {
   order: { id: string; number?: string; tracking: string | null; payKey: string };
   payment: PaymentInfo | null;
+  // Share links of a split order; kept so a reload can still hand them out.
+  shares?: SplitShareLink[];
 }
 
 // Matches the backend guest session TTL; the server still has to confirm ownership on every load.
