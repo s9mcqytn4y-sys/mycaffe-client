@@ -39,7 +39,9 @@
     <string name="a11y_decrease_qty">Kurangi jumlah %1$s</string>
     <string name="a11y_increase_qty">Tambah jumlah %1$s</string>
     <string name="subtotal_label">Subtotal</string>
-    <string name="tax_pb1_label">PB1 (10%)</string>
+    <string name="tax_pb1_label">Pajak</string>
+    <string name="service_label">Biaya layanan</string>
+    <string name="total_from_server">Total dihitung server setelah kasir masuk ke toko.</string>
     <string name="grand_total_label">Grand Total</string>
     <string name="btn_kick_drawer">Buka Laci (RJ11)</string>
     <string name="btn_send_to_kitchen">Kirim ke Dapur</string>

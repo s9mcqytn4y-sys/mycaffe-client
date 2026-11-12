@@ -39,7 +39,9 @@
     <string name="a11y_decrease_qty">Decrease quantity of %1$s</string>
     <string name="a11y_increase_qty">Increase quantity of %1$s</string>
     <string name="subtotal_label">Subtotal</string>
-    <string name="tax_pb1_label">PB1 Tax (10%)</string>
+    <string name="tax_pb1_label">Tax</string>
+    <string name="service_label">Service charge</string>
+    <string name="total_from_server">Totals are priced by the server once a cashier signs in.</string>
     <string name="grand_total_label">Grand Total</string>
     <string name="btn_kick_drawer">Open Drawer (RJ11)</string>
     <string name="btn_send_to_kitchen">Send to Kitchen</string>
