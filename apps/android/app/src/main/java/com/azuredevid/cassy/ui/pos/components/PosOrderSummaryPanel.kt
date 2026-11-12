@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.azuredevid.cassy.R
+import com.azuredevid.cassy.data.model.OrderQuote
 import com.azuredevid.cassy.ui.pos.CartItem
 import com.azuredevid.cassy.ui.theme.StatusErrBgLight
 import com.azuredevid.cassy.ui.theme.StatusErrFgLight
@@ -40,9 +41,8 @@ fun PosOrderSummaryPanel(
     isCartLocked: Boolean,
     onIncreaseQuantity: (CartItem) -> Unit,
     onDecreaseQuantity: (CartItem) -> Unit,
-    subtotal: Long,
-    taxPb1: Long,
-    grandTotal: Long,
+    // Server-priced totals; null until the server answers (or while no staff session exists).
+    quote: OrderQuote?,
     rupiahFormat: NumberFormat,
     onOpenDrawerKick: () -> Unit,
     onSendToKitchen: () -> Unit,
@@ -240,34 +240,50 @@ fun PosOrderSummaryPanel(
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 HorizontalDivider()
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(stringResource(R.string.subtotal_label), style = MaterialTheme.typography.bodySmall)
-                    Text("Rp ${rupiahFormat.format(subtotal)}", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
-                }
+                if (quote == null) {
+                    if (cart.isNotEmpty()) {
+                        Text(stringResource(R.string.total_from_server), style = MaterialTheme.typography.bodySmall)
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(stringResource(R.string.subtotal_label), style = MaterialTheme.typography.bodySmall)
+                        Text("Rp ${rupiahFormat.format(quote.subtotalAmount)}", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+                    }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(stringResource(R.string.tax_pb1_label), style = MaterialTheme.typography.bodySmall)
-                    Text("Rp ${rupiahFormat.format(taxPb1)}", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
-                }
+                    if (quote.serviceChargeAmount > 0) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(stringResource(R.string.service_label), style = MaterialTheme.typography.bodySmall)
+                            Text("Rp ${rupiahFormat.format(quote.serviceChargeAmount)}", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+                        }
+                    }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(stringResource(R.string.grand_total_label), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    Text(
-                        "Rp ${rupiahFormat.format(grandTotal)}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(stringResource(R.string.tax_pb1_label), style = MaterialTheme.typography.bodySmall)
+                        Text("Rp ${rupiahFormat.format(quote.taxAmount)}", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(stringResource(R.string.grand_total_label), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        Text(
+                            "Rp ${rupiahFormat.format(quote.totalAmount)}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(2.dp))
@@ -304,7 +320,7 @@ fun PosOrderSummaryPanel(
                 ) {
                     Button(
                         onClick = onOpenCashModal,
-                        enabled = cart.isNotEmpty() && !isCartLocked,
+                        enabled = quote != null && cart.isNotEmpty() && !isCartLocked,
                         modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
                     ) {
                         Text(stringResource(R.string.btn_pay_cash), fontWeight = FontWeight.Bold)
@@ -312,7 +328,8 @@ fun PosOrderSummaryPanel(
 
                     Button(
                         onClick = onOpenQrisModal,
-                        enabled = cart.isNotEmpty(),
+                        // Dynamic QRIS comes from the server payment flow (Android Release One PR 7); off until then.
+                        enabled = false,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
                         modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
                     ) {

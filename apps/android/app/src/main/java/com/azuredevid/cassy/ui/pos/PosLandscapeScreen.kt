@@ -14,10 +14,20 @@ import com.azuredevid.cassy.core.hardware.EscPosReceiptBuilder
 import com.azuredevid.cassy.core.hardware.KdsTicketRouter
 import com.azuredevid.cassy.core.hardware.PrinterPort9100Manager
 import com.azuredevid.cassy.data.model.CatalogProduct
+import com.azuredevid.cassy.data.model.OrderQuote
+import com.azuredevid.cassy.data.model.OrderQuoteItem
+import com.azuredevid.cassy.data.model.OrderQuoteRequest
 import com.azuredevid.cassy.data.repository.KtorCatalogRepository
+import com.azuredevid.cassy.data.repository.KtorOrderQuoteRepository
+import com.azuredevid.cassy.data.repository.KtorPaymentCredentialRepository
 import com.azuredevid.cassy.domain.repository.CatalogRepository
+import com.azuredevid.cassy.domain.repository.OrderQuoteRepository
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
 import com.azuredevid.cassy.ui.pos.components.*
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
@@ -36,6 +46,7 @@ data class CartItem(
 @Composable
 fun PosLandscapeScreen(
     catalogRepository: CatalogRepository? = null,
+    orderQuoteRepository: OrderQuoteRepository? = null,
     printerManager: PrinterPort9100Manager = remember { PrinterPort9100Manager() },
     stationConfigs: List<KdsTicketRouter.StationPrinterConfig> = remember {
         listOf(
@@ -55,6 +66,14 @@ fun PosLandscapeScreen(
     val coroutineScope = rememberCoroutineScope()
     val repo = remember(catalogRepository) {
         catalogRepository ?: KtorCatalogRepository(context)
+    }
+    // shortcut: one client per screen until Koin and the shared Ktor client land in Android Release One PR 1.
+    val quoteRepo = remember(orderQuoteRepository) {
+        orderQuoteRepository ?: KtorOrderQuoteRepository(
+            httpClient = HttpClient(OkHttp) { install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) } },
+            apiBaseUrl = "https://api.abbdullaziz.online",
+            staffToken = { KtorPaymentCredentialRepository(context).getStoredAuthToken() }
+        )
     }
     val ticketRouter = remember(printerManager) { KdsTicketRouter(printerManager) }
     val rupiahFormat = remember { NumberFormat.getIntegerInstance(Locale("id", "ID")) }
@@ -78,12 +97,10 @@ fun PosLandscapeScreen(
     val cart = remember { mutableStateListOf<CartItem>() }
 
     var showCashModal by remember { mutableStateOf(false) }
-    var showQrisModal by remember { mutableStateOf(false) }
     var isPrinterOnline by remember { mutableStateOf(true) }
     var orderType by rememberSaveable { mutableStateOf("DINE-IN") }
     var tableName by rememberSaveable { mutableStateOf("Meja T-04") }
     var dineInRound by rememberSaveable { mutableIntStateOf(1) }
-    var isQrisSyncing by remember { mutableStateOf(false) }
     var failoverAlert by remember { mutableStateOf<String?>(null) }
 
     // Categories with adaptive i18n
@@ -116,10 +133,14 @@ fun PosLandscapeScreen(
         }
     }
 
-    // Integer Rupiah Money Totals
-    val subtotal = cart.sumOf { it.product.basePriceIdr * it.quantity }
-    val taxPb1 = (subtotal * 0.10).toLong() // 10% PB1
-    val grandTotal = subtotal + taxPb1
+    // Totals come only from the server quote; the tablet never computes tax or totals (CLAUDE.md).
+    var quote by remember { mutableStateOf<OrderQuote?>(null) }
+    val cartKey = cart.map { it.product.id to it.quantity }
+    LaunchedEffect(cartKey, orderType) {
+        quote = null
+        if (cartKey.isEmpty()) return@LaunchedEffect
+        quote = quoteRepo.quote(quoteRequestOf(cart, orderType)).getOrNull()
+    }
 
     val deliveryMode = if (orderType == "DINE-IN") KdsTicketRouter.OrderDeliveryMode.DINE_IN else KdsTicketRouter.OrderDeliveryMode.TAKEAWAY
 
@@ -149,7 +170,7 @@ fun PosLandscapeScreen(
                 onSearchQueryChange = { searchQuery = it },
                 isLoadingCatalog = isLoadingCatalog,
                 onProductSelected = { product ->
-                    if (!showQrisModal) {
+                    run {
                         val existing = cart.find { it.product.id == product.id }
                         if (existing != null) {
                             existing.quantity += 1
@@ -172,7 +193,7 @@ fun PosLandscapeScreen(
                     orderType = if (orderType == "DINE-IN") "TAKEAWAY" else "DINE-IN"
                 },
                 cart = cart,
-                isCartLocked = showQrisModal,
+                isCartLocked = false,
                 onIncreaseQuantity = { item -> item.quantity += 1 },
                 onDecreaseQuantity = { item ->
                     if (item.quantity > 1) {
@@ -181,9 +202,7 @@ fun PosLandscapeScreen(
                         cart.remove(item)
                     }
                 },
-                subtotal = subtotal,
-                taxPb1 = taxPb1,
-                grandTotal = grandTotal,
+                quote = quote,
                 rupiahFormat = rupiahFormat,
                 onOpenDrawerKick = {
                     coroutineScope.launch {
@@ -226,7 +245,7 @@ fun PosLandscapeScreen(
                     }
                 },
                 onOpenCashModal = { showCashModal = true },
-                onOpenQrisModal = { showQrisModal = true },
+                onOpenQrisModal = {},
                 failoverWarning = failoverAlert,
                 onReprintStations = {
                     coroutineScope.launch {
@@ -255,9 +274,10 @@ fun PosLandscapeScreen(
         }
 
         // Modal 1: Pembayaran Tunai
-        if (showCashModal) {
+        val pricedQuote = quote
+        if (showCashModal && pricedQuote != null) {
             PosCashModal(
-                grandTotal = grandTotal,
+                grandTotal = pricedQuote.totalAmount,
                 rupiahFormat = rupiahFormat,
                 onDismiss = { showCashModal = false },
                 onConfirmCashPayment = { tenderedLong, change ->
@@ -275,9 +295,9 @@ fun PosLandscapeScreen(
                             tableName = tableName,
                             cashierName = "Kasir 1",
                             items = cart.map { EscPosReceiptBuilder.ReceiptItem(it.product.name, it.quantity, it.product.basePriceIdr) },
-                            subtotalIdr = subtotal,
-                            pb1TaxIdr = taxPb1,
-                            grandTotalIdr = grandTotal,
+                            subtotalIdr = pricedQuote.subtotalAmount,
+                            pb1TaxIdr = pricedQuote.taxAmount,
+                            grandTotalIdr = pricedQuote.totalAmount,
                             paymentMethod = "TUNAI",
                             cashTenderedIdr = tenderedLong,
                             changeIdr = change
@@ -314,75 +334,11 @@ fun PosLandscapeScreen(
             )
         }
 
-        // Modal 2: QRIS Dinamis Midtrans Core API dengan Cart Lock & Hybrid Sync
-        if (showQrisModal) {
-            val qrisPayload = remember(grandTotal) {
-                "00020101021226590014ID.LINKAJA.WWW0118936009110020038849520458125303360540" + grandTotal + "5802ID5914Central Cafe6007Jakarta6304"
-            }
-
-            PosQrisModal(
-                grandTotal = grandTotal,
-                qrisPayload = qrisPayload,
-                isSyncing = isQrisSyncing,
-                rupiahFormat = rupiahFormat,
-                onForceSyncPayment = {
-                    coroutineScope.launch {
-                        isQrisSyncing = true
-                        delay(1200L) // Polling probe simulation to backend API
-                        isQrisSyncing = false
-                        Toast.makeText(context, "Status: Menunggu pembayaran", Toast.LENGTH_SHORT).show()
-                    }
-                },
-                onCancelOrderAndReleaseLock = {
-                    // Release Cart Lock and notify backend
-                    showQrisModal = false
-                    Toast.makeText(context, context.getString(R.string.toast_qris_cancelled), Toast.LENGTH_SHORT).show()
-                },
-                onConfirmPaymentSuccess = {
-                    coroutineScope.launch {
-                        val orderNum = "QRIS-" + System.currentTimeMillis().toString().takeLast(8)
-                        val receiptBuilder = EscPosReceiptBuilder(EscPosReceiptBuilder.PaperWidth.WIDTH_80MM)
-                        val receiptBytes = receiptBuilder.buildStoreReceipt(
-                            storeName = "Central Cafe Senopati",
-                            storeAddress = "Jl. Senopati No. 18, Jakarta Selatan",
-                            orderId = orderNum,
-                            tableName = tableName,
-                            cashierName = "Kasir 1",
-                            items = cart.map { EscPosReceiptBuilder.ReceiptItem(it.product.name, it.quantity, it.product.basePriceIdr) },
-                            subtotalIdr = subtotal,
-                            pb1TaxIdr = taxPb1,
-                            grandTotalIdr = grandTotal,
-                            paymentMethod = "QRIS DINAMIS (MIDTRANS)"
-                        )
-
-                        val stationItems = cart.map {
-                            KdsTicketRouter.StationItem(
-                                name = it.product.name,
-                                quantity = it.quantity,
-                                prepStation = it.product.prepStation,
-                                notes = it.notes
-                            )
-                        }
-                        val res = ticketRouter.routeOrderDynamic(
-                            orderNumber = orderNum,
-                            tableOrQueue = tableName,
-                            items = stationItems,
-                            stations = stationConfigs,
-                            cashierPrinterIp = cashierPrinterIp,
-                            cashierReceiptBytes = receiptBytes,
-                            deliveryMode = deliveryMode,
-                            roundNumber = dineInRound
-                        )
-
-                        failoverAlert = if (res.hasAnyFailover) "Perhatian: Sebagian printer offline. Tiket dialihkan." else null
-
-                        Toast.makeText(context, context.getString(R.string.toast_qris_success), Toast.LENGTH_LONG).show()
-                        showQrisModal = false
-                        cart.clear()
-                        dineInRound = 1
-                    }
-                }
-            )
-        }
     }
 }
+
+/** Request body for the server quote; order types follow the API (dine_in, takeaway). */
+internal fun quoteRequestOf(cart: List<CartItem>, orderType: String) = OrderQuoteRequest(
+    orderType = if (orderType == "DINE-IN") "dine_in" else "takeaway",
+    items = cart.map { OrderQuoteItem(productId = it.product.id, quantity = it.quantity) }
+)
