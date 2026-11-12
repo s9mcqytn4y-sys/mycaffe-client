@@ -31,7 +31,7 @@ Nama gerai besar di kiri atas dan chip "Meja A1" langsung menjawab "saya di mana
 | Elemen | Masalah | Rekomendasi |
 |---|---|---|
 | `packages/design-tokens/i18n.json` | Tidak dipakai aplikasi mana pun (hanya dibaca verifier), dan isinya bertentangan dengan copy sebenarnya: "Sedang Disiapkan Barista/Dapur", "Didukung oleh AzureDevID", "Bayar Tunai di Kasir" | Hapus berkas dan pemeriksaannya, atau jadikan sumber copy betulan. Rekomendasi: hapus, karena copy WPA ada di `messages.ts` |
-| Ikon | Enam ikon Phosphor di `Icon.tsx`; ikon F&B Cassy baru ada di vault | Tambahkan ikon F&B ke `Icon.tsx` saat layar yang memakainya dibangun |
+| Ikon | Selesai 2026-11-13: `Icon.tsx` dihapus, WPA memakai `lucide-react` | - |
 
 ### Aksesibilitas
 
@@ -68,7 +68,7 @@ Tata letak tiga panel (rail, katalog, ringkasan) tepat untuk tablet landscape. T
 |---|---|---|
 | Warna | `ui/theme/Theme.kt` menulis 26 warna Espresso & Crema dengan tangan | Hasilkan `CassyColors.kt` dari `tokens.json` (generator sudah ada untuk web), pakai tema gelap pandan untuk POS dan KDS |
 | Huruf | Tidak ada font produk; jatuh ke Roboto bawaan | Plus Jakarta Sans lewat `res/font`, tabular figures untuk harga |
-| Ikon | Belum memakai ikon Cassy | `ImageVector` dari paket ikon vault (CashDrawer, Qris, Shift, KitchenTicket) |
+| Ikon | Belum memakai ikon apa pun; tombol hapus masih karakter "✕" | Material Symbols lewat `androidx.compose.material.icons` (keputusan Q6 baru) |
 
 ### Aksesibilitas
 

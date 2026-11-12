@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Icon } from "@/components/Icon";
+import { CircleCheck, CircleX } from "lucide-react";
 import { useLocale } from "@/components/Providers";
 import { QrCodeSvg } from "@/components/QrCodeSvg";
 import { apiFetch } from "@/lib/api";
@@ -123,7 +123,7 @@ export function PaymentView({
     return (
       <section className="mx-auto max-w-md px-5 py-10">
         <span className="inline-block text-[var(--state-err-fg)] motion-safe:animate-shake">
-          <Icon name="cross" size={56} />
+          <CircleX size={56} />
         </span>
         <h1 className="mt-3 text-2xl font-bold">{title}</h1>
         {orderNumber ? (
@@ -144,7 +144,7 @@ export function PaymentView({
     return (
       <section className="mx-auto max-w-md px-5 py-10">
         <span className="inline-block text-[var(--state-ok-fg)] motion-safe:animate-pop">
-          <Icon name="check" size={56} />
+          <CircleCheck size={56} />
         </span>
         <h1 className="mt-3 text-2xl font-bold">{t.paidTitle}</h1>
         {orderNumber ? (
@@ -206,7 +206,7 @@ export function PaymentView({
       {expired ? (
         <div role="alert" className="mt-6 flex flex-col items-center">
           <span className="text-[var(--state-err-fg)] motion-safe:animate-shake">
-            <Icon name="cross" size={40} />
+            <CircleX size={40} />
           </span>
           <p className="mt-2 font-semibold">{t.expired}</p>
           <button type="button" disabled={retrying} onClick={onNewQr} className="btn-primary mt-3 min-h-[56px] px-6 font-bold">

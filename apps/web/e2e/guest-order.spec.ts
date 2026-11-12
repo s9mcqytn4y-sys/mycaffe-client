@@ -420,7 +420,8 @@ test.describe("footer di dasar layar 390 x 844", () => {
     const bar = page.locator("[data-cart-bar]");
     const linkBox = (await link.boundingBox())!;
     const barBox = (await bar.boundingBox())!;
-    expect(linkBox.y + linkBox.height).toBeLessThanOrEqual(barBox.y);
+    // The dock sits in the flow above the footer, so the link must clear it on one side.
+    expect(linkBox.y + linkBox.height <= barBox.y || linkBox.y >= barBox.y + barBox.height).toBe(true);
   });
 });
 

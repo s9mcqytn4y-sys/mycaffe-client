@@ -79,11 +79,6 @@ body {
   overflow-x: clip;
 }
 
-/* The fixed cart bar (56px button, 12px top padding, safe-area bottom) must not cover the footer links. */
-body:has([data-cart-bar]) {
-  padding-bottom: calc(4.25rem + max(0.75rem, env(safe-area-inset-bottom)));
-}
-
 *,
 *::before,
 *::after {

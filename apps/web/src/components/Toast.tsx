@@ -1,6 +1,6 @@
 "use client";
 
-import { Icon } from "./Icon";
+import { CircleCheck, WifiOff } from "lucide-react";
 
 /**
  * Top-of-screen notices. The live regions stay mounted so screen readers announce a message the
@@ -12,7 +12,7 @@ export function Notices({ toast, offline, offlineText }: { toast: string | null;
       <div role="alert" className="w-full max-w-lg">
         {offline ? (
           <p className="flex items-center gap-2 rounded-lg bg-[var(--state-warn-bg)] px-4 py-3 text-sm font-semibold text-[var(--state-warn-fg)] shadow-md">
-            <Icon name="offline" size={18} />
+            <WifiOff size={18} />
             {offlineText}
           </p>
         ) : null}
@@ -20,7 +20,7 @@ export function Notices({ toast, offline, offlineText }: { toast: string | null;
       <div role="status" aria-live="polite" className="w-full max-w-lg">
         {toast ? (
           <p className="flex items-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-brand-fg shadow-md motion-safe:animate-enter">
-            <Icon name="check" size={18} />
+            <CircleCheck size={18} />
             {toast}
           </p>
         ) : null}

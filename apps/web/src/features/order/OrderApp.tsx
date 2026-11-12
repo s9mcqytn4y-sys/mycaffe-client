@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { Icon } from "@/components/Icon";
+import { ShoppingBag } from "lucide-react";
 import { Notices } from "@/components/Toast";
 import { useLocale } from "@/components/Providers";
 import { DataStateBox } from "@/components/Shell";
@@ -13,74 +13,14 @@ import { cartReducer, toOrderItems, type CartLine } from "./cart";
 import { CategoryNav, sectionId } from "./CategoryNav";
 import { menuSections } from "./menu";
 import { PaymentView } from "./PaymentView";
-import { ProductImage } from "./ProductImage";
+import { defaultVariant, ProductCard, ProductRow } from "./MenuItems";
 import { ProductOptionsSheet } from "./ProductOptionsSheet";
 import { checkoutMessageKey, moneyTaken, orderPhase, writeActiveOrder, type ActiveOrder } from "./status";
 import type { CatalogProduct, PaymentInfo, PayMethod, ServiceMode, SplitShareLink } from "./types";
 import { SplitView } from "./SplitView";
+import { StoreHeader } from "./StoreHeader";
 import { playBell, primeBell, readMuted, writeMuted } from "./bell";
 import { useOrderData, useOrderProgress, useQuote } from "./useOrderData";
-
-function defaultVariant(product: CatalogProduct) {
-  return product.variants.find((v) => v.is_default && v.available) ?? product.variants.find((v) => v.available);
-}
-
-/** Photo-led card: the photo opens the details sheet, the round button adds or opens the choices. */
-function ProductCard({
-  product,
-  canOrder,
-  onOpen,
-  onQuickAdd,
-  eager
-}: {
-  product: CatalogProduct;
-  canOrder: boolean;
-  onOpen: () => void;
-  onQuickAdd: () => void;
-  eager: boolean;
-}) {
-  const { t } = useLocale();
-  const variant = defaultVariant(product);
-  const soldOut = !product.available || !variant;
-  const bundled = (product.bundle_slots?.length ?? 0) > 0;
-  const needsChoice = product.variants.length > 1 || product.modifier_groups.length > 0;
-
-  return (
-    <li className="min-w-0">
-      <div className="relative">
-        <button
-          type="button"
-          aria-label={`${t.details} ${product.name}`}
-          onClick={onOpen}
-          className={`block w-full overflow-hidden rounded-2xl ${soldOut ? "opacity-50" : ""}`}
-        >
-          {product.image_url ? (
-            <ProductImage src={product.image_url} alt="" width={320} height={320} eager={eager} className="aspect-square w-full" />
-          ) : (
-            // Without a photo the card shows a plate, not initials that read like a person's avatar.
-            <span aria-hidden="true" className="grid aspect-square w-full place-items-center bg-muted text-subink">
-              <Icon name="dish" size={56} />
-            </span>
-          )}
-        </button>
-        {!soldOut && !bundled && canOrder ? (
-          <button
-            type="button"
-            aria-label={`${needsChoice ? t.choose : t.add} ${product.name}`}
-            onClick={needsChoice ? onOpen : onQuickAdd}
-            className="btn-primary absolute bottom-2 right-2 h-11 w-11 rounded-full shadow-md"
-          >
-            <Icon name="plus" />
-          </button>
-        ) : null}
-      </div>
-      <h3 className="mt-2 line-clamp-2 text-sm font-bold leading-snug">{product.name}</h3>
-      <p className="mt-0.5 text-base font-bold tabular-nums">{variant ? formatIdr(variant.price) : ""}</p>
-      {soldOut ? <p className="text-xs font-semibold text-subink">{t.soldOut}</p> : null}
-      {!soldOut && bundled ? <p className="text-xs text-subink">{t.askStaff}</p> : null}
-    </li>
-  );
-}
 
 export function OrderApp({ token }: { token: string }) {
   const { t, locale } = useLocale();
@@ -368,7 +308,7 @@ export function OrderApp({ token }: { token: string }) {
   }
 
   return (
-    <div style={brand} className="mx-auto max-w-lg md:max-w-3xl">
+    <div style={brand} className="mx-auto flex min-h-dvh max-w-lg flex-col md:max-w-3xl">
       {notices}
       {cms.hero_banner_url ? (
         <img
@@ -380,16 +320,12 @@ export function OrderApp({ token }: { token: string }) {
           className="aspect-[8/3] w-full object-cover"
         />
       ) : null}
-      <header className="px-5 pt-5">
-        <div className="flex items-start justify-between gap-3">
-          <h1 className="text-3xl font-extrabold leading-tight">{table.store_name}</h1>
-          <p className="mt-1 shrink-0 rounded-full bg-muted px-3 py-1 text-sm font-semibold">
-            {table.label || `${t.table} ${table.table_number}`}
-          </p>
-        </div>
-        {tagline ? <p className="mt-1 text-sm text-subink">{tagline}</p> : null}
-        {announcement ? <p className="mt-3 rounded-lg bg-muted px-3 py-2 text-sm">{announcement}</p> : null}
-      </header>
+      <StoreHeader
+        storeName={table.store_name}
+        tableLabel={table.label || `${t.table} ${table.table_number}`}
+        tagline={tagline}
+        announcement={announcement}
+      />
 
       {order && !viewingPayment ? (
         <div className="mt-4 px-5">
@@ -406,49 +342,58 @@ export function OrderApp({ token }: { token: string }) {
         </div>
       ) : null}
 
-      {sections.length > 1 ? <CategoryNav sections={sections} /> : null}
-
       <div className="px-5">
         {sections.length === 0 ? (
           <div className="mt-4"><DataStateBox state="empty" title={t.emptyTitle} description={t.emptyBody} /></div>
         ) : (
           sections.map((section) => (
-            <section key={section.id} aria-labelledby={sectionId(section.id)} className="mt-4">
-              {/* scroll-mt keeps the heading clear of the sticky category strip after a jump. */}
-              <h2 id={sectionId(section.id)} className="scroll-mt-16 text-lg font-bold">
+            <section key={section.id} aria-labelledby={sectionId(section.id)} className="mt-7">
+                  <h2 id={sectionId(section.id)} className="scroll-mt-4 text-xl font-extrabold tracking-tight">
                 {section.name}
               </h2>
-              <ul className="mt-3 grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3">
-                {section.products.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    canOrder={table.ordering_open}
-                    eager={eagerIds.has(product.id)}
-                    onOpen={() => setOptionsFor(product)}
-                    onQuickAdd={() =>
-                      dispatch({
-                        type: "add",
-                        line: { productId: product.id, variantId: defaultVariant(product)?.id, name: product.name, options: [], quantity: 1, notes: "" }
-                      })
-                    }
-                  />
-                ))}
-              </ul>
+              {(() => {
+                const withPhotos = section.products.some((p) => p.image_url);
+                const Item = withPhotos ? ProductCard : ProductRow;
+                return (
+                  <ul className={withPhotos ? "mt-3 grid grid-cols-2 gap-3 md:grid-cols-3" : "mt-1 divide-y divide-[var(--border-subtle)]"}>
+                    {section.products.map((product) => (
+                      <Item
+                        key={product.id}
+                        product={product}
+                        canOrder={table.ordering_open}
+                        eager={eagerIds.has(product.id)}
+                        onOpen={() => setOptionsFor(product)}
+                        onQuickAdd={() =>
+                          dispatch({
+                            type: "add",
+                            line: { productId: product.id, variantId: defaultVariant(product)?.id, name: product.name, options: [], quantity: 1, notes: "" }
+                          })
+                        }
+                      />
+                    ))}
+                  </ul>
+                );
+              })()}
             </section>
           ))
         )}
       </div>
 
-      {itemCount > 0 ? (
-        <div data-cart-bar className="fixed inset-x-0 bottom-0 z-20 flex justify-center bg-surface p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <button type="button" onClick={() => setCartOpen(true)} className="btn-primary mx-auto flex min-h-[56px] w-full max-w-lg items-center justify-between px-5 text-base font-bold">
-            <span className="flex items-center gap-2">
-              <Icon name="bag" />
-              {t.viewCart} ({itemCount} {t.items})
-            </span>
-            <span className="tabular-nums">{quote ? formatIdr(quote.total_amount) : ""}</span>
-          </button>
+      {sections.length > 1 || itemCount > 0 ? (
+        // Bottom dock in thumb reach: categories like a native tab bar, the cart right under them.
+        <div data-cart-bar className="sticky bottom-0 z-20 mt-auto border-t border-subtle bg-surface/95 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur supports-[backdrop-filter]:bg-surface/85">
+          {sections.length > 1 ? <CategoryNav sections={sections} /> : null}
+          {itemCount > 0 ? (
+            <div className="px-3 pt-1">
+              <button type="button" onClick={() => setCartOpen(true)} className="btn-primary flex min-h-[56px] w-full items-center justify-between rounded-xl px-5 text-base font-bold">
+                <span className="flex items-center gap-2.5">
+                  <ShoppingBag size={20} />
+                  {t.viewCart} ({itemCount} {t.items})
+                </span>
+                <span className="tabular-nums">{quote ? formatIdr(quote.total_amount) : ""}</span>
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
 

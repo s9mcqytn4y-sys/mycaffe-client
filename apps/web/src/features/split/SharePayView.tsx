@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Icon } from "@/components/Icon";
+import { CircleCheck } from "lucide-react";
 import { useLocale } from "@/components/Providers";
 import { QrCodeSvg } from "@/components/QrCodeSvg";
 import { ApiError, apiFetch, isMaintenance } from "@/lib/api";
@@ -101,7 +101,7 @@ export function SharePayView({ token }: { token: string }) {
     return (
       <section className="mx-auto max-w-md px-5 py-10">
         <span className="inline-block text-[var(--state-ok-fg)] motion-safe:animate-pop">
-          <Icon name="check" size={56} />
+          <CircleCheck size={56} />
         </span>
         <h1 className="mt-3 text-2xl font-bold">{t.sharePaidTitle}</h1>
         <p className="mt-2 text-base">{t.sharePaidBody}</p>
