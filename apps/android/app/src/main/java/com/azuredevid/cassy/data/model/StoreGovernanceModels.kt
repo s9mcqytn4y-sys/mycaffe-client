@@ -56,9 +56,9 @@ data class StoreCMSConfigDto(
     @SerialName("hero_title_en")
     val heroTitleEn: String = "Order & Pay at Table",
     @SerialName("hero_subtitle_id")
-    val heroSubtitleId: String = "Pindai QR, pilih sajian kopi dan makanan favorit Anda",
+    val heroSubtitleId: String = "Pindai QR, pilih menu, lalu bayar dari meja",
     @SerialName("hero_subtitle_en")
-    val heroSubtitleEn: String = "Scan QR, browse our signature coffee & freshly baked pastry",
+    val heroSubtitleEn: String = "Scan the QR, pick from the menu, and pay at your table",
     @SerialName("hero_banner_url")
     val heroBannerUrl: String = "",
     @SerialName("announcement_banner_id")
@@ -66,9 +66,9 @@ data class StoreCMSConfigDto(
     @SerialName("announcement_banner_en")
     val announcementBannerEn: String = "",
     @SerialName("primary_hex")
-    val primaryHex: String = "#2C1A12",
+    val primaryHex: String = "",
     @SerialName("accent_hex")
-    val accentHex: String = "#C68B59",
+    val accentHex: String = "",
     @SerialName("high_contrast_mode")
     val highContrastMode: Boolean = false,
     @SerialName("hide_powered_by_badge")

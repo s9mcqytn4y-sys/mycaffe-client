@@ -112,6 +112,13 @@ class StoreSettingsViewModelTest {
     }
 
     @Test
+    fun `new brand form has no colour so saving keeps the neutral fallback`() {
+        val state = StoreSettingsUiState()
+        assertEquals("", state.primaryHex)
+        assertEquals("", state.accentHex)
+    }
+
+    @Test
     fun initialLoad_populatesUiStateCorrectly() = runTest {
         val repo = FakeStoreGovernanceRepository()
         val serverSettings = FakeServerSettings()
