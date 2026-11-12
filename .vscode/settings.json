@@ -8,6 +8,20 @@
   "tailwindCSS.experimental.classRegex": [
     ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
   ],
+  "java.jdt.ls.java.home": "C:/Program Files/Java/jdk-17",
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-17",
+      "path": "C:/Program Files/Java/jdk-17",
+      "default": true
+    }
+  ],
+  "java.import.gradle.enabled": true,
+  "java.import.gradle.wrapper.enabled": true,
+  "kotlin.java.home": "C:/Program Files/Java/jdk-17",
+  "kotlin.languageServer.enabled": true,
+  "kotlin.compiler.jvm.target": "17",
+  "android.sdkPath": "C:/Users/Acer/AppData/Local/Android/Sdk",
   "search.exclude": {
     "**/node_modules": true,
     "**/.next": true,
@@ -15,4 +29,3 @@
     "**/build": true
   }
 }
-

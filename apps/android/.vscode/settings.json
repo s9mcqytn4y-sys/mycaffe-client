@@ -3,11 +3,28 @@
   "files.eol": "\n",
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
-  "[kotlin]": { "editor.tabSize": 4, "editor.rulers": [140] },
-  "[xml]": { "editor.tabSize": 4 },
-  "java.import.gradle.enabled": false,
+  "[kotlin]": {
+    "editor.tabSize": 4,
+    "editor.rulers": [140]
+  },
+  "[xml]": {
+    "editor.tabSize": 4
+  },
+  "java.jdt.ls.java.home": "C:/Program Files/Java/jdk-17",
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-17",
+      "path": "C:/Program Files/Java/jdk-17",
+      "default": true
+    }
+  ],
+  "java.import.gradle.enabled": true,
+  "java.import.gradle.wrapper.enabled": true,
+  "java.import.gradle.version": "8.9",
+  "kotlin.java.home": "C:/Program Files/Java/jdk-17",
   "kotlin.languageServer.enabled": true,
   "kotlin.compiler.jvm.target": "17",
+  "android.sdkPath": "C:/Users/Acer/AppData/Local/Android/Sdk",
   "files.exclude": {
     "**/.gradle": true,
     "**/.kotlin": true,

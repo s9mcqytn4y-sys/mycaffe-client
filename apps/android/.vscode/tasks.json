@@ -1,68 +1,74 @@
 {
   "version": "2.0.0",
-  "options": {
-    "env": { "ADB": "${env:LOCALAPPDATA}\Android\Sdk\platform-tools\adb.exe" }
-  },
   "tasks": [
     {
       "label": "Android: Test + bundleDebug (PR gate)",
       "type": "shell",
-      "command": ".\gradlew.bat test bundleDebug --console=plain",
-      "group": { "kind": "test", "isDefault": true },
+      "command": ".\\gradlew.bat testDebugUnitTest bundleDebug --console=plain",
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
       "problemMatcher": []
     },
     {
       "label": "Android: Unit tests",
       "type": "shell",
-      "command": ".\gradlew.bat testDebugUnitTest --console=plain",
-      "group": "test",
+      "command": ".\\gradlew.bat testDebugUnitTest --console=plain",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
       "problemMatcher": []
     },
     {
       "label": "Android: Unit tests for one class",
       "type": "shell",
-      "command": ".\gradlew.bat testDebugUnitTest --console=plain --tests \"${input:testClass}\"",
+      "command": ".\\gradlew.bat testDebugUnitTest --console=plain --tests \"${input:testClass}\"",
       "group": "test",
       "problemMatcher": []
     },
     {
       "label": "Android: Assemble debug APK",
       "type": "shell",
-      "command": ".\gradlew.bat assembleDebug --console=plain",
-      "group": { "kind": "build", "isDefault": true },
+      "command": ".\\gradlew.bat assembleDebug --console=plain",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
       "problemMatcher": []
     },
     {
-      "label": "Android: Install and launch on device",
+      "label": "Android: Install and launch on device (ADB)",
       "type": "shell",
-      "command": "& $env:ADB install -r app\build\outputs\apk\debug\app-debug.apk; & $env:ADB shell monkey -p com.azuredevid.cassy -c android.intent.category.LAUNCHER 1",
+      "command": "adb install -r app/build/outputs/apk/debug/app-debug.apk && adb shell monkey -p com.azuredevid.cassy -c android.intent.category.LAUNCHER 1",
       "dependsOn": "Android: Assemble debug APK",
       "problemMatcher": []
     },
     {
       "label": "Android: Logcat (Cassy only)",
       "type": "shell",
-      "command": "& $env:ADB logcat -v color --pid=$(& $env:ADB shell pidof -s com.azuredevid.cassy)",
+      "command": "adb logcat -v color --pid=$(adb shell pidof -s com.azuredevid.cassy)",
       "isBackground": true,
       "problemMatcher": []
     },
     {
       "label": "Android: Start tablet emulator (Medium_Tablet)",
       "type": "shell",
-      "command": "& \"$env:LOCALAPPDATA\Android\Sdk\emulator\emulator.exe\" -avd Medium_Tablet -gpu host -memory 4096",
+      "command": "& \"$env:LOCALAPPDATA/Android/Sdk/emulator/emulator.exe\" -avd Medium_Tablet -gpu host -memory 4096",
       "isBackground": true,
       "problemMatcher": []
     },
     {
       "label": "Android: Reverse demo API to device (adb reverse 8080)",
       "type": "shell",
-      "command": "& $env:ADB reverse tcp:8080 tcp:8080",
+      "command": "adb reverse tcp:8080 tcp:8080",
       "problemMatcher": []
     },
     {
       "label": "Android: Clean",
       "type": "shell",
-      "command": ".\gradlew.bat clean --console=plain",
+      "command": ".\\gradlew.bat clean --console=plain",
       "problemMatcher": []
     }
   ],
