@@ -17,7 +17,7 @@ Konteks operasional: tinjauan hukum naskah tamu dan tenant selesai; rotasi krede
 | Q3 | Kepribadian | Hangat dan praktis: rekan kerja yang tenang dan cekatan di dapur yang sibuk. Presisi lewat detail, bukan kemewahan |
 | Q4 | Warna | Pandan (utama), kunyit (aksen), putih tulang hangat, tinta hijau kehitaman. Warna status terpisah dan lolos WCAG AA. Tanpa cokelat |
 | Q5 | Huruf | Plus Jakarta Sans untuk UI produk. Display face terpisah untuk brand dan landing (kandidat Bricolage Grotesque), dipilih lewat uji wordmark |
-| Q6 | Ikon | Phosphor (MIT) untuk ikon umum, ditambah 30 sampai 40 ikon F&B buatan sendiri pada grid yang sama |
+| Q6 | Ikon | Diperbarui 2026-11-13: pustaka standar per stack, tanpa paket ikon buatan sendiri. Web memakai `lucide-react`, Android memakai Material Symbols (`androidx.compose.material.icons`) |
 | Q7 | Ilustrasi | Satu sumber 3D isometrik di Blender: GLB untuk landing, render PNG/WebP untuk paket ilustrasi, jiplakan SVG untuk ukuran kecil |
 | Q8 | AzureDevID | Penyegaran. Logo AD dan biru dipertahankan, ditambah versi mono, aturan ruang kosong, kop surat, dan lockup "oleh AzureDevID" |
 | Q9 | Fallback tamu | Gerai tanpa warna, atau warnanya gagal kontras 4.5:1, memakai tinta netral, bukan pandan dan bukan espresso |
@@ -49,7 +49,7 @@ Konteks operasional: tinjauan hukum naskah tamu dan tenant selesai; rotasi krede
 | B3 | Logo Cassy: wordmark, monogram, ikon aplikasi, versi mono | Vault `BrandAssetsLogo\Cassy\Logo\` | SVG sumber, PNG 16 sampai 1024 px, terbaca di 16 px |
 | B4 | Penyegaran AzureDevID: versi mono, ruang kosong, palet, kop surat, lockup | Vault `BrandAssetsLogo\AzureDevId\` | Tidak bertabrakan dengan pandan |
 | B5 | Token desain tunggal untuk web, Android, iOS | `packages/design-tokens` | Web, Compose, dan iOS dihasilkan atau diverifikasi dari satu berkas |
-| B6 | Paket ikon inti (15 ikon pertama) | Vault `BrandAssetsLogo\Cassy\Icons\` dan repo | Grid 24 px, goresan setara Phosphor Bold, indeks nama dan makna |
+| B6 | Dibatalkan 2026-11-13 (lihat Q6). Paket ikon vault dipindah ke Recycle Bin | - | - |
 | B7 | Kritik UI WPA, Android, iOS | `docs/DesignCritique2026-11.md` | Setiap temuan punya bukti, prioritas, dan perbaikan |
 | W1 | WPA pindah ke token baru dan fallback tinta netral | `apps/web` | E2E dan axe hijau, tanpa sisa warna espresso |
 | W2 | Refine copy WPA | `apps/web/src/lib/messages.ts` | Mengikuti tabel suara di atas |

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Icon } from "@/components/Icon";
+import { Minus, Plus } from "lucide-react";
 import { useLocale } from "@/components/Providers";
 import { Sheet } from "@/components/Sheet";
 import { formatIdr } from "@/lib/format";
@@ -12,9 +12,9 @@ export const METHOD_LABEL: Record<PayMethod, string> = { qris: "QRIS", gopay: "G
 
 function Row({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
   return (
-    <div className={`flex justify-between py-0.5 ${strong ? "text-base font-bold" : "text-sm text-subink"}`}>
+    <div className={`flex justify-between ${strong ? "mt-2 border-t border-subtle pt-3 text-lg font-extrabold" : "py-1 text-sm text-subink"}`}>
       <span>{label}</span>
-      <span>{formatIdr(value)}</span>
+      <span className="tabular-nums">{formatIdr(value)}</span>
     </div>
   );
 }
@@ -69,7 +69,7 @@ export function CartSheet({
     <Sheet title={t.cart} onClose={onClose}>
       {lines.length === 0 ? <p className="py-6 text-sm text-subink">{t.cartEmpty}</p> : null}
 
-      <ul>
+      <ul className="divide-y divide-[var(--border-subtle)]">
         {lines.map((line, index) => {
           const priced = quote?.lines[index];
           // "Reguler" says nothing when the product has no other size.
@@ -78,30 +78,30 @@ export function CartSheet({
           // Two lines of one product need distinct button names for screen readers too.
           const label = [line.name, ...details].join(", ");
           return (
-            <li key={line.key} className="py-3">
-              <div className="flex justify-between gap-3 text-sm font-semibold">
-                <span>{line.name}</span>
-                {priced ? <span>{formatIdr(priced.subtotal_amount)}</span> : null}
+            <li key={line.key} className="flex items-start gap-3 py-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-[0.9375rem] font-semibold leading-snug">{line.name}</p>
+                {details.length > 0 ? <p className="mt-0.5 text-sm text-subink">{details.join(", ")}</p> : null}
+                {line.notes ? <p className="mt-0.5 text-sm italic text-subink">{line.notes}</p> : null}
+                {priced ? <p className="mt-1.5 text-base font-bold tabular-nums">{formatIdr(priced.subtotal_amount)}</p> : null}
               </div>
-              {details.length > 0 ? <p className="text-xs text-subink">{details.join(", ")}</p> : null}
-              {line.notes ? <p className="text-xs text-subink">{line.notes}</p> : null}
-              <div className="mt-2 flex items-center gap-3">
+              <div role="group" aria-label={label} className="flex shrink-0 items-center gap-1 rounded-full bg-muted p-1">
                 <button
                   type="button"
                   aria-label={`${t.decrease} ${label}`}
                   onClick={() => dispatch({ type: "setQuantity", key: line.key, quantity: line.quantity - 1 })}
                   className="btn-secondary h-11 w-11 rounded-full"
                 >
-                  <Icon name="minus" size={18} />
+                  <Minus size={18} />
                 </button>
-                <span className="min-w-6 text-center font-bold">{line.quantity}</span>
+                <span className="min-w-7 text-center font-bold tabular-nums">{line.quantity}</span>
                 <button
                   type="button"
                   aria-label={`${t.increase} ${label}`}
                   onClick={() => dispatch({ type: "setQuantity", key: line.key, quantity: line.quantity + 1 })}
                   className="btn-secondary h-11 w-11 rounded-full"
                 >
-                  <Icon name="plus" size={18} />
+                  <Plus size={18} />
                 </button>
               </div>
             </li>
@@ -111,7 +111,8 @@ export function CartSheet({
 
       {lines.length > 0 ? (
         <>
-          <div aria-live="polite" className="mt-3 border-t border-subtle pt-3">
+          <h3 className="mt-4 text-base font-bold">{t.orderSummary}</h3>
+          <div aria-live="polite" className="mt-2 rounded-2xl bg-muted px-4 py-3">
             {quote ? (
               <>
                 <Row label={t.subtotal} value={quote.subtotal_amount} />
@@ -132,7 +133,7 @@ export function CartSheet({
             )}
           </div>
 
-          <label htmlFor="guest-name" className="mt-4 block text-sm font-bold">
+          <label htmlFor="guest-name" className="mt-6 block text-base font-bold">
             {t.guestName}
           </label>
           <input
@@ -171,7 +172,7 @@ export function CartSheet({
                       onClick={() => onSplitCount(splitCount - 1)}
                       className="btn-secondary h-11 w-11 rounded-full"
                     >
-                      <Icon name="minus" size={18} />
+                      <Minus size={18} />
                     </button>
                     <span aria-live="polite" className="min-w-6 text-center font-bold">{splitCount}</span>
                     <button
@@ -181,7 +182,7 @@ export function CartSheet({
                       onClick={() => onSplitCount(splitCount + 1)}
                       className="btn-secondary h-11 w-11 rounded-full"
                     >
-                      <Icon name="plus" size={18} />
+                      <Plus size={18} />
                     </button>
                   </div>
                   <p className="mt-1 text-xs text-subink">{t.splitHint}</p>
@@ -192,7 +193,7 @@ export function CartSheet({
 
           {methods.length > 1 && splitCount === null ? (
             <fieldset className="mt-4">
-              <legend className="text-sm font-bold">{t.payMethod}</legend>
+              <legend className="text-base font-bold">{t.payMethod}</legend>
               <div className="mt-1 flex flex-wrap gap-2">
                 {methods.map((m) => (
                   <label
@@ -216,11 +217,12 @@ export function CartSheet({
           ) : null}
 
           {canOrder ? (
+            <div className="sticky bottom-0 -mx-5 mt-6 border-t border-subtle bg-surface px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
             <button
               type="button"
               disabled={!quote || quoteLoading || placing}
               onClick={onPay}
-              className="btn-primary mt-4 min-h-[56px] w-full text-base font-bold"
+              className="btn-primary min-h-[56px] w-full rounded-xl text-base font-bold"
             >
               {placing
                 ? t.placing
@@ -230,6 +232,7 @@ export function CartSheet({
                     ? `${t.splitPay} ${formatIdr(quote.total_amount)}`
                     : `${t.pay} ${formatIdr(quote.total_amount)}`}
             </button>
+            </div>
           ) : null}
         </>
       ) : null}

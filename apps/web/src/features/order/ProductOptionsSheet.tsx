@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useLocale } from "@/components/Providers";
-import { Icon } from "@/components/Icon";
+import { Minus, Plus } from "lucide-react";
 import { Sheet } from "@/components/Sheet";
 import { formatIdr } from "@/lib/format";
 import type { CartLine, SelectedOption } from "./cart";
@@ -36,8 +36,8 @@ function GroupFields({
   const { t } = useLocale();
   const selected = selection[group.id] ?? [];
   return (
-    <fieldset className="mt-5">
-      <legend className="text-sm font-bold">
+    <fieldset className="mt-6">
+      <legend className="text-base font-bold">
         {group.name}
         <span className="ml-2 text-xs font-normal text-subink">
           {group.required ? t.required : ""}
@@ -45,7 +45,10 @@ function GroupFields({
         </span>
       </legend>
       {group.options.map((option) => (
-        <label key={option.id} className="flex min-h-[44px] cursor-pointer items-center gap-3 py-1 text-sm">
+        <label
+          key={option.id}
+          className="mt-2 flex min-h-[48px] cursor-pointer items-center gap-3 rounded-xl border border-subtle px-3.5 text-[0.9375rem] has-[:checked]:border-brand has-[:checked]:bg-muted has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50"
+        >
           <input
             type={group.max === 1 ? "radio" : "checkbox"}
             name={group.id}
@@ -53,10 +56,10 @@ function GroupFields({
             checked={selected.includes(option.id)}
             onClick={() => onChange(toggle(selection, group, option.id))}
             onChange={() => undefined}
-            className="h-5 w-5"
+            className="h-5 w-5 accent-[var(--brand-primary)]"
           />
           <span className="flex-1">{option.available ? option.name : `${option.name} (${t.soldOut})`}</span>
-          {option.price_delta > 0 ? <span className="text-subink">+{formatIdr(option.price_delta)}</span> : null}
+          {option.price_delta > 0 ? <span className="tabular-nums text-subink">+{formatIdr(option.price_delta)}</span> : null}
         </label>
       ))}
     </fieldset>
@@ -117,25 +120,28 @@ export function ProductOptionsSheet({
   return (
     <Sheet title={product.name} onClose={onClose}>
       {product.image_url ? (
-        <ProductImage src={product.image_url} alt={product.name} width={640} height={480} className="mb-4 aspect-[4/3] w-full rounded-lg" />
+        <ProductImage src={product.image_url} alt={product.name} width={640} height={480} className="mb-4 aspect-[4/3] w-full rounded-2xl" />
       ) : null}
-      {product.description ? <p className="text-sm text-subink">{product.description}</p> : null}
+      {product.description ? <p className="text-[0.9375rem] leading-relaxed text-subink">{product.description}</p> : null}
 
       {product.variants.length > 1 ? (
-        <fieldset className="mt-4">
-          <legend className="text-sm font-bold">{t.choose}</legend>
+        <fieldset className="mt-6">
+          <legend className="text-base font-bold">{t.choose}</legend>
           {product.variants.map((v) => (
-            <label key={v.id} className="flex min-h-[44px] cursor-pointer items-center gap-3 py-1 text-sm">
+            <label
+              key={v.id}
+              className="mt-2 flex min-h-[48px] cursor-pointer items-center gap-3 rounded-xl border border-subtle px-3.5 text-[0.9375rem] has-[:checked]:border-brand has-[:checked]:bg-muted has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50"
+            >
               <input
                 type="radio"
                 name="variant"
                 disabled={!v.available}
                 checked={variantId === v.id}
                 onChange={() => setVariantId(v.id)}
-                className="h-5 w-5"
+                className="h-5 w-5 accent-[var(--brand-primary)]"
               />
               <span className="flex-1">{v.available ? v.name : `${v.name} (${t.soldOut})`}</span>
-              <span>{formatIdr(v.price)}</span>
+              <span className="font-semibold tabular-nums">{formatIdr(v.price)}</span>
             </label>
           ))}
         </fieldset>
@@ -152,7 +158,7 @@ export function ProductOptionsSheet({
         </div>
       ))}
 
-      <label htmlFor="line-notes" className="mt-5 block text-sm font-bold">
+      <label htmlFor="line-notes" className="mt-6 block text-base font-bold">
         {t.notes}
       </label>
       <textarea
@@ -168,9 +174,14 @@ export function ProductOptionsSheet({
         {t.notesHint}
       </p>
 
-      <div className="mt-5 flex items-center justify-between">
-        <span className="text-sm font-bold">{t.quantity}</span>
-        <div className="flex items-center gap-3">
+      {showError && incomplete ? (
+        <p role="alert" className="mt-4 text-sm font-semibold text-[var(--state-err-fg)]">
+          {t.needChoice}
+        </p>
+      ) : null}
+
+      <div className="sticky bottom-0 -mx-5 mt-6 flex items-center gap-3 border-t border-subtle bg-surface px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+        <div role="group" aria-label={t.quantity} className="flex items-center gap-1 rounded-full bg-muted p-1">
           <button
             type="button"
             aria-label={t.decrease}
@@ -178,9 +189,9 @@ export function ProductOptionsSheet({
             onClick={() => setQuantity((q) => q - 1)}
             className="btn-secondary h-11 w-11 rounded-full"
           >
-            <Icon name="minus" size={18} />
+            <Minus size={18} />
           </button>
-          <span aria-live="polite" className="min-w-6 text-center font-bold">
+          <span aria-live="polite" className="min-w-7 text-center text-base font-bold tabular-nums">
             {quantity}
           </span>
           <button
@@ -189,19 +200,13 @@ export function ProductOptionsSheet({
             onClick={() => setQuantity((q) => q + 1)}
             className="btn-secondary h-11 w-11 rounded-full"
           >
-            <Icon name="plus" size={18} />
+            <Plus size={18} />
           </button>
         </div>
+        <button type="button" onClick={submit} className="btn-primary min-h-[52px] flex-1 rounded-xl text-base font-bold">
+          {t.addToCart}
+        </button>
       </div>
-
-      {showError && incomplete ? (
-        <p role="alert" className="mt-4 text-sm font-semibold text-[var(--state-err-fg)]">
-          {t.needChoice}
-        </p>
-      ) : null}
-      <button type="button" onClick={submit} className="btn-primary mt-4 min-h-[56px] w-full text-base font-bold">
-        {t.addToCart}
-      </button>
     </Sheet>
   );
 }

@@ -46,7 +46,7 @@ Status: disetujui arah, 2026-11-10. Diperbarui 2026-11-12 untuk PRD v4 (`docs/Pr
 
 ## DESIGN
 
-Mengikuti PRD v4: token pandan dan kunyit dari `packages/design-tokens`, Plus Jakarta Sans, ikon Cassy sebagai `ImageVector`, target sentuh 48px untuk kasir, status selalu berupa teks. Layout tablet landscape memakai rail navigasi kiri. Layar setup memakai satu tugas per layar. Dapur memakai font besar yang terbaca dari jarak 2 meter.
+Mengikuti PRD v4: token pandan dan kunyit dari `packages/design-tokens`, Plus Jakarta Sans, ikon Material Symbols dari `androidx.compose.material.icons` (PRD v4 Q6 diperbarui 2026-11-13), target sentuh 48px untuk kasir, status selalu berupa teks. Layout tablet landscape memakai rail navigasi kiri. Layar setup memakai satu tugas per layar. Dapur memakai font besar yang terbaca dari jarak 2 meter.
 
 ## Arsitektur (PRD v4 Q11, prinsip SOLID)
 
