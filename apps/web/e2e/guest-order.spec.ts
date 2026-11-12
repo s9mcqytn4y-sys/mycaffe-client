@@ -351,7 +351,7 @@ test("field nama menjelaskan tujuan data dan menaut privasi", async ({ page }) =
   await mockStore(page);
   await addAndOpenCart(page);
   const dialog = page.getByRole("dialog");
-  await expect(dialog.getByText("memanggil pesanan")).toBeVisible();
+  await expect(dialog.getByText("memanggil atau mengantar pesanan")).toBeVisible();
   await expect(dialog.getByRole("link", { name: "Ketentuan dan privasi" })).toHaveAttribute("href", "/legal");
 });
 

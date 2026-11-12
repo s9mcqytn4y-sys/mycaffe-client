@@ -25,14 +25,6 @@ function defaultVariant(product: CatalogProduct) {
   return product.variants.find((v) => v.is_default && v.available) ?? product.variants.find((v) => v.available);
 }
 
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0] ?? "")
-    .join("")
-    .toUpperCase();
-
 /** Photo-led card: the photo opens the details sheet, the round button adds or opens the choices. */
 function ProductCard({
   product,
@@ -65,8 +57,9 @@ function ProductCard({
           {product.image_url ? (
             <ProductImage src={product.image_url} alt="" width={320} height={320} eager={eager} className="aspect-square w-full" />
           ) : (
-            <span aria-hidden="true" className="grid aspect-square w-full place-items-center bg-muted text-2xl font-bold text-subink">
-              {initials(product.name)}
+            // Without a photo the card shows a plate, not initials that read like a person's avatar.
+            <span aria-hidden="true" className="grid aspect-square w-full place-items-center bg-muted text-subink">
+              <Icon name="dish" size={56} />
             </span>
           )}
         </button>

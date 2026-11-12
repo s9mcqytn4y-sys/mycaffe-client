@@ -24,6 +24,13 @@ It provides the complete front-facing suite for multi-tenant hospitality busines
 - **Brand Consistency**: Product brand is `Cassy` by AzureDevID. `MyCaffe` is the former name and survives only in technical identifiers. Visual tokens *Espresso & Crema* (`#FAF6F1`, `#2C1A12`, `#C68B59`, `#8A4F22`).
 - **Clean & DRY Principle**: Modularize UI components into dedicated files. Follow SOLID principles.
 
+## Official CLI Toolchain & Agent Plugins
+- **Android CLI**: `C:\Users\Acer\AppData\AndroidCLI\android.exe` (v1.1+, managed via `android sdk`, `android emulator`, `android preview render`).
+- **GitHub CLI**: `C:\Program Files\GitHub CLI\gh.exe` (issues, PRs, actions).
+- **Android Debug Bridge (ADB)**: `C:\Users\Acer\scoop\shims\adb.exe` (device communication, shell input, logcat).
+- **Official Android Agent Plugins**:
+  - `android-cli-plugin`: `device-hub` sidecar for live device mirroring & control, and `compose-preview` sidecar for instant Compose `@Preview` rendering.
+
 <!-- antislop:start -->
 ## antislop
 For UI, copy, people, mobile layout, or code comments work, read `antislop.md` (core) and then the skill for the task:
