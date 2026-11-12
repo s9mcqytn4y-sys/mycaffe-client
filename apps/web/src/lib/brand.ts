@@ -15,10 +15,10 @@ export function brandVariables(hex: string | undefined): Record<string, string> 
   if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return {};
   const lum = luminance(hex);
   const onLight = contrast(lum, 1);
-  const onDark = contrast(lum, luminance("#140E0B"));
+  const onDark = contrast(lum, luminance("#17211E"));
   const best = Math.max(onLight, onDark);
   if (best < 4.5) return {};
-  const foreground = onLight >= onDark ? "#FFFFFF" : "#140E0B";
+  const foreground = onLight >= onDark ? "#FFFFFF" : "#17211E";
   // Tailwind's colour tokens are resolved at :root, so the utilities need their own override.
   return {
     "--brand-primary": hex,

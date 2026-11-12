@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./tokens.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
@@ -65,61 +66,9 @@
 }
 
 /*
- * Design Read: QR table ordering for cafe guests on their phones. The outlet's brand leads;
- * Espresso & Crema is the fallback palette. Dial ENERGY 2 / RHYTHM 1 / MOTION 1 (DESIGN.md).
+ * Design Read: QR table ordering for guests of any food and drink outlet. The outlet's brand leads; neutral
+ * ink is the fallback (PRD v4 Q9). Colours come from tokens.css, generated from packages/design-tokens.
  */
-
-:root,
-[data-theme="light"] {
-  --bg-canvas: #FAF6F1;
-  --bg-surface: #FFFFFF;
-  --bg-muted: #F2EBE2;
-  --text-primary: #2C1A12;
-  --text-secondary: #5C4738;
-  --border-subtle: #D8CCC0;
-  --border-strong: #8C7360;
-  --brand-primary: #2C1A12;
-  --brand-on-primary: #FAF6F1;
-  --brand-accent: #C68B59;
-  --brand-accent-text: #7C4318;
-
-  --state-ok-bg: #DCFCE7;
-  --state-ok-fg: #166534;
-  --state-warn-bg: #FFEDD5;
-  --state-warn-fg: #9A3412;
-  --state-err-bg: #FEE2E2;
-  --state-err-fg: #991B1B;
-  --state-info-bg: #DBEAFE;
-  --state-info-fg: #1E40AF;
-
-  /* Ink, not the outlet colour: a ring must stay visible whatever --brand-primary the outlet sets. */
-  --focus-ring: #2C1A12;
-}
-
-[data-theme="dark"] {
-  --bg-canvas: #140E0B;
-  --bg-surface: #1E1612;
-  --bg-muted: #2A1F1A;
-  --text-primary: #FAF6F1;
-  --text-secondary: #D6C6B8;
-  --border-subtle: #4A382E;
-  --border-strong: #8F7564;
-  --brand-primary: #F0CFAF;
-  --brand-on-primary: #140E0B;
-  --brand-accent: #E0A976;
-  --brand-accent-text: #F0CFAF;
-
-  --state-ok-bg: #064E3B;
-  --state-ok-fg: #A7F3D0;
-  --state-warn-bg: #7C2D12;
-  --state-warn-fg: #FED7AA;
-  --state-err-bg: #7F1D1D;
-  --state-err-fg: #FECACA;
-  --state-info-bg: #1E3A8A;
-  --state-info-fg: #BFDBFE;
-
-  --focus-ring: #F0CFAF;
-}
 
 html,
 body {

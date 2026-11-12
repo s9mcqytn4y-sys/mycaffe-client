@@ -79,10 +79,18 @@ test("warna gerai dipakai", async ({ page }) => {
   await expect(add).toHaveCSS("background-color", "rgb(11, 93, 59)");
 });
 
+// Without a valid outlet colour the guest app falls back to neutral ink, not a Cassy or coffee colour (PRD v4 Q9).
 test("nilai warna yang tidak valid diabaikan", async ({ page }) => {
   await mockStore(page, {}, { primary_hex: "red;}" });
   await page.goto("/order/T1");
-  await expect(page.getByRole("button", { name: "Tambah Croissant" })).toHaveCSS("background-color", "rgb(44, 26, 18)");
+  await expect(page.getByRole("button", { name: "Tambah Croissant" })).toHaveCSS("background-color", "rgb(23, 33, 30)");
+});
+
+// Neither white (3.77:1) nor ink (4.37:1) text reaches 4.5:1 on this tomato red.
+test("warna gerai yang tidak terbaca jatuh ke tinta netral", async ({ page }) => {
+  await mockStore(page, {}, { primary_hex: "#E0563C" });
+  await page.goto("/order/T1");
+  await expect(page.getByRole("button", { name: "Tambah Croissant" })).toHaveCSS("background-color", "rgb(23, 33, 30)");
 });
 
 async function addAndOpenCart(page: Page) {

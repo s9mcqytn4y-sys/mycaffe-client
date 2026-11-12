@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -27,26 +28,35 @@ function contrastRatio(fg, bg) {
   return (bright + 0.05) / (dark + 0.05);
 }
 
+const { cassyLight: L, cassyDark: D, azureDevIdCorporate: A } = tokens.themes;
+// Every text and component pair the apps actually draw (PRD v4 B2): 4.5:1 for text, 3:1 for borders and focus.
+const pairs = [
+  ["primary text on canvas", "textPrimary", "bgCanvas", 4.5],
+  ["primary text on surface", "textPrimary", "bgSurface", 4.5],
+  ["secondary text on canvas", "textSecondary", "bgCanvas", 4.5],
+  ["secondary text on surface", "textSecondary", "bgSurface", 4.5],
+  ["secondary text on muted", "textSecondary", "bgMuted", 4.5],
+  ["text on pandan", "brandOnPrimary", "brandPrimary", 4.5],
+  ["pandan text on surface", "brandPrimary", "bgSurface", 4.5],
+  ["text on kunyit", "brandOnAccent", "brandAccent", 4.5],
+  ["kunyit text on surface", "brandAccentText", "bgSurface", 4.5],
+  ["text on guest primary", "guestOnPrimary", "guestPrimary", 4.5],
+  ["strong border on surface", "borderStrong", "bgSurface", 3],
+  ["strong border on canvas", "borderStrong", "bgCanvas", 3],
+  ["focus ring on canvas", "focusRing", "bgCanvas", 3],
+  ["focus ring on surface", "focusRing", "bgSurface", 3],
+  ["paid badge", "okFg", "okBg", 4.5],
+  ["pending badge", "warnFg", "warnBg", 4.5],
+  ["failed badge", "errFg", "errBg", 4.5],
+  ["info badge", "infoFg", "infoBg", 4.5],
+  ["paid text on surface", "okFg", "bgSurface", 4.5],
+  ["failed text on surface", "errFg", "bgSurface", 4.5]
+];
 const checks = [
-  ["Light: Primary Text on Canvas", tokens.themes.mycaffeEspressoCrema.textPrimary, tokens.themes.mycaffeEspressoCrema.bgCanvas, 4.5],
-  ["Light: Secondary Text on Canvas", tokens.themes.mycaffeEspressoCrema.textSecondary, tokens.themes.mycaffeEspressoCrema.bgCanvas, 4.5],
-  ["Light: Secondary Text on Muted", tokens.themes.mycaffeEspressoCrema.textSecondary, tokens.themes.mycaffeEspressoCrema.bgMuted, 4.5],
-  ["Light: Accent Text on Canvas", tokens.themes.mycaffeEspressoCrema.brandAccentText, tokens.themes.mycaffeEspressoCrema.bgCanvas, 4.5],
-  ["Light: Primary Ink on Crema Accent", tokens.themes.mycaffeEspressoCrema.textPrimary, tokens.themes.mycaffeEspressoCrema.brandAccent, 4.5],
-  ["Dark: Primary Text on Canvas", tokens.themes.mycaffeRoastedObsidian.textPrimary, tokens.themes.mycaffeRoastedObsidian.bgCanvas, 4.5],
-  ["Dark: Primary Text on Surface", tokens.themes.mycaffeRoastedObsidian.textPrimary, tokens.themes.mycaffeRoastedObsidian.bgSurface, 4.5],
-  ["Dark: Secondary Text on Canvas", tokens.themes.mycaffeRoastedObsidian.textSecondary, tokens.themes.mycaffeRoastedObsidian.bgCanvas, 4.5],
-  ["Dark: Secondary Text on Surface", tokens.themes.mycaffeRoastedObsidian.textSecondary, tokens.themes.mycaffeRoastedObsidian.bgSurface, 4.5],
-  ["Dark: Secondary Text on Muted", tokens.themes.mycaffeRoastedObsidian.textSecondary, tokens.themes.mycaffeRoastedObsidian.bgMuted, 4.5],
-  ["Dark: Button Ink on Primary", tokens.themes.mycaffeRoastedObsidian.brandOnPrimary, tokens.themes.mycaffeRoastedObsidian.brandPrimary, 4.5],
-  ["AzureDevID Primary on Surface", tokens.themes.azureDevIdCorporate.brandPrimary, tokens.themes.azureDevIdCorporate.bgCanvas, 4.5],
-  ["AzureDevID Cyan on Obsidian Dark", tokens.themes.azureDevIdCorporate.brandCyan, tokens.themes.azureDevIdCorporate.bgDarkObsidian, 4.5],
-  ["Light Status Paid Badge", tokens.semanticStatus.paidOrReady.fg, tokens.semanticStatus.paidOrReady.bg, 4.5],
-  ["Light Status Pending Badge", tokens.semanticStatus.pendingOrPreparing.fg, tokens.semanticStatus.pendingOrPreparing.bg, 4.5],
-  ["Light Status Alert Badge", tokens.semanticStatus.failedOrAlert.fg, tokens.semanticStatus.failedOrAlert.bg, 4.5],
-  ["Dark Status Paid Badge", tokens.semanticStatus.paidOrReady.darkFg, tokens.semanticStatus.paidOrReady.darkBg, 4.5],
-  ["Dark Status Pending Badge", tokens.semanticStatus.pendingOrPreparing.darkFg, tokens.semanticStatus.pendingOrPreparing.darkBg, 4.5],
-  ["Dark Status Alert Badge", tokens.semanticStatus.failedOrAlert.darkFg, tokens.semanticStatus.failedOrAlert.darkBg, 4.5]
+  ...pairs.map(([label, fg, bg, min]) => [`Light: ${label}`, L[fg], L[bg], min]),
+  ...pairs.map(([label, fg, bg, min]) => [`Dark: ${label}`, D[fg], D[bg], min]),
+  ["AzureDevID Primary on Surface", A.brandPrimary, A.bgCanvas, 4.5],
+  ["AzureDevID Cyan on Obsidian Dark", A.brandCyan, A.bgDarkObsidian, 4.5]
 ];
 
 let failed = false;
@@ -84,6 +94,11 @@ if (tokens.appIdentifier !== "com.azuredevid.cassy") {
 } else {
   console.log(`[PASS] Official legal appIdentifier verified: ${tokens.appIdentifier}`);
 }
+
+// Generated platform files must match tokens.json.
+const build = spawnSync(process.execPath, [path.join(__dirname, "build-tokens.mjs"), "--check"], { stdio: "inherit" });
+if (build.status !== 0) failed = true;
+else console.log("[PASS] Generated platform token files are in sync");
 
 if (failed) process.exit(1);
 console.log("All WCAG 2.2 AA (Light & Dark), i18n, and antislop token checks passed.");

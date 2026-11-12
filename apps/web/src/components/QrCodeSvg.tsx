@@ -28,7 +28,7 @@ export function QrCodeSvg({ value, size = 180, label = "Kode QR dapat dipindai" 
       width: size,
       errorCorrectionLevel: "M",
       color: {
-        dark: "#140E0B",
+        dark: "#17211E",
         light: "#FFFFFF",
       },
     })
