@@ -1,52 +1,41 @@
-# Cassy Client Monorepo: AGENTS.md
+# Cassy client monorepo
 
-## Ecosystem Context & Architecture
-`MyCaffeClient` is the official client monorepo for **Cassy by AzureDevID** (usaha perorangan AzureDevID, Jakarta Pusat, DKI Jakarta).
-It provides the complete front-facing suite for multi-tenant hospitality businesses (cafes, restaurants, roasteries):
-- `apps/android`: **Cassy POS** native tablet application in Jetpack Compose (`com.azuredevid.cassy`) with CameraX store pairing, ESC/POS Port 9100 KDS ticket routing, dynamic ZXing QRIS generation, and Biometric Keystore security.
-- `apps/web`: **Guest Table Ordering & Management PWA** in Next.js 15 App Router, React 19, Tailwind CSS v4, and real-time WebSocket connection.
-- `apps/ios`: **iOS Hardware Bridge & HAL** in Objective-C for serial and network receipt printers.
-- `packages/design-tokens`: Shared design tokens (*Espresso & Crema* palette, typography, elevation, spacing).
+Single source of agent instructions for this repo. `CLAUDE.md` and `GEMINI.md` only import this file. Each app folder has its own `AGENTS.md` with app rules; read both.
 
-### The 7 Ecosystem Directories
-All AI agents (Antigravity, Claude Code, Gemini CLI, Codex) operating across this workspace must recognize the unified ecosystem:
-1. `C:\Projects\myCaffe-backend`: Core POS engine in Go 1.24 and PostgreSQL 18 RLS (`mycaffe_app`).
-3. `C:\Projects\MyCaffeClient`: Client monorepo root (this workspace).
-4. `C:\Projects\MyCaffeClient\apps\android`: Cassy POS Native Android Tablet application (`com.azuredevid.cassy`).
-5. `C:\Projects\MyCaffeClient\apps\web`: Next.js 15 PWA Guest Table Ordering & Owner Backoffice web client.
-6. `C:\Projects\MyCaffeClient\apps\ios`: iOS hardware abstraction layer and native printer bridge.
-7. `C:\Users\Acer\OneDrive\Documents\AzureDevId`: Corporate brand identity, legal licenses (HAKI, PSE), payment gateway merchant docs, and recovery keys.
+## What this is
+Client apps for **Cassy by AzureDevID**: ordering and POS for food and beverage businesses in Indonesia (restaurants, cafes, bakeries, food courts, cloud kitchens, kiosks). `MyCaffe` is the former name and survives only in technical identifiers.
 
-## Core Engineering Principles
-- **No Hardcoded Values**: All store configurations, tenant IDs, catalog seeds, tax/service rates, payment credentials, and station routes must come dynamically from the backend API or authenticated session bootstrap (`/api/v1/mobile/bootstrap`).
-- **Money & Precision**: Currency amounts are integer Indonesian Rupiah (`int64` / `BIGINT`). Never use floating-point arithmetic for prices, subtotals, discounts, or settlement amounts.
-- **Fail-Closed Security**: In the absence of an authenticated store binding, active session, or valid token, apps must fail-closed (`503` / locked screen).
-- **Anti-Emoji Policy**: Zero emojis in source code, user interface copy, logs, or Git commit messages.
-- **Brand Consistency**: Product brand is `Cassy` by AzureDevID. `MyCaffe` is the former name and survives only in technical identifiers. Visual tokens *Espresso & Crema* (`#FAF6F1`, `#2C1A12`, `#C68B59`, `#8A4F22`).
-- **Clean & DRY Principle**: Modularize UI components into dedicated files (no monolithic screen files). Follow Single Responsibility, Dependency Inversion, and separation of concerns.
+| Path | App |
+|---|---|
+| `apps/web` | Guest QR ordering PWA: Next.js 15 App Router, React 19, Tailwind CSS v4 |
+| `apps/android` | Cassy POS tablet, Jetpack Compose, `com.azuredevid.cassy` |
+| `apps/ios` | Objective-C printer bridge, no UI |
+| `packages/design-tokens` | `tokens.json`, the single source of colour for every app |
 
-## Branch & Quality Gates
-- **Branch Strategy**: Trunk-based: short-lived `feat/*`, `fix/*`, `docs/*`, `chore/*` into `main`; `main` goes to demo, owner-approved `v*` tags go to production. No `staging` branch.
-- **Commit Format**: Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `ci:`).
-- **Validation Before Commit**:
-  - Android: `./gradlew test bundleDebug` in `apps/android`
-  - Web: `pnpm lint` and `pnpm test` in `apps/web`
-  - Monorepo: `pnpm check`
+Related folders: backend `C:\Projects\myCaffe-backend` (Go, PostgreSQL 18 RLS, owns all prices, taxes and state); brand and legal vault `C:\Users\Acer\OneDrive\Documents\AzureDevId` (never touch `SecurityRecovery` or `MerchantPaymentGateway`).
 
-## Official CLI Toolchain & Agent Plugins
-- **Android CLI**: `C:\Users\Acer\AppData\AndroidCLI\android.exe` (v1.1+, managed via `android sdk`, `android emulator`, `android preview render`).
-- **GitHub CLI**: `C:\Program Files\GitHub CLI\gh.exe` (issues, pull requests, actions).
-- **Android Debug Bridge (ADB)**: `C:\Users\Acer\scoop\shims\adb.exe` (device communication, shell input, logcat).
-- **Official Android Agent Plugins**:
-  - `android-cli-plugin`: `device-hub` sidecar for live AVD/device mirroring & control, and `compose-preview` sidecar for instant Compose `@Preview` rendering.
+Current product decisions: `docs/PrdCassyV4.md`. Open debt: `docs/TechDebt.md`. Android plan: `apps/android/docs/ReleaseOnePlan.md`.
 
-<!-- antislop:start -->
-## antislop
-For UI, copy, people, mobile layout, or code comments work, read `antislop.md` (core) and then the skill for the task:
-- UI / visual: `skills/antislop-ui/SKILL.md`
-- Copy & text: `skills/antislop-copywriting/SKILL.md`
-- People: `skills/antislop-human/SKILL.md`
-- Mobile / responsive: `skills/antislop-layoutmobile/SKILL.md`
-- Code comments: `skills/antislop-code/SKILL.md`
-Before starting, ask the user when antislop applies: during the work, or after it is done.
-<!-- antislop:end -->
+## Rules
+- **Server is the source of truth.** Prices, taxes, service charges, totals and payment state come from the API. Clients never calculate them.
+- **Money is integer rupiah** (`Long` / `number` without fractions). No floating point.
+- **No hardcoded tenant data.** Store config, tenant ids, catalog, rates and printer routes come from the API or the authenticated bootstrap.
+- **Fail closed.** Without a valid session, store binding or token, show a locked or error state.
+- **Brand (PRD v4).** Pandan `#1F5F52`, kunyit `#E9A23B`, putih tulang `#F7F5F0`, tinta `#17211E`. No brown. The outlet colour leads the guest app; without one the guest app uses neutral ink. Plus Jakarta Sans for product UI, Bricolage Grotesque for brand display.
+- **Icons.** Web uses `lucide-react`; Android uses Material Symbols (`androidx.compose.material.icons`). No custom icon packs.
+- **No emoji** in code, UI copy, logs or commits.
+- **Copy** is everyday, polite Bahasa Indonesia with English in `values-en` / `messages.ts`. Short sentences, verb first, clear numbers.
+- Small focused files, SOLID, no dead code.
+
+## Branches and checks
+Trunk-based: short `feat/*`, `fix/*`, `docs/*`, `chore/*` branches into `main` by PR. Conventional Commits. Merge only when CI is green and the owner approves.
+
+| Area | Command |
+|---|---|
+| Tokens | `pnpm tokens:verify` |
+| Web | `pnpm --filter @azuredevid/mycaffe-web typecheck`, `test:unit`, `test:e2e` |
+| Android | `apps/android/gradlew -p apps/android test bundleDebug` |
+| iOS | `pnpm ios:lint-objc` |
+
+## Tooling
+`gh` for GitHub, `adb` at `C:\Users\Acer\scoop\shims\adb.exe`, Android CLI at `C:\Users\Acer\AppData\AndroidCLI\android.exe`. Never print `.env` contents or credentials.
