@@ -87,4 +87,41 @@
     <string name="btn_pair_manual">Hubungkan dengan Kode Manual</string>
     <string name="err_invalid_qr_format">Format QR Code tidak valid (harus JSON signed payload).</string>
     <string name="err_code_length">Masukkan minimal 4 hingga 6 karakter kode pairing gerai.</string>
+
+    <!-- Cashier Shift & Cash Reconciliation -->
+    <string name="shift_open_title">Buka Shift Kasir</string>
+    <string name="shift_open_subtitle">Masukkan modal kas laci (opening float) untuk memulai sesi transaksi baru.</string>
+    <string name="shift_open_float_label">Modal Kas Awal</string>
+    <string name="shift_open_custom_amount">Nominal Kas Awal (Rp)</string>
+    <string name="shift_open_notes_placeholder">Catatan shift (opsional)</string>
+    <string name="shift_notes_label">Catatan</string>
+    <string name="shift_btn_open">Buka Shift Kasir</string>
+    <string name="shift_close_title">Tutup Shift &amp; Rekonsiliasi Kas</string>
+    <string name="shift_close_subtitle">Hitung fisik uang tunai di laci kasir (Blind Cash Count).</string>
+    <string name="shift_counted_cash_label">Fisik Kas Dihitung (Rp)</string>
+    <string name="shift_variance_status_label">Hasil Rekonsiliasi Kas</string>
+    <string name="shift_variance_balance">PAS (BALANCE)</string>
+    <string name="shift_variance_over">LEBIH (+Rp %1$s)</string>
+    <string name="shift_variance_short">KURANG (-Rp %1$s)</string>
+    <string name="shift_supervisor_gate_warning">Selisih kas melebihi toleransi (Rp 50.000). Memerlukan alasan dan otorisasi PIN Supervisor.</string>
+    <string name="shift_variance_reason_label">Alasan Selisih Kas</string>
+    <string name="shift_variance_reason_placeholder">Contoh: Salah kembalian transaksi #12</string>
+    <string name="shift_supervisor_pin_label">PIN Supervisor</string>
+    <string name="shift_close_notes_placeholder">Catatan penutupan shift (opsional)</string>
+    <string name="shift_print_zreport_checkbox">Cetak Struk Z-Report (Thermal 80mm)</string>
+    <string name="shift_btn_close">Tutup Shift Kasir</string>
+    <string name="shift_movement_title">Mutasi Kas Laci (Petty Cash)</string>
+    <string name="shift_movement_subtitle">Catat pengeluaran operasional atau penambahan kas laci.</string>
+    <string name="shift_movement_paid_out">Kas Keluar (Paid Out)</string>
+    <string name="shift_movement_cash_in">Kas Masuk (Cash In)</string>
+    <string name="shift_movement_amount_label">Nominal Mutasi Kas</string>
+    <string name="shift_movement_custom_amount">Nominal Mutasi (Rp)</string>
+    <string name="shift_movement_reason_label">Keperluan / Alasan Mutasi</string>
+    <string name="shift_movement_reason_placeholder">Contoh: Beli es batu darurat / Tambah uang kembalian</string>
+    <string name="shift_btn_save_movement">Simpan Mutasi Kas</string>
+    <string name="shift_banner_movement_btn">Mutasi Kas</string>
+    <string name="shift_banner_close_btn">Tutup Shift</string>
+    <string name="shift_banner_closed_badge">SHIFT BELUM DIBUKA</string>
+    <string name="shift_banner_closed_hint">Buka shift kasir untuk menerima pembayaran dan pesanan</string>
+    <string name="shift_banner_open_btn">Buka Shift</string>
 </resources>

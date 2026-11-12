@@ -87,5 +87,42 @@
     <string name="btn_pair_manual">Connect with Manual Code</string>
     <string name="err_invalid_qr_format">Invalid QR Code format (must be JSON signed payload).</string>
     <string name="err_code_length">Enter at least 4 to 6 characters for store pairing code.</string>
+
+    <!-- Cashier Shift & Cash Reconciliation -->
+    <string name="shift_open_title">Open Cashier Shift</string>
+    <string name="shift_open_subtitle">Enter the cash drawer opening float to start a new transaction session.</string>
+    <string name="shift_open_float_label">Opening Cash Float</string>
+    <string name="shift_open_custom_amount">Opening Float Amount (IDR)</string>
+    <string name="shift_open_notes_placeholder">Shift notes (optional)</string>
+    <string name="shift_notes_label">Notes</string>
+    <string name="shift_btn_open">Open Cashier Shift</string>
+    <string name="shift_close_title">Close Shift &amp; Cash Reconciliation</string>
+    <string name="shift_close_subtitle">Count physical cash in the cash drawer (Blind Cash Count).</string>
+    <string name="shift_counted_cash_label">Physical Counted Cash (IDR)</string>
+    <string name="shift_variance_status_label">Cash Reconciliation Result</string>
+    <string name="shift_variance_balance">BALANCE (NO VARIANCE)</string>
+    <string name="shift_variance_over">OVER (+IDR %1$s)</string>
+    <string name="shift_variance_short">SHORT (-IDR %1$s)</string>
+    <string name="shift_supervisor_gate_warning">Cash variance exceeds tolerance (IDR 50,000). Reason and supervisor PIN authorization required.</string>
+    <string name="shift_variance_reason_label">Cash Variance Reason</string>
+    <string name="shift_variance_reason_placeholder">Example: Change error on order #12</string>
+    <string name="shift_supervisor_pin_label">Supervisor PIN</string>
+    <string name="shift_close_notes_placeholder">Shift close notes (optional)</string>
+    <string name="shift_print_zreport_checkbox">Print Z-Report Receipt (Thermal 80mm)</string>
+    <string name="shift_btn_close">Close Cashier Shift</string>
+    <string name="shift_movement_title">Cash Drawer Movement (Petty Cash)</string>
+    <string name="shift_movement_subtitle">Record operational paid-outs or cash additions.</string>
+    <string name="shift_movement_paid_out">Cash Out (Paid Out)</string>
+    <string name="shift_movement_cash_in">Cash In</string>
+    <string name="shift_movement_amount_label">Cash Movement Amount</string>
+    <string name="shift_movement_custom_amount">Movement Amount (IDR)</string>
+    <string name="shift_movement_reason_label">Reason for Cash Movement</string>
+    <string name="shift_movement_reason_placeholder">Example: Emergency ice purchase / Coin change top-up</string>
+    <string name="shift_btn_save_movement">Save Cash Movement</string>
+    <string name="shift_banner_movement_btn">Cash Movement</string>
+    <string name="shift_banner_close_btn">Close Shift</string>
+    <string name="shift_banner_closed_badge">SHIFT CLOSED</string>
+    <string name="shift_banner_closed_hint">Open cashier shift to accept payments and orders</string>
+    <string name="shift_banner_open_btn">Open Shift</string>
 </resources>
 

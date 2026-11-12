@@ -6,6 +6,12 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+// Cassy Brand Palette (PRD v4 - packages/design-tokens/tokens.json)
+val CassyPandan = Color(0xFF1F5F52)
+val CassyKunyit = Color(0xFFE9A23B)
+val CassyTinta = Color(0xFF17211E)
+val CassyPutihTulang = Color(0xFFF7F5F0)
+
 // Light Mode: Espresso & Crema (>= 4.5:1 WCAG AA verified)
 val LightCanvas = Color(0xFFFAF6F1)
 val LightSurface = Color(0xFFFFFFFF)

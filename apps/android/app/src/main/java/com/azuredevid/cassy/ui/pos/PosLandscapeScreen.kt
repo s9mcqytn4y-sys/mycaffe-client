@@ -20,8 +20,16 @@ import com.azuredevid.cassy.data.model.OrderQuoteRequest
 import com.azuredevid.cassy.data.repository.KtorCatalogRepository
 import com.azuredevid.cassy.data.repository.KtorOrderQuoteRepository
 import com.azuredevid.cassy.data.repository.KtorPaymentCredentialRepository
+import com.azuredevid.cassy.data.repository.KtorShiftRepository
+import com.azuredevid.cassy.data.repository.SharedPreferencesServerSettingsRepository
 import com.azuredevid.cassy.domain.repository.CatalogRepository
 import com.azuredevid.cassy.domain.repository.OrderQuoteRepository
+import com.azuredevid.cassy.ui.shift.ShiftUiEffect
+import com.azuredevid.cassy.ui.shift.ShiftViewModel
+import com.azuredevid.cassy.ui.shift.components.CashMovementModal
+import com.azuredevid.cassy.ui.shift.components.CloseShiftModal
+import com.azuredevid.cassy.ui.shift.components.OpenShiftModal
+import com.azuredevid.cassy.ui.shift.components.ShiftStatusBanner
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -47,6 +55,7 @@ data class CartItem(
 fun PosLandscapeScreen(
     catalogRepository: CatalogRepository? = null,
     orderQuoteRepository: OrderQuoteRepository? = null,
+    shiftViewModel: ShiftViewModel? = null,
     printerManager: PrinterPort9100Manager = remember { PrinterPort9100Manager() },
     stationConfigs: List<KdsTicketRouter.StationPrinterConfig> = remember {
         listOf(
@@ -77,6 +86,33 @@ fun PosLandscapeScreen(
     }
     val ticketRouter = remember(printerManager) { KdsTicketRouter(printerManager) }
     val rupiahFormat = remember { NumberFormat.getIntegerInstance(Locale("id", "ID")) }
+
+    val shiftVm = remember(shiftViewModel) {
+        shiftViewModel ?: ShiftViewModel(
+            shiftRepository = KtorShiftRepository(context),
+            serverSettings = SharedPreferencesServerSettingsRepository(context)
+        )
+    }
+    val shiftState by shiftVm.uiState.collectAsState()
+
+    LaunchedEffect(shiftVm) {
+        shiftVm.effects.collect { effect ->
+            when (effect) {
+                is ShiftUiEffect.ShowToast -> {
+                    Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
+                }
+                is ShiftUiEffect.PromptOpenShift -> {
+                    shiftVm.openShiftModal()
+                }
+                is ShiftUiEffect.ShiftOpenedSuccessfully -> {
+                    Toast.makeText(context, "Shift kasir aktif", Toast.LENGTH_SHORT).show()
+                }
+                is ShiftUiEffect.ShiftClosedSuccessfully -> {
+                    Toast.makeText(context, "Shift kasir ditutup", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     var allProducts by remember { mutableStateOf<List<CatalogProduct>>(emptyList()) }
     var isLoadingCatalog by remember { mutableStateOf(true) }
@@ -162,25 +198,38 @@ fun PosLandscapeScreen(
 
             VerticalDivider()
 
-            // Panel 2: Product Catalog Grid (55%)
-            PosCatalogGrid(
-                gridWidth = totalWidth * 0.55f,
-                displayedProducts = displayedProducts,
-                searchQuery = searchQuery,
-                onSearchQueryChange = { searchQuery = it },
-                isLoadingCatalog = isLoadingCatalog,
-                onProductSelected = { product ->
-                    run {
+            // Panel 2: Product Catalog Grid & Shift Banner (55%)
+            Column(
+                modifier = Modifier
+                    .width(totalWidth * 0.55f)
+                    .fillMaxHeight()
+            ) {
+                ShiftStatusBanner(
+                    isShiftOpen = shiftState.isShiftOpen,
+                    currentShift = shiftState.currentShift,
+                    onOpenShiftClick = { shiftVm.openShiftModal() },
+                    onCashMovementClick = { shiftVm.openCashMovementModal() },
+                    onCloseShiftClick = { shiftVm.openCloseShiftModal() }
+                )
+
+                PosCatalogGrid(
+                    gridWidth = totalWidth * 0.55f,
+                    displayedProducts = displayedProducts,
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = { searchQuery = it },
+                    isLoadingCatalog = isLoadingCatalog,
+                    onProductSelected = { product ->
                         val existing = cart.find { it.product.id == product.id }
                         if (existing != null) {
                             existing.quantity += 1
                         } else {
                             cart.add(CartItem(product = product, quantity = 1))
                         }
-                    }
-                },
-                rupiahFormat = rupiahFormat
-            )
+                    },
+                    rupiahFormat = rupiahFormat,
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
             VerticalDivider()
 
@@ -212,6 +261,11 @@ fun PosLandscapeScreen(
                     }
                 },
                 onSendToKitchen = {
+                    if (!shiftState.isShiftOpen) {
+                        Toast.makeText(context, "Buka shift kasir terlebih dahulu untuk mengirim pesanan", Toast.LENGTH_SHORT).show()
+                        shiftVm.openShiftModal()
+                        return@PosOrderSummaryPanel
+                    }
                     // Dine-In Trigger: Send unprinted items to kitchen
                     coroutineScope.launch {
                         val stationItems = cart.map {
@@ -244,8 +298,20 @@ fun PosLandscapeScreen(
                         Toast.makeText(context, context.getString(R.string.toast_kitchen_sent, dineInRound - 1), Toast.LENGTH_LONG).show()
                     }
                 },
-                onOpenCashModal = { showCashModal = true },
-                onOpenQrisModal = {},
+                onOpenCashModal = {
+                    if (!shiftState.isShiftOpen) {
+                        Toast.makeText(context, "Buka shift kasir terlebih dahulu untuk memproses pembayaran", Toast.LENGTH_SHORT).show()
+                        shiftVm.openShiftModal()
+                    } else {
+                        showCashModal = true
+                    }
+                },
+                onOpenQrisModal = {
+                    if (!shiftState.isShiftOpen) {
+                        Toast.makeText(context, "Buka shift kasir terlebih dahulu untuk memproses pembayaran", Toast.LENGTH_SHORT).show()
+                        shiftVm.openShiftModal()
+                    }
+                },
                 failoverWarning = failoverAlert,
                 onReprintStations = {
                     coroutineScope.launch {
@@ -331,6 +397,59 @@ fun PosLandscapeScreen(
                         dineInRound = 1
                     }
                 }
+            )
+        }
+
+        // Modal 2: Buka Shift Kasir
+        if (shiftState.showOpenShiftModal) {
+            OpenShiftModal(
+                openingFloatInput = shiftState.openingFloatInput,
+                notes = shiftState.openShiftNotes,
+                isOpening = shiftState.isOpeningShift,
+                errorMessage = shiftState.errorMessage,
+                onOpeningFloatChanged = { shiftVm.onOpeningFloatChanged(it) },
+                onNotesChanged = { shiftVm.onOpenShiftNotesChanged(it) },
+                onSubmit = { shiftVm.submitOpenShift() },
+                onDismiss = { shiftVm.closeOpenShiftModal() }
+            )
+        }
+
+        // Modal 3: Mutasi Kas Laci (Petty Cash)
+        if (shiftState.showCashMovementModal) {
+            CashMovementModal(
+                movementType = shiftState.movementType,
+                amountInput = shiftState.movementAmountInput,
+                reason = shiftState.movementReason,
+                isRecording = shiftState.isRecordingMovement,
+                errorMessage = shiftState.errorMessage,
+                onMovementTypeChanged = { shiftVm.onMovementTypeChanged(it) },
+                onAmountChanged = { shiftVm.onMovementAmountChanged(it) },
+                onReasonChanged = { shiftVm.onMovementReasonChanged(it) },
+                onSubmit = { shiftVm.submitCashMovement() },
+                onDismiss = { shiftVm.closeCashMovementModal() }
+            )
+        }
+
+        // Modal 4: Tutup Shift & Rekonsiliasi Kas (Z-Report)
+        if (shiftState.showCloseShiftModal) {
+            CloseShiftModal(
+                currentShift = shiftState.currentShift,
+                countedCashInput = shiftState.countedCashInput,
+                varianceReason = shiftState.varianceReason,
+                notes = shiftState.closeShiftNotes,
+                supervisorPinInput = shiftState.supervisorPinInput,
+                calculatedVariance = shiftState.calculatedVariance,
+                isSupervisorAuthRequired = shiftState.isSupervisorAuthRequired,
+                printReceiptOnClose = shiftState.printReceiptOnClose,
+                isClosing = shiftState.isClosingShift,
+                errorMessage = shiftState.errorMessage,
+                onCountedCashChanged = { shiftVm.onCountedCashChanged(it) },
+                onVarianceReasonChanged = { shiftVm.onVarianceReasonChanged(it) },
+                onNotesChanged = { shiftVm.onCloseShiftNotesChanged(it) },
+                onSupervisorPinChanged = { shiftVm.onSupervisorPinChanged(it) },
+                onPrintReceiptToggled = { shiftVm.onPrintReceiptOnCloseToggled(it) },
+                onSubmit = { shiftVm.submitCloseShift(cashierPrinterIp) },
+                onDismiss = { shiftVm.closeCloseShiftModal() }
             )
         }
 
