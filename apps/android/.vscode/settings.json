@@ -1,0 +1,27 @@
+{
+  "editor.formatOnSave": false,
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "[kotlin]": { "editor.tabSize": 4, "editor.rulers": [140] },
+  "[xml]": { "editor.tabSize": 4 },
+  "java.import.gradle.enabled": false,
+  "kotlin.languageServer.enabled": true,
+  "kotlin.compiler.jvm.target": "17",
+  "files.exclude": {
+    "**/.gradle": true,
+    "**/.kotlin": true,
+    "**/build": true,
+    "**/.idea": true
+  },
+  "search.exclude": {
+    "**/build": true,
+    "**/.gradle": true,
+    "**/.kotlin": true
+  },
+  "files.watcherExclude": {
+    "**/build/**": true,
+    "**/.gradle/**": true,
+    "**/.kotlin/**": true
+  }
+}

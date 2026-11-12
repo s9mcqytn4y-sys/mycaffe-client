@@ -1,20 +1,24 @@
 {
   "folders": [
     {
-      "name": "🌐 Web PWA (Next.js 15)",
+      "name": "Web PWA (Next.js 15)",
       "path": "apps/web"
     },
     {
-      "name": "🤖 Android Native (Compose)",
+      "name": "Android POS (Compose)",
       "path": "apps/android"
     },
     {
-      "name": "🍎 iOS Native (SwiftUI)",
+      "name": "iOS printer bridge (Objective-C)",
       "path": "apps/ios"
     },
     {
-      "name": "🎨 Shared Design Tokens",
+      "name": "Design tokens",
       "path": "packages/design-tokens"
+    },
+    {
+      "name": "Repo root",
+      "path": "."
     }
   ],
   "settings": {
@@ -36,11 +40,8 @@
     "recommendations": [
       "dbaeumer.vscode-eslint",
       "bradlc.vscode-tailwindcss",
-      "mathiasfrohlich.Kotlin",
       "fwcd.kotlin",
-      "vscjava.vscode-java-pack",
-      "sswg.swift-lang"
+      "vscjava.vscode-gradle"
     ]
   }
 }
-

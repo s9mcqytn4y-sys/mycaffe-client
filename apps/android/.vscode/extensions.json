@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "fwcd.kotlin",
+    "vscjava.vscode-gradle",
+    "redhat.vscode-xml",
+    "google.google-antigravity"
+  ],
+  "unwantedRecommendations": ["mathiasfrohlich.kotlin", "redhat.java"]
+}
