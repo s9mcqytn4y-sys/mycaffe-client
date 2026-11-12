@@ -4,7 +4,6 @@
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
     "fwcd.kotlin",
-    "mathiasfrohlich.kotlin"
+    "vscjava.vscode-gradle"
   ]
 }
-

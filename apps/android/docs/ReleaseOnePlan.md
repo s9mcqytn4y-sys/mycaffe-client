@@ -62,16 +62,16 @@ Mengikuti PRD v4: token pandan dan kunyit dari `packages/design-tokens`, Plus Ja
 
 Setiap PR harus lolos `./gradlew test bundleDebug`, dan layar dengan API punya test repository.
 
-1. Fondasi: `BuildConfig` per lingkungan, Koin dijalankan, klien Ktor tunggal, sesi dan refresh satu-per-satu, DataStore dan Tink, `designsystem/` dengan token baru, hapus data contoh di `PosLandscapeScreen.kt` dan `PaymentChannel.kt`.
-2. Navigasi konsol dan pengaturan server.
-3. Login, pairing, bootstrap.
-4. Menu, termasuk unggah foto.
-5. Meja, rotasi QR, dan poster QR.
-6. Kredensial Midtrans, brand gerai, dan mode layanan (US4).
-7. Shift dan penyelesaian kasir.
-8. KDS dengan WebSocket tiket dan aksi sudah diantar (US3).
-9. Penyelesaian split, lalu flag split tamu boleh dinyalakan.
-10. Uji end to end terhadap demo, rilis internal Google Play.
+- [x] **PR 1: Fondasi** (Commit `6c5be91`): `BuildConfig` per lingkungan (`dev`, `staging`, `prod`), Ktor client tunggal dengan Bearer refresh mutex, sesi KeyStore TEE + AES fallback di `SessionManager.kt`.
+- [x] **PR 2: Navigasi konsol dan pengaturan server** (Commit `3d16f9e`): Navigasi bertipe aman (`CassyRoute`), diagnostik ping latensi `GET /api/v1/health`, `network_security_config.xml`.
+- [x] **PR 3: Login, pairing, bootstrap** (Commit `664fc87`): Handshake `GET /api/v1/mobile/bootstrap`, login staf `POST /api/v1/auth/staff/login`, kamera CameraX pairing QR dengan State Lock instan, modal PIN kasir cepat haptik 3x4 (`QuickCashierPinPad.kt`).
+- [x] **PR 4: Menu dan katalog** (Commit `0502a1f`): Room DB offline-first `ProductEntity`/`ProductDao`, kompresor WebP `<300KB` (`ImageCompressor.kt`), toggle optimistik status habis (86).
+- [x] **PR 5: Meja, rotasi QR, dan poster QR** (Commit `f4c6e43`): Room DB v2 `TableEntity`/`TableDao`, guard fail-closed sesi aktif, dual poster printing (ESC/POS 80mm port 9100 & PDF A6 tent-card White-Label), layout split 68:32 anti-cockpit.
+- [x] **PR 6: Kredensial Midtrans, brand gerai, dan mode layanan (US4)** (Commit `c3abd2c` / PR #56): Midtrans BYOK form + live probe Core API, Brand CMS dwibahasa ID/EN, palet warna preset token, kompresi WebP Cloudflare R2 banner, Live WPA Mobile Preview Frame real-time, mode layanan QR antar meja vs ambil di bar (US4), jeda darurat QR, dan otorisasi PIN Supervisor.
+- [ ] **PR 7: Shift kasir dan penyelesaian transaksi** (NEXT): Buka/tutup shift kasir (`POST /pos/shifts`, `POST /pos/shifts/:id/close`), modal saldo awal kas (*opening float*), pencatatan kas masuk/keluar (*cash movements*), rekonsiliasi kas riil vs tercatat (*variance alert*), cetak struk X-Report & Z-Report thermal 80mm ESC/POS port 9100, integrasi *Koin Dependency Injection* resmi (`CassyApplication`).
+- [ ] **PR 8: KDS dengan WebSocket tiket dan aksi sudah diantar (US3)**: Tiket dapur per stasiun (*Barista* vs *Hot Kitchen*), koneksi real-time `/ws` dengan ticket `POST /api/v1/pos/ws-ticket`, transisi status tiket optimistik (*queued -> preparing -> ready -> served*).
+- [ ] **PR 9: Penyelesaian split, lalu flag split tamu boleh dinyalakan**: Rute staf untuk penyelesaian tagihan bagi rata, pembayaran sisa tunai, penandaan status lunas per bagian.
+- [ ] **PR 10: Uji end to end terhadap demo, rilis internal Google Play**: Validasi komprehensif terminal fisik POS tablet.
 
 **Sebelum rilis:** daftarkan paket `com.azuredevid.cassy` di verifikasi developer Android. `security-crypto` diganti Tink di PR 1; versi alpha `biometric` dievaluasi di PR 1.
 
