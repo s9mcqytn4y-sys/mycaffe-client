@@ -13,7 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import com.azuredevid.cassy.core.hardware.PrinterPort9100Manager
 import com.azuredevid.cassy.ui.pairing.StorePairingScreen
 import com.azuredevid.cassy.ui.pos.PosLandscapeScreen
-import com.azuredevid.cassy.ui.settings.MidtransConfigScreen
+import com.azuredevid.cassy.ui.settings.StoreSettingsScreen
 import com.azuredevid.cassy.ui.theme.CassyTheme
 import kotlinx.coroutines.launch
 
@@ -51,15 +51,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         "settings" -> {
-                            MidtransConfigScreen(
-                                onSaveSuccess = { response ->
-                                    Toast.makeText(
-                                        this@MainActivity,
-                                        "Kredensial tersimpan: ${response.merchantId} [${response.environment}] (Status: ${response.validationStatus})",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                    currentScreen = "pos"
-                                },
+                            StoreSettingsScreen(
                                 onNavigateBack = {
                                     currentScreen = "pos"
                                 }

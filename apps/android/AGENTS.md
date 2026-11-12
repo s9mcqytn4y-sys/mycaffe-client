@@ -39,6 +39,13 @@ This sub-workspace is **Cassy POS Native Android Tablet application** (`apps/and
 ./gradlew bundleDebug     # Build production/test App Bundle (AAB)
 ```
 
+## Official CLI Toolchain & Agent Plugins
+- **Android CLI**: `C:\Users\Acer\AppData\AndroidCLI\android.exe` (v1.1+, managed via `android sdk`, `android emulator`, `android preview render`).
+- **GitHub CLI**: `C:\Program Files\GitHub CLI\gh.exe` (issues, pull requests, actions).
+- **Android Debug Bridge (ADB)**: `C:\Users\Acer\scoop\shims\adb.exe` (device communication, shell input, logcat).
+- **Official Android Agent Plugins**:
+  - `android-cli-plugin`: `device-hub` sidecar for live AVD/device mirroring & control, and `compose-preview` sidecar for instant Compose `@Preview` rendering.
+
 <!-- antislop:start -->
 ## antislop
 For UI, copy, people, mobile layout, or code comments work, read `antislop.md` (core) and then the skill for the task:
