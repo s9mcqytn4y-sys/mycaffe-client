@@ -40,5 +40,6 @@
     "**/build/**": true,
     "**/.gradle/**": true,
     "**/.kotlin/**": true
-  }
+  },
+  "java.configuration.updateBuildConfiguration": "automatic"
 }

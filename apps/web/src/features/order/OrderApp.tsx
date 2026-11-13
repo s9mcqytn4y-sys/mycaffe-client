@@ -1,13 +1,16 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { animate } from "animejs";
 import { ShoppingBag } from "lucide-react";
+import { MenuSkeleton } from "@/components/MenuSkeleton";
 import { Notices } from "@/components/Toast";
 import { useLocale } from "@/components/Providers";
 import { DataStateBox } from "@/components/Shell";
 import { ApiError, apiFetch } from "@/lib/api";
 import { brandVariables } from "@/lib/brand";
 import { formatIdr } from "@/lib/format";
+import { normalizeSubmissionText } from "@/lib/sanitize";
 import { CartSheet } from "./CartSheet";
 import { toOrderItems } from "./cart";
 import { CategoryNav, sectionId } from "./CategoryNav";
@@ -16,7 +19,7 @@ import { PaymentView } from "./PaymentView";
 import { defaultVariant, ProductCard, ProductRow } from "./MenuItems";
 import { ProductOptionsSheet } from "./ProductOptionsSheet";
 import { checkoutMessageKey, moneyTaken, orderPhase, writeActiveOrder, type ActiveOrder } from "./status";
-import type { CatalogProduct, PaymentInfo, PayMethod, ServiceMode, SplitShareLink } from "./types";
+import type { BankCode, CatalogProduct, PaymentInfo, PayMethod, ServiceMode, SplitShareLink } from "./types";
 import { SplitView } from "./SplitView";
 import { StoreHeader } from "./StoreHeader";
 import { useCartPersistence, useOnlineStatus, useOrderBell } from "./hooks";
@@ -45,14 +48,34 @@ export function OrderApp({ token }: { token: string }) {
   const methods: PayMethod[] = data?.table.payment_methods?.length ? data.table.payment_methods : ["qris"];
   const [picked, setPicked] = useState<PayMethod | null>(null);
   const method = picked && methods.includes(picked) ? picked : methods[0];
+  const [bank, setBank] = useState<BankCode>("bca");
+  const [actionToast, setActionToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const notify = useCallback((message: string) => {
+    setActionToast(message);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setActionToast(null), 2600);
+  }, []);
+
+  useEffect(() => () => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+  }, []);
 
   // One key per method: retrying the same method replays, switching makes a new attempt.
-  const initiatePayment = async (orderId: string, key: string, via: PayMethod) => {
+  const initiatePayment = async (orderId: string, key: string, via: PayMethod, viaBank: BankCode = bank) => {
     const { payment: created } = await apiFetch<{ payment: PaymentInfo }>(
       `/api/v1/public/guest/orders/${encodeURIComponent(orderId)}/payments`,
-      { method: "POST", body: { idempotency_key: `${key}_${via}`, method: via } }
+      {
+        method: "POST",
+        body: {
+          idempotency_key: via === "bank_transfer" ? `${key}_${via}_${viaBank}` : `${key}_${via}`,
+          method: via,
+          ...(via === "bank_transfer" ? { bank: viaBank } : {})
+        }
+      }
     );
-    setPayment({ ...created, method: created.method ?? via });
+    setPayment({ ...created, method: created.method ?? via, bank: created.bank ?? (via === "bank_transfer" ? viaBank : undefined) });
     setViewingPayment(true);
   };
 
@@ -101,7 +124,7 @@ export function OrderApp({ token }: { token: string }) {
 
   const { muted, toggleSound, toast } = useOrderBell(arrived, arrivedText, serviceMode);
   const online = useOnlineStatus(() => void refresh());
-  const notices = <Notices toast={toast} offline={!online} offlineText={t.offline} />;
+  const notices = <Notices toast={actionToast ?? toast} offline={!online} offlineText={t.offline} />;
 
   const sections = useMemo(() => menuSections(data?.categories ?? [], data?.products ?? [], t.otherMenu), [data, t.otherMenu]);
   // About the first screen at 360 to 390 px: two rows of the two-column grid.
@@ -109,13 +132,32 @@ export function OrderApp({ token }: { token: string }) {
   const multiVariant = useMemo(() => new Set((data?.products ?? []).filter((p) => p.variants.length > 1).map((p) => p.id)), [data]);
   const itemCount = lines.reduce((sum, l) => sum + l.quantity, 0);
 
-  if (state === "loading") return <div className="p-5"><DataStateBox state="loading" title={t.loadingTitle} description={t.loadingBody} /></div>;
-  if (state === "missing") return <div className="p-5"><DataStateBox state="error" title={t.tableMissingTitle} description={t.tableMissingBody} /></div>;
+  const prevItemCount = useRef(0);
+  useEffect(() => {
+    const increased = itemCount > prevItemCount.current;
+    prevItemCount.current = itemCount;
+    if (!increased || typeof window === "undefined" || !window.matchMedia("(prefers-reduced-motion: no-preference)").matches) return;
+    animate("[data-cart-cta]", {
+      scale: [0.97, 1],
+      duration: 180,
+      ease: "outQuad"
+    });
+  }, [itemCount]);
+
+  if (state === "loading") {
+    return (
+      <div className="py-4">
+        <p className="sr-only" role="status">{t.loadingTitle}</p>
+        <MenuSkeleton />
+      </div>
+    );
+  }
+  if (state === "missing") return <div className="p-5"><DataStateBox state="error" illustration="error" title={t.tableMissingTitle} description={t.tableMissingBody} /></div>;
   if (state === "maintenance") {
-    return <div className="p-5"><DataStateBox state="error" title={t.maintenanceTitle} description={t.maintenanceBody} onRetry={reload} /></div>;
+    return <div className="p-5"><DataStateBox state="error" illustration="maintenance" title={t.maintenanceTitle} description={t.maintenanceBody} onRetry={reload} /></div>;
   }
   if (state === "failed" || !data) {
-    return <div className="p-5"><DataStateBox state="error" title={t.loadFailedTitle} description={t.loadFailedBody} onRetry={reload} /></div>;
+    return <div className="p-5"><DataStateBox state="error" illustration="error" title={t.loadFailedTitle} description={t.loadFailedBody} onRetry={reload} /></div>;
   }
 
   const { table, cms } = data;
@@ -136,7 +178,7 @@ export function OrderApp({ token }: { token: string }) {
           method: "POST",
           body: {
             idempotency_key: key,
-            customer_name: guestName.trim() || t.guestDefault,
+            customer_name: normalizeSubmissionText(guestName, 60) || t.guestDefault,
             expected_quote_fingerprint: quote.quote_fingerprint,
             items: toOrderItems(lines)
           }
@@ -170,13 +212,13 @@ export function OrderApp({ token }: { token: string }) {
   };
 
   // A fresh attempt: a new QR after expiry, or another method; the server cancels the open one.
-  const newAttempt = async (via: PayMethod) => {
+  const newAttempt = async (via: PayMethod, viaBank: BankCode = bank) => {
     if (!order) return;
     setPicked(via);
     setPlacing(true);
     setCheckoutError(null);
     try {
-      await initiatePayment(order.id, `pay_${crypto.randomUUID()}`, via);
+      await initiatePayment(order.id, `pay_${crypto.randomUUID()}`, via, viaBank);
     } catch (err) {
       const code = err instanceof ApiError ? (err.details as { code?: unknown } | undefined)?.code : undefined;
       setCheckoutError(t[checkoutMessageKey(code)]);
@@ -242,12 +284,16 @@ export function OrderApp({ token }: { token: string }) {
           moneyTaken={moneyTaken(tracked)}
           orderId={order.id}
           orderNumber={tracked?.order_number ?? order.number}
+          storeName={table.store_name}
           status={tracked?.status}
           retrying={placing}
           error={checkoutError}
           methods={methods}
+          bank={bank}
           onNewQr={() => void newAttempt(payment?.method ?? method)}
-          onSwitch={(via) => void newAttempt(via)}
+          onSwitch={(via, viaBank) => void newAttempt(via, viaBank)}
+          onSelectBank={setBank}
+          onNotify={notify}
           serviceMode={serviceMode}
           muted={muted}
           onToggleSound={toggleSound}
@@ -295,10 +341,10 @@ export function OrderApp({ token }: { token: string }) {
 
       <div className="px-5">
         {sections.length === 0 ? (
-          <div className="mt-4"><DataStateBox state="empty" title={t.emptyTitle} description={t.emptyBody} /></div>
+          <div className="mt-4"><DataStateBox state="empty" illustration="empty" title={t.emptyTitle} description={t.emptyBody} /></div>
         ) : (
           sections.map((section) => (
-            <section key={section.id} aria-labelledby={sectionId(section.id)} className="mt-7">
+            <section key={section.id} aria-labelledby={sectionId(section.id)} className="cassy-menu-section mt-7">
                   <h2 id={sectionId(section.id)} className="scroll-mt-4 text-xl font-extrabold tracking-tight">
                 {section.name}
               </h2>
@@ -314,12 +360,13 @@ export function OrderApp({ token }: { token: string }) {
                         canOrder={table.ordering_open}
                         eager={eagerIds.has(product.id)}
                         onOpen={() => setOptionsFor(product)}
-                        onQuickAdd={() =>
+                        onQuickAdd={() => {
                           dispatch({
                             type: "add",
                             line: { productId: product.id, variantId: defaultVariant(product)?.id, name: product.name, options: [], quantity: 1, notes: "" }
-                          })
-                        }
+                          });
+                          notify(t.addedToCart);
+                        }}
                       />
                     ))}
                   </ul>
@@ -336,7 +383,7 @@ export function OrderApp({ token }: { token: string }) {
           {sections.length > 1 ? <CategoryNav sections={sections} /> : null}
           {itemCount > 0 ? (
             <div className="px-3 pt-1">
-              <button type="button" onClick={() => setCartOpen(true)} className="btn-primary flex min-h-[56px] w-full items-center justify-between rounded-xl px-5 text-base font-bold">
+              <button type="button" data-cart-cta onClick={() => setCartOpen(true)} className="btn-primary flex min-h-[56px] w-full items-center justify-between rounded-xl px-5 text-base font-bold">
                 <span className="flex items-center gap-2.5">
                   <ShoppingBag size={20} />
                   {t.viewCart} ({itemCount} {t.items})
@@ -355,6 +402,7 @@ export function OrderApp({ token }: { token: string }) {
           onAdd={(line) => {
             dispatch({ type: "add", line });
             setOptionsFor(null);
+            notify(t.addedToCart);
           }}
         />
       ) : null}
@@ -376,6 +424,8 @@ export function OrderApp({ token }: { token: string }) {
           methods={methods}
           method={method}
           onMethod={setPicked}
+          bank={bank}
+          onBank={setBank}
           // Shares are paid by QRIS only, so the outlet must have QRIS on as well.
           splitEnabled={table.split_enabled === true && methods.includes("qris")}
           splitCount={splitCount}

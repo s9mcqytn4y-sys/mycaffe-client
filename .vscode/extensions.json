@@ -4,6 +4,8 @@
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
     "fwcd.kotlin",
-    "vscjava.vscode-gradle"
+    "vscjava.vscode-gradle",
+    "davidanson.vscode-markdownlint",
+    "skeinllc.anti-slop"
   ]
 }

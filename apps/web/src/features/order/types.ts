@@ -65,7 +65,9 @@ export interface SplitShareLink {
 
 export type ServiceMode = "pickup" | "table";
 
-export type PayMethod = "qris" | "gopay" | "shopeepay";
+export type PayMethod = "qris" | "gopay" | "shopeepay" | "bank_transfer";
+
+export type BankCode = "bca" | "bni" | "bri" | "mandiri" | "permata";
 
 export interface StoreCms {
   primary_hex?: string;
@@ -98,6 +100,10 @@ export interface Quote {
 export interface PaymentInfo {
   id: string;
   method?: PayMethod;
+  bank?: string;
+  va_number?: string;
+  biller_code?: string;
+  bill_key?: string;
   qr_string?: string;
   deeplink_url?: string;
   expires_at?: string;
