@@ -6,9 +6,10 @@ import { useLocale } from "@/components/Providers";
 import { Sheet } from "@/components/Sheet";
 import { formatIdr } from "@/lib/format";
 import { optionNames, type CartAction, type CartLine } from "./cart";
+import { METHOD_LABEL, PaymentMethodPicker } from "./PaymentMethodPicker";
 import type { PayMethod, Quote } from "./types";
 
-export const METHOD_LABEL: Record<PayMethod, string> = { qris: "QRIS", gopay: "GoPay", shopeepay: "ShopeePay" };
+export { METHOD_LABEL };
 
 function Row({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
   return (
@@ -194,19 +195,7 @@ export function CartSheet({
           {methods.length > 1 && splitCount === null ? (
             <fieldset className="mt-4">
               <legend className="text-base font-bold">{t.payMethod}</legend>
-              <div className="mt-1 flex flex-wrap gap-2">
-                {methods.map((m) => (
-                  <label
-                    key={m}
-                    className={`flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm font-semibold has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
-                      method === m ? "border-brand bg-brand text-brand-fg" : "border-subtle"
-                    }`}
-                  >
-                    <input type="radio" name="pay-method" value={m} checked={method === m} onChange={() => onMethod(m)} className="sr-only" />
-                    {METHOD_LABEL[m]}
-                  </label>
-                ))}
-              </div>
+              <PaymentMethodPicker methods={methods} selected={method} onSelect={onMethod} />
             </fieldset>
           ) : null}
 

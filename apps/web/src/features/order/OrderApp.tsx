@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ShoppingBag } from "lucide-react";
 import { Notices } from "@/components/Toast";
 import { useLocale } from "@/components/Providers";
@@ -9,7 +9,7 @@ import { ApiError, apiFetch } from "@/lib/api";
 import { brandVariables } from "@/lib/brand";
 import { formatIdr } from "@/lib/format";
 import { CartSheet } from "./CartSheet";
-import { cartReducer, toOrderItems, type CartLine } from "./cart";
+import { toOrderItems } from "./cart";
 import { CategoryNav, sectionId } from "./CategoryNav";
 import { menuSections } from "./menu";
 import { PaymentView } from "./PaymentView";
@@ -19,13 +19,13 @@ import { checkoutMessageKey, moneyTaken, orderPhase, writeActiveOrder, type Acti
 import type { CatalogProduct, PaymentInfo, PayMethod, ServiceMode, SplitShareLink } from "./types";
 import { SplitView } from "./SplitView";
 import { StoreHeader } from "./StoreHeader";
-import { playBell, primeBell, readMuted, writeMuted } from "./bell";
+import { useCartPersistence, useOnlineStatus, useOrderBell } from "./hooks";
 import { useOrderData, useOrderProgress, useQuote } from "./useOrderData";
 
 export function OrderApp({ token }: { token: string }) {
   const { t, locale } = useLocale();
   const { state, data, reload } = useOrderData(token);
-  const [lines, dispatch] = useReducer(cartReducer, [] as CartLine[]);
+  const { lines, dispatch, attemptKey } = useCartPersistence(token);
   const [optionsFor, setOptionsFor] = useState<CatalogProduct | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [guestName, setGuestName] = useState("");
@@ -36,28 +36,7 @@ export function OrderApp({ token }: { token: string }) {
   const [viewingPayment, setViewingPayment] = useState(false);
   const [splitCount, setSplitCount] = useState<number | null>(null);
   const [shares, setShares] = useState<SplitShareLink[] | null>(null);
-  const attemptKey = useRef<string | null>(null);
-
-  const storageKey = `cassy_cart_${token}`;
-  const restored = useRef(false);
-  useEffect(() => {
-    try {
-      const saved = sessionStorage.getItem(storageKey);
-      if (saved) dispatch({ type: "replace", lines: JSON.parse(saved) as CartLine[] });
-    } catch {
-      // A blocked or corrupt store just means an empty cart.
-    }
-    restored.current = true;
-  }, [storageKey]);
-  useEffect(() => {
-    if (!restored.current) return;
-    attemptKey.current = null;
-    try {
-      sessionStorage.setItem(storageKey, JSON.stringify(lines));
-    } catch {
-      // See above.
-    }
-  }, [lines, storageKey]);
+  const pendingSplitCount = useRef<number | null>(null);
 
   const { quote, failed, loading, refresh } = useQuote(data?.table.store_slug, lines);
   const tracked = useOrderProgress(order?.tracking ?? null);
@@ -120,48 +99,8 @@ export function OrderApp({ token }: { token: string }) {
     return () => document.removeEventListener("visibilitychange", apply);
   }, [data, t.table, arrived, arrivedText]);
 
-  const [muted, setMuted] = useState(false);
-  useEffect(() => {
-    setMuted(readMuted());
-    // Browsers allow sound only after a tap; the first tap anywhere unlocks the bell for later.
-    window.addEventListener("pointerdown", primeBell, { once: true });
-    return () => window.removeEventListener("pointerdown", primeBell);
-  }, []);
-  const toggleSound = () => {
-    writeMuted(!muted);
-    setMuted(!muted);
-  };
-
-  // Payment itself gets its own heading and animated check, so only this moment has a toast.
-  const [toast, setToast] = useState<string | null>(null);
-  const wasArrived = useRef(arrived);
-  useEffect(() => {
-    const changed = arrived && !wasArrived.current;
-    wasArrived.current = arrived;
-    if (!changed) return;
-    navigator.vibrate?.(200);
-    if (!muted && !document.hidden) playBell(serviceMode === "table" ? "delivered" : "ready");
-    setToast(arrivedText);
-    const id = setTimeout(() => setToast(null), 5000);
-    return () => clearTimeout(id);
-  }, [arrived, arrivedText, muted, serviceMode]);
-
-  // Offline banner; back online re-prices the cart (the tracker re-polls on its own).
-  const [online, setOnline] = useState(true);
-  useEffect(() => {
-    const up = () => {
-      setOnline(true);
-      void refresh();
-    };
-    const down = () => setOnline(false);
-    setOnline(navigator.onLine);
-    window.addEventListener("online", up);
-    window.addEventListener("offline", down);
-    return () => {
-      window.removeEventListener("online", up);
-      window.removeEventListener("offline", down);
-    };
-  }, [refresh]);
+  const { muted, toggleSound, toast } = useOrderBell(arrived, arrivedText, serviceMode);
+  const online = useOnlineStatus(() => void refresh());
   const notices = <Notices toast={toast} offline={!online} offlineText={t.offline} />;
 
   const sections = useMemo(() => menuSections(data?.categories ?? [], data?.products ?? [], t.otherMenu), [data, t.otherMenu]);
@@ -205,6 +144,7 @@ export function OrderApp({ token }: { token: string }) {
       );
       const payKey = `pay_${key}`;
       setOrder({ id: created.order.id, number: created.order.order_number, tracking: created.tracking_token ?? null, payKey });
+      pendingSplitCount.current = splitCount;
       dispatch({ type: "clear" });
       setCartOpen(false);
       if (splitCount !== null) {
@@ -213,6 +153,7 @@ export function OrderApp({ token }: { token: string }) {
           `/api/v1/public/guest/orders/${encodeURIComponent(created.order.id)}/splits`,
           { method: "POST", body: { strategy: "equal", split_count: splitCount } }
         );
+        pendingSplitCount.current = null;
         setShares(links.map(({ split_number, amount, token: shareToken }) => ({ split_number, amount, token: shareToken })));
         setViewingPayment(true);
       } else {
@@ -253,7 +194,17 @@ export function OrderApp({ token }: { token: string }) {
     }
     setPlacing(true);
     try {
-      await initiatePayment(order.id, order.payKey, method);
+      if (pendingSplitCount.current !== null) {
+        const { links } = await apiFetch<{ links: SplitShareLink[] }>(
+          `/api/v1/public/guest/orders/${encodeURIComponent(order.id)}/splits`,
+          { method: "POST", body: { strategy: "equal", split_count: pendingSplitCount.current } }
+        );
+        pendingSplitCount.current = null;
+        setShares(links.map(({ split_number, amount, token: shareToken }) => ({ split_number, amount, token: shareToken })));
+        setViewingPayment(true);
+      } else {
+        await initiatePayment(order.id, order.payKey, method);
+      }
     } catch {
       setCheckoutError(t.checkoutFailed);
     } finally {

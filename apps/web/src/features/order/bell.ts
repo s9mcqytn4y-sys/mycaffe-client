@@ -21,9 +21,15 @@ export function primeBell() {
   if (Ctor) ctx = new Ctor();
 }
 
-export function playBell(kind: BellKind) {
+export async function playBell(kind: BellKind) {
   if (!ctx) return;
-  void ctx.resume();
+  if (ctx.state === "suspended") {
+    try {
+      await ctx.resume();
+    } catch {
+      return;
+    }
+  }
   const now = ctx.currentTime;
   for (const [freq, start, length] of bellNotes(kind)) {
     const osc = ctx.createOscillator();
