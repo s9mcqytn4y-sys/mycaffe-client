@@ -2,9 +2,14 @@ package com.azuredevid.cassy.ui.pos
 
 import androidx.datastore.core.DataStore
 import com.azuredevid.cassy.core.security.DataStoreSessionManager
+import com.azuredevid.cassy.data.model.CatalogCategory
 import com.azuredevid.cassy.data.model.CatalogProduct
+import com.azuredevid.cassy.data.model.CatalogSnapshot
+import com.azuredevid.cassy.data.model.CatalogVariant
 import com.azuredevid.cassy.data.model.OrderQuote
 import com.azuredevid.cassy.data.model.OrderQuoteRequest
+import com.azuredevid.cassy.data.model.ProductUpsertInput
+import com.azuredevid.cassy.data.model.VariantUpsertInput
 import com.azuredevid.cassy.domain.model.StaffIdentity
 import com.azuredevid.cassy.domain.model.StoredSession
 import com.azuredevid.cassy.domain.repository.CatalogRepository
@@ -59,15 +64,39 @@ class PosViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private class StubCatalogRepository(
+        private val onGetCatalog: (String) -> Result<List<CatalogProduct>>
+    ) : CatalogRepository {
+        override suspend fun getCatalog(storeSlug: String): Result<List<CatalogProduct>> = onGetCatalog(storeSlug)
+        override suspend fun getStaffCatalog(): Result<CatalogSnapshot> = Result.failure(UnsupportedOperationException())
+        override suspend fun createCategory(name: String, displayOrder: Int, isActive: Boolean): Result<CatalogCategory> =
+            Result.failure(UnsupportedOperationException())
+        override suspend fun updateCategory(id: String, name: String, displayOrder: Int, isActive: Boolean): Result<CatalogCategory> =
+            Result.failure(UnsupportedOperationException())
+        override suspend fun deleteCategory(id: String): Result<Unit> = Result.failure(UnsupportedOperationException())
+        override suspend fun createProduct(input: ProductUpsertInput): Result<CatalogProduct> =
+            Result.failure(UnsupportedOperationException())
+        override suspend fun updateProduct(id: String, input: ProductUpsertInput): Result<CatalogProduct> =
+            Result.failure(UnsupportedOperationException())
+        override suspend fun archiveProduct(id: String): Result<Unit> = Result.failure(UnsupportedOperationException())
+        override suspend fun setProductAvailability(id: String, isAvailable: Boolean): Result<Unit> =
+            Result.failure(UnsupportedOperationException())
+        override suspend fun createVariant(productId: String, input: VariantUpsertInput): Result<CatalogVariant> =
+            Result.failure(UnsupportedOperationException())
+        override suspend fun updateVariant(variantId: String, input: VariantUpsertInput): Result<CatalogVariant> =
+            Result.failure(UnsupportedOperationException())
+        override suspend fun archiveVariant(variantId: String): Result<Unit> = Result.failure(UnsupportedOperationException())
+        override suspend fun uploadProductImage(productId: String, webpBytes: ByteArray): Result<String> =
+            Result.failure(UnsupportedOperationException())
+    }
+
     @Test
     fun withoutStaffSession_failsClosedAndDoesNotLoadCatalog() = runTest {
         val sessionManager = DataStoreSessionManager(InMemorySessionDataStore(), backgroundScope)
         var catalogCalled = false
-        val catalogRepo = object : CatalogRepository {
-            override suspend fun getCatalog(storeSlug: String): Result<List<CatalogProduct>> {
-                catalogCalled = true
-                return Result.success(listOf(latte))
-            }
+        val catalogRepo = StubCatalogRepository {
+            catalogCalled = true
+            Result.success(listOf(latte))
         }
         val quoteRepo = object : OrderQuoteRepository {
             override suspend fun quote(request: OrderQuoteRequest): Result<OrderQuote> =
@@ -91,11 +120,9 @@ class PosViewModelTest {
             sessionExpiresAt = "2026-11-14T21:00:00Z",
             staff = StaffIdentity("u1", "Kasir Budi", "budi@kopi.id", "cashier", "s1", "kopi-senja", "Kopi Senja")
         )
-        val catalogRepo = object : CatalogRepository {
-            override suspend fun getCatalog(storeSlug: String): Result<List<CatalogProduct>> {
-                assertEquals("kopi-senja", storeSlug)
-                return Result.success(listOf(latte))
-            }
+        val catalogRepo = StubCatalogRepository { storeSlug ->
+            assertEquals("kopi-senja", storeSlug)
+            Result.success(listOf(latte))
         }
         val quoteRepo = object : OrderQuoteRepository {
             override suspend fun quote(request: OrderQuoteRequest): Result<OrderQuote> {

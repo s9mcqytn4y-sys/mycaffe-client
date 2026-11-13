@@ -139,4 +139,24 @@
     <string name="server_config_save">Simpan Alamat Server</string>
     <string name="server_config_err_url">Masukkan URL http:// atau https:// yang valid.</string>
     <string name="a11y_navigate_back">Kembali</string>
+
+    <!-- Catalog Management (PR 4) -->
+    <string name="catalog_mgmt_title">Manajemen Katalog</string>
+    <string name="catalog_nav_label">Katalog</string>
+    <string name="catalog_add_category">Tambah Kategori</string>
+    <string name="catalog_edit_category">Ubah Kategori</string>
+    <string name="catalog_add_product">Tambah Produk</string>
+    <string name="catalog_edit_product">Ubah Produk</string>
+    <string name="catalog_search_hint">Cari nama atau deskripsi menu…</string>
+    <string name="catalog_readonly_hint">Mode staf: hanya bisa ubah status tersedia (86).</string>
+    <string name="catalog_status_available">Tersedia</string>
+    <string name="catalog_status_sold_out">Habis (86)</string>
+    <string name="catalog_btn_upload_photo">Foto</string>
+    <string name="catalog_btn_variants">Varian</string>
+    <string name="catalog_btn_archive">Arsipkan</string>
+    <string name="catalog_btn_save">Simpan</string>
+    <string name="catalog_btn_cancel">Batal</string>
+    <string name="catalog_empty">Belum ada produk di kategori ini.</string>
+    <string name="catalog_photo_present">Foto tersedia</string>
+    <string name="catalog_photo_missing">Belum ada foto</string>
 </resources>

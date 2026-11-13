@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.azuredevid.cassy.core.security.SessionManager
+import com.azuredevid.cassy.ui.catalog.CatalogManagementScreen
 import com.azuredevid.cassy.ui.pairing.StorePairingScreen
 import com.azuredevid.cassy.ui.pos.PosLandscapeScreen
 import com.azuredevid.cassy.ui.settings.ServerConfigScreen
@@ -72,6 +73,9 @@ fun CassyNavHost(
                 onNavigateToSettings = {
                     navController.navigate(CassyRoute.StoreSettings)
                 },
+                onNavigateToCatalog = {
+                    navController.navigate(CassyRoute.CatalogManagement)
+                },
                 onNavigateToPairing = {
                     navController.navigate(CassyRoute.StorePairing)
                 }
@@ -80,6 +84,12 @@ fun CassyNavHost(
 
         composable<CassyRoute.StoreSettings> {
             StoreSettingsScreen(
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+
+        composable<CassyRoute.CatalogManagement> {
+            CatalogManagementScreen(
                 onNavigateBack = { navController.navigateUp() }
             )
         }

@@ -40,6 +40,7 @@ fun PosNavRail(
     allProducts: List<CatalogProduct>,
     isPrinterOnline: Boolean,
     onNavigateToSettings: () -> Unit,
+    onNavigateToCatalog: () -> Unit = {},
     onNavigateToPairing: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -155,6 +156,14 @@ fun PosNavRail(
                         modifier = Modifier.padding(vertical = 6.dp),
                         textAlign = TextAlign.Center
                     )
+                }
+
+                OutlinedButton(
+                    onClick = onNavigateToCatalog,
+                    contentPadding = PaddingValues(2.dp),
+                    modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp)
+                ) {
+                    Text(stringResource(R.string.catalog_nav_label), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                 }
 
                 Row(

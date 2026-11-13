@@ -15,5 +15,17 @@ One module, strict layers per feature: `ui` (Compose + ViewModel) -> `domain` (m
 
 ## Commands
 ```bash
-./gradlew test bundleDebug
+./gradlew testDevDebugUnitTest bundleDevDebug
 ```
+
+## Headless Emulator Test Workflow
+1. Build APK lebih dulu tanpa Gradle daemon agar commit memory Windows tetap bebas:
+   `./gradlew assembleDevDebug --no-daemon`
+2. Hentikan AVD lain jika ada (`adb emu kill`), lalu start tablet AVD headless (AVD tablet API 36 mengalokasikan 4096 MB RAM):
+   `emulator -avd Medium_Tablet -no-window -no-audio -no-boot-anim`
+3. Tunggu boot selesai: `adb wait-for-device shell 'while [ -z "$(getprop sys.boot_completed)" ]; do sleep 1; done'`.
+4. Pasang APK langsung via `adb` (jangan jalankan `./gradlew` saat emulator menyala agar tidak kehabisan commit memory):
+   `adb -s <serial> install -r app/build/outputs/apk/dev/debug/app-dev-debug.apk`
+   lalu jalankan: `adb -s <serial> shell am start -W -n com.azuredevid.cassy.dev/com.azuredevid.cassy.MainActivity`.
+5. Inspeksi UI & verifikasi: `android layout --device <serial> --pretty` dan `android screen capture --device <serial> --output <path>.png` (atau `adb -s <serial> exec-out screencap -p > <path>.png` jika headless GPU menghasilkan frame hitam).
+

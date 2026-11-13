@@ -139,5 +139,25 @@
     <string name="server_config_save">Save Server URL</string>
     <string name="server_config_err_url">Enter a valid http:// or https:// URL.</string>
     <string name="a11y_navigate_back">Navigate back</string>
+
+    <!-- Catalog Management (PR 4) -->
+    <string name="catalog_mgmt_title">Catalog Management</string>
+    <string name="catalog_nav_label">Catalog</string>
+    <string name="catalog_add_category">Add Category</string>
+    <string name="catalog_edit_category">Edit Category</string>
+    <string name="catalog_add_product">Add Product</string>
+    <string name="catalog_edit_product">Edit Product</string>
+    <string name="catalog_search_hint">Search menu name or description…</string>
+    <string name="catalog_readonly_hint">Staff mode: availability (86) toggle only.</string>
+    <string name="catalog_status_available">Available</string>
+    <string name="catalog_status_sold_out">Sold Out (86)</string>
+    <string name="catalog_btn_upload_photo">Photo</string>
+    <string name="catalog_btn_variants">Variants</string>
+    <string name="catalog_btn_archive">Archive</string>
+    <string name="catalog_btn_save">Save</string>
+    <string name="catalog_btn_cancel">Cancel</string>
+    <string name="catalog_empty">No products in this category yet.</string>
+    <string name="catalog_photo_present">Photo uploaded</string>
+    <string name="catalog_photo_missing">No photo</string>
 </resources>
 

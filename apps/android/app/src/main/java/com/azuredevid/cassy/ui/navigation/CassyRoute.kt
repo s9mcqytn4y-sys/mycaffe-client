@@ -14,4 +14,7 @@ sealed interface CassyRoute {
 
     @Serializable
     data object StoreSettings : CassyRoute
+
+    @Serializable
+    data object CatalogManagement : CassyRoute
 }

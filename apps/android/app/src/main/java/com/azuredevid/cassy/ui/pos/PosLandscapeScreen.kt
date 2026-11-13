@@ -56,6 +56,7 @@ fun PosLandscapeScreen(
     cashierPrinterIp: String = "192.168.10.200",
     onOpenDrawerKick: () -> Unit = {},
     onNavigateToSettings: () -> Unit,
+    onNavigateToCatalog: () -> Unit = {},
     onNavigateToPairing: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -146,6 +147,7 @@ fun PosLandscapeScreen(
                 allProducts = allProducts,
                 isPrinterOnline = isPrinterOnline,
                 onNavigateToSettings = onNavigateToSettings,
+                onNavigateToCatalog = onNavigateToCatalog,
                 onNavigateToPairing = onNavigateToPairing
             )
 

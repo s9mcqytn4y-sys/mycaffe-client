@@ -23,6 +23,7 @@ import com.azuredevid.cassy.domain.repository.OrderQuoteRepository
 import com.azuredevid.cassy.domain.repository.PaymentCredentialRepository
 import com.azuredevid.cassy.domain.repository.ShiftRepository
 import com.azuredevid.cassy.domain.repository.StoreGovernanceRepository
+import com.azuredevid.cassy.ui.catalog.CatalogManagementViewModel
 import com.azuredevid.cassy.ui.pairing.StorePairingViewModel
 import com.azuredevid.cassy.ui.pos.PosViewModel
 import com.azuredevid.cassy.ui.settings.ServerConfigViewModel
@@ -116,4 +117,5 @@ val viewModelModule = module {
     viewModel { StoreSettingsViewModel(get(), get()) }
     viewModel { ShiftViewModel(get(), get(), get(), get()) }
     viewModel { PosViewModel(get(), get(), get()) }
+    viewModel { CatalogManagementViewModel(get(), get()) }
 }
