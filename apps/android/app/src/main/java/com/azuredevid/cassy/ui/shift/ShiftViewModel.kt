@@ -330,8 +330,8 @@ class ShiftViewModel(
                 _uiState.update { it.copy(errorMessage = "Selisih kas melebihi toleransi. Alasan wajib diisi") }
                 return
             }
-            if (supervisorPin.isBlank() || !serverSettings.verifySupervisorPin(supervisorPin)) {
-                _uiState.update { it.copy(errorMessage = "PIN Supervisor tidak valid") }
+            if (supervisorPin.length != 6) {
+                _uiState.update { it.copy(errorMessage = "PIN Owner 6 digit wajib diisi untuk verifikasi server") }
                 return
             }
         }

@@ -17,9 +17,37 @@ android {
         versionName = "1.0.0"
     }
 
+    flavorDimensions += "environment"
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            buildConfigField("String", "BASE_API_URL", "\"http://10.0.2.2:8080\"")
+            buildConfigField("Boolean", "IS_DEMO_ENVIRONMENT", "true")
+        }
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".staging"
+            versionNameSuffix = "-staging"
+            buildConfigField("String", "BASE_API_URL", "\"https://demo.abbdullaziz.online\"")
+            buildConfigField("Boolean", "IS_DEMO_ENVIRONMENT", "true")
+        }
+        create("prod") {
+            dimension = "environment"
+            buildConfigField("String", "BASE_API_URL", "\"https://api.cassy.id\"")
+            buildConfigField("Boolean", "IS_DEMO_ENVIRONMENT", "false")
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 
@@ -34,6 +62,11 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
     }
 
     packaging {
@@ -52,6 +85,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.8.3")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
@@ -61,14 +95,18 @@ dependencies {
     implementation("io.ktor:ktor-client-core:$ktorVersion")
     implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-client-auth:$ktorVersion")
+    implementation("io.ktor:ktor-client-logging:$ktorVersion")
+    implementation("io.ktor:ktor-client-websockets:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     implementation("io.ktor:ktor-network:$ktorVersion")
 
     // Koin Dependency Injection
     implementation("io.insert-koin:koin-androidx-compose:4.0.0")
 
-    // Security & Encrypted Shared Preferences
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    // Security & Persistence: Google Tink AEAD (Android Keystore) + Jetpack DataStore
+    implementation("androidx.datastore:datastore:1.1.1")
+    implementation("com.google.crypto.tink:tink-android:1.15.0")
 
     // Image Loading for WebP Menu Catalog from Cloudflare R2 CDN
     implementation("io.coil-kt:coil-compose:2.7.0")

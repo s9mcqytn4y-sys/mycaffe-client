@@ -2,6 +2,7 @@ package com.azuredevid.cassy.ui.pos
 
 import com.azuredevid.cassy.data.model.CatalogProduct
 import com.azuredevid.cassy.data.repository.KtorOrderQuoteRepository
+import com.azuredevid.cassy.data.repository.ServerSettingsRepository
 import com.azuredevid.cassy.domain.repository.NoStaffSessionException
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -35,11 +36,16 @@ class ServerTotalsTest {
         assertEquals("takeaway", quoteRequestOf(emptyList(), "TAKEAWAY").orderType)
     }
 
+    private fun settings(url: String = "https://api.test") = object : ServerSettingsRepository {
+        override fun getBaseUrl(): String = url
+        override fun setBaseUrl(url: String) {}
+    }
+
     @Test
     fun withoutStaffSessionNoRequestIsSentAndNoTotalExists() = runTest {
         var calls = 0
         val engine = MockEngine { calls++; respond("{}") }
-        val repo = KtorOrderQuoteRepository(client(engine), "https://api.test", staffToken = { null })
+        val repo = KtorOrderQuoteRepository(client(engine), settings(), staffToken = { null })
         val result = repo.quote(quoteRequestOf(listOf(CartItem(latte)), "DINE-IN"))
         assertTrue(result.exceptionOrNull() is NoStaffSessionException)
         assertEquals(0, calls)
@@ -58,7 +64,7 @@ class ServerTotalsTest {
                 headersOf(HttpHeaders.ContentType, "application/json")
             )
         }
-        val quote = KtorOrderQuoteRepository(client(engine), "https://api.test") { "t0k" }
+        val quote = KtorOrderQuoteRepository(client(engine), settings(), staffToken = { "t0k" })
             .quote(quoteRequestOf(listOf(CartItem(latte, quantity = 2)), "DINE-IN")).getOrThrow()
         assertEquals(64000L, quote.subtotalAmount)
         assertEquals(6720L, quote.taxAmount)
@@ -68,7 +74,7 @@ class ServerTotalsTest {
     @Test
     fun serverErrorGivesNoTotal() = runTest {
         val engine = MockEngine { respond("{}", HttpStatusCode.Unauthorized) }
-        val result = KtorOrderQuoteRepository(client(engine), "https://api.test") { "expired" }
+        val result = KtorOrderQuoteRepository(client(engine), settings(), staffToken = { "expired" })
             .quote(quoteRequestOf(listOf(CartItem(latte)), "TAKEAWAY"))
         assertTrue(result.isFailure)
     }

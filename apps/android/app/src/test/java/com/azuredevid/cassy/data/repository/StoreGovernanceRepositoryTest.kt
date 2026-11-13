@@ -24,13 +24,7 @@ import org.junit.Test
 
 class StoreGovernanceRepositoryTest {
 
-    private class FakeServerSettingsRepository(private var currentUrl: String = "http://10.0.2.2:8080/api/v1") : ServerSettingsRepository {
-        var pinRequired: Boolean = true
-        var pin: String = "1234"
-
-        override fun isSupervisorPinRequired(): Boolean = pinRequired
-        override fun verifySupervisorPin(pin: String): Boolean = pin.trim() == this.pin
-        override fun setSupervisorPin(pin: String) { this.pin = pin }
+    private class FakeServerSettingsRepository(private var currentUrl: String = "http://10.0.2.2:8080") : ServerSettingsRepository {
         override fun getBaseUrl(): String = currentUrl
         override fun setBaseUrl(url: String) { this.currentUrl = url }
     }

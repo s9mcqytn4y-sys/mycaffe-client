@@ -91,13 +91,7 @@ class StoreSettingsViewModelTest {
     }
 
     private class FakeServerSettings : ServerSettingsRepository {
-        var pinRequired: Boolean = true
-        var correctPin: String = "4321"
-
-        override fun isSupervisorPinRequired(): Boolean = pinRequired
-        override fun verifySupervisorPin(pin: String): Boolean = pin.trim() == correctPin
-        override fun setSupervisorPin(pin: String) { correctPin = pin }
-        override fun getBaseUrl(): String = "http://10.0.2.2:8080/api/v1"
+        override fun getBaseUrl(): String = "http://10.0.2.2:8080"
         override fun setBaseUrl(url: String) {}
     }
 
@@ -131,32 +125,19 @@ class StoreSettingsViewModelTest {
         assertEquals("Judul Id Asli", state.heroTitleId)
         assertEquals(QRServiceMode.TABLE, state.qrServiceMode)
         assertEquals(90, state.tableTimeLimitMinutes)
-        assertFalse(state.isSupervisorAuthenticated)
+        assertTrue(state.isSupervisorAuthenticated)
     }
 
     @Test
-    fun supervisorPin_verificationFlow() = runTest {
+    fun midtransTab_neverUsesLocalPinBypass() = runTest {
         val repo = FakeStoreGovernanceRepository()
         val serverSettings = FakeServerSettings()
         val vm = StoreSettingsViewModel(repo, serverSettings)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // 1. Request Supervisor Auth
-        vm.onEvent(StoreSettingsUiEvent.RequestSupervisorAuth)
-        assertTrue(vm.uiState.value.showSupervisorPinModal)
-
-        // 2. Submit wrong PIN
-        vm.onEvent(StoreSettingsUiEvent.UpdateSupervisorPinInput("9999"))
-        vm.onEvent(StoreSettingsUiEvent.SubmitSupervisorPin)
-        assertNotNull(vm.uiState.value.supervisorPinError)
-        assertFalse(vm.uiState.value.isSupervisorAuthenticated)
-
-        // 3. Submit correct PIN
-        vm.onEvent(StoreSettingsUiEvent.UpdateSupervisorPinInput("4321"))
-        vm.onEvent(StoreSettingsUiEvent.SubmitSupervisorPin)
-        assertNull(vm.uiState.value.supervisorPinError)
+        vm.onEvent(StoreSettingsUiEvent.SelectTab(0))
         assertFalse(vm.uiState.value.showSupervisorPinModal)
-        assertTrue(vm.uiState.value.isSupervisorAuthenticated)
+        assertEquals(0, vm.uiState.value.selectedTabIndex)
     }
 
     @Test
