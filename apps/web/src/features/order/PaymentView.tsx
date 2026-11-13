@@ -7,7 +7,7 @@ import { QrCodeSvg } from "@/components/QrCodeSvg";
 import { apiFetch } from "@/lib/api";
 import { formatIdr } from "@/lib/format";
 import type { Messages } from "@/lib/messages";
-import { METHOD_LABEL } from "./CartSheet";
+import { METHOD_LABEL, MidtransTrustFooter, PaymentChannelLogo } from "./PaymentMethodPicker";
 import { progressStep, safeDeeplink, type OrderPhase } from "./status";
 import type { PaymentInfo, PayMethod, ServiceMode } from "./types";
 
@@ -198,7 +198,7 @@ export function PaymentView({
   const others = methods.filter((m) => m !== via);
 
   return (
-    <section className="mx-auto flex max-w-md flex-col items-center px-5 py-8 text-center">
+    <section className="mx-auto flex max-w-md flex-col items-center py-8 pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(1.25rem,env(safe-area-inset-right))] pt-[max(2rem,env(safe-area-inset-top))] text-center">
       <h1 className="text-2xl font-bold">{wallet ? METHOD_LABEL[via] : t.scanToPay}</h1>
       <p className="mt-2 text-sm text-subink">{wallet ? t.walletHint : t.scanHint}</p>
       <p className="mt-5 text-3xl font-bold">{formatIdr(payment.amount)}</p>
@@ -252,16 +252,19 @@ export function PaymentView({
                 type="button"
                 disabled={retrying}
                 onClick={() => onSwitch(m)}
-                className="btn-secondary min-h-[44px] px-4 text-sm font-semibold"
+                className="btn-secondary inline-flex min-h-[48px] items-center gap-2 px-4 text-sm font-semibold motion-safe:transition-transform motion-safe:active:scale-[0.98]"
               >
-                {METHOD_LABEL[m]}
+                <PaymentChannelLogo method={m} className="h-4 w-auto" />
+                <span>{METHOD_LABEL[m]}</span>
               </button>
             ))}
           </div>
         </div>
       ) : null}
 
-      <button type="button" onClick={onBack} className="btn-secondary mt-8 min-h-[44px] px-5 font-semibold">
+      <MidtransTrustFooter />
+
+      <button type="button" onClick={onBack} className="btn-secondary mt-6 min-h-[44px] px-5 font-semibold motion-safe:transition-transform motion-safe:active:scale-[0.98]">
         {t.back}
       </button>
     </section>

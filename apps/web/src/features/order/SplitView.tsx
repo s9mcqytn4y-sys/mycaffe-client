@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check, CircleCheck, ExternalLink, QrCode, Share2 } from "lucide-react";
 import { useLocale } from "@/components/Providers";
 import { QrCodeSvg } from "@/components/QrCodeSvg";
 import { apiFetch } from "@/lib/api";
@@ -37,6 +38,12 @@ export function SplitView({ orderId, shares, onBack }: { orderId: string; shares
     };
   }, [orderId]);
 
+  useEffect(() => {
+    if (copied === null) return;
+    const timer = setTimeout(() => setCopied(null), 2500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
   const urlOf = (s: SplitShareLink) => `${window.location.origin}/bagian/${encodeURIComponent(s.token)}`;
   const send = async (s: SplitShareLink) => {
     const url = urlOf(s);
@@ -53,7 +60,7 @@ export function SplitView({ orderId, shares, onBack }: { orderId: string; shares
   };
 
   return (
-    <section className="mx-auto max-w-md px-5 py-8">
+    <section className="mx-auto max-w-md py-8 pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(1.25rem,env(safe-area-inset-right))] pt-[max(2rem,env(safe-area-inset-top))]">
       <h1 className="text-2xl font-bold">{t.splitTitle}</h1>
       <p className="mt-2 text-sm text-subink">{t.splitIntro}</p>
       <ul className="mt-6 space-y-3">
@@ -67,30 +74,34 @@ export function SplitView({ orderId, shares, onBack }: { orderId: string; shares
                 </span>
                 <span className="tabular-nums font-bold">{formatIdr(s.amount)}</span>
               </div>
-              <p className={`mt-1 text-sm font-semibold ${done ? "text-[var(--state-ok-fg)]" : "text-subink"}`}>
-                {done ? t.sharePaid : t.shareWaiting}
+              <p className={`mt-1 inline-flex items-center gap-1.5 text-sm font-semibold ${done ? "text-[var(--state-ok-fg)]" : "text-subink"}`}>
+                {done ? <CircleCheck size={16} aria-hidden="true" /> : null}
+                <span>{done ? t.sharePaid : t.shareWaiting}</span>
               </p>
               {!done ? (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <a href={urlOf(s)} className="btn-primary min-h-[44px] px-4 text-sm font-semibold">
-                    {t.shareOpen}
+                  <a href={urlOf(s)} className="btn-primary inline-flex min-h-[44px] items-center gap-1.5 px-4 text-sm font-semibold motion-safe:transition-transform motion-safe:active:scale-[0.98]">
+                    <ExternalLink size={16} aria-hidden="true" />
+                    <span>{t.shareOpen}</span>
                   </a>
-                  <button type="button" onClick={() => void send(s)} className="btn-secondary min-h-[44px] px-4 text-sm font-semibold">
-                    {t.shareSend}
+                  <button type="button" onClick={() => void send(s)} className="btn-secondary inline-flex min-h-[44px] items-center gap-1.5 px-4 text-sm font-semibold motion-safe:transition-transform motion-safe:active:scale-[0.98]">
+                    {copied === s.split_number ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
+                    <span>{t.shareSend}</span>
                   </button>
                   <button
                     type="button"
                     aria-expanded={qrFor === s.split_number}
                     onClick={() => setQrFor(qrFor === s.split_number ? null : s.split_number)}
-                    className="btn-secondary min-h-[44px] px-4 text-sm font-semibold"
+                    className="btn-secondary inline-flex min-h-[44px] items-center gap-1.5 px-4 text-sm font-semibold motion-safe:transition-transform motion-safe:active:scale-[0.98]"
                   >
-                    {qrFor === s.split_number ? t.shareHideQr : t.shareShowQr}
+                    <QrCode size={16} aria-hidden="true" />
+                    <span>{qrFor === s.split_number ? t.shareHideQr : t.shareShowQr}</span>
                   </button>
                 </div>
               ) : null}
               {copied === s.split_number ? <p role="status" className="mt-2 text-sm">{t.shareCopied}</p> : null}
               {qrFor === s.split_number && !done ? (
-                <div className="mt-3 inline-block rounded-xl bg-white p-3">
+                <div data-testid="split-qr-code" className="mt-3 inline-block rounded-xl bg-white p-3">
                   <QrCodeSvg value={urlOf(s)} size={200} />
                 </div>
               ) : null}

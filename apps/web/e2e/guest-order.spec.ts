@@ -523,7 +523,7 @@ test.describe("bagi tagihan (W13, di belakang split_enabled)", () => {
     await expect(shares.nth(1).getByRole("link", { name: "Bayar bagian ini" })).toHaveAttribute("href", /\/bagian\/tok2$/);
 
     await shares.nth(2).getByRole("button", { name: "Tampilkan QR" }).click();
-    await expect(shares.nth(2).locator("svg")).toBeVisible();
+    await expect(shares.nth(2).getByTestId("split-qr-code").locator("svg")).toBeVisible();
 
     firstPaid = true;
     await expect(shares.nth(0)).toContainText("Lunas", { timeout: 8000 });

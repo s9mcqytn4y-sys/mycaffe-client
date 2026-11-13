@@ -26,11 +26,18 @@ export function CategoryNav({ sections }: { sections: { id: string; name: string
   }, [sections]);
 
   useEffect(() => {
-    nav.current?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    nav.current
+      ?.querySelector('[aria-current="true"]')
+      ?.scrollIntoView({ block: "nearest", inline: "center", behavior: reduced ? "auto" : "smooth" });
   }, [active]);
 
   return (
-    <nav ref={nav} aria-label={t.categories} className="no-scrollbar flex snap-x gap-1.5 overflow-x-auto px-3 pt-2">
+    <nav
+      ref={nav}
+      aria-label={t.categories}
+      className="no-scrollbar flex snap-x gap-2 overflow-x-auto px-4 pt-2 [mask-image:linear-gradient(to_right,transparent,black_12px,black_calc(100%-12px),transparent)]"
+    >
       {sections.map((s) => (
         <button
           key={s.id}
@@ -38,9 +45,14 @@ export function CategoryNav({ sections }: { sections: { id: string; name: string
           aria-current={active === s.id ? "true" : undefined}
           onClick={() => {
             setActive(s.id);
-            document.getElementById(sectionId(s.id))?.scrollIntoView({ block: "start" });
+            const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+            document.getElementById(sectionId(s.id))?.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
           }}
-          className={`min-h-[44px] shrink-0 snap-start rounded-full px-4 text-sm font-semibold ${active === s.id ? "bg-brand text-brand-fg" : "bg-muted text-ink"}`}
+          className={`min-h-[44px] shrink-0 snap-center rounded-full border px-4 text-sm font-semibold motion-safe:transition-all motion-safe:active:scale-[0.97] ${
+            active === s.id
+              ? "border-brand bg-brand text-brand-fg shadow-sm"
+              : "border-transparent bg-muted text-ink hover:border-subtle"
+          }`}
         >
           {s.name}
         </button>

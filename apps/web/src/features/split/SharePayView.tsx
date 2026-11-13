@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CircleCheck } from "lucide-react";
 import { useLocale } from "@/components/Providers";
 import { QrCodeSvg } from "@/components/QrCodeSvg";
+import { MidtransTrustFooter, PaymentChannelLogo } from "@/features/order/PaymentMethodPicker";
 import { ApiError, apiFetch, isMaintenance } from "@/lib/api";
 import { formatIdr } from "@/lib/format";
 
@@ -116,13 +117,14 @@ export function SharePayView({ token }: { token: string }) {
       <p className="mt-5 text-3xl font-bold">{formatIdr(share.amount)}</p>
 
       {!charge ? (
-        <button type="button" disabled={paying} onClick={() => void pay(false)} className="btn-primary mt-6 min-h-[56px] w-full text-base font-bold">
-          {paying ? t.placing : t.sharePayCta}
+        <button type="button" disabled={paying} onClick={() => void pay(false)} className="btn-primary mt-6 inline-flex min-h-[56px] w-full items-center justify-center gap-2 text-base font-bold motion-safe:transition-transform motion-safe:active:scale-[0.98]">
+          <PaymentChannelLogo method="qris" className="h-4 w-auto" />
+          <span>{paying ? t.placing : t.sharePayCta}</span>
         </button>
       ) : expired ? (
         <div role="alert" className="mt-6 flex flex-col items-center">
           <p className="font-semibold">{t.expired}</p>
-          <button type="button" disabled={paying} onClick={() => void pay(true)} className="btn-primary mt-3 min-h-[56px] px-6 font-bold">
+          <button type="button" disabled={paying} onClick={() => void pay(true)} className="btn-primary mt-3 min-h-[56px] px-6 font-bold motion-safe:transition-transform motion-safe:active:scale-[0.98]">
             {t.newQr}
           </button>
         </div>
@@ -142,6 +144,7 @@ export function SharePayView({ token }: { token: string }) {
         </>
       )}
       {error ? <p role="alert" className="mt-4 text-sm font-semibold text-[var(--state-err-fg)]">{error}</p> : null}
+      <MidtransTrustFooter />
     </section>
   );
 }
