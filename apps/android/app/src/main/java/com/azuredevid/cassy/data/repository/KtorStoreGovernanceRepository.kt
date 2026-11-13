@@ -1,6 +1,5 @@
-﻿package com.azuredevid.cassy.data.repository
+package com.azuredevid.cassy.data.repository
 
-import android.content.Context
 import com.azuredevid.cassy.data.model.CompletedMediaUploadDto
 import com.azuredevid.cassy.data.model.CreateMediaUploadRequest
 import com.azuredevid.cassy.data.model.MediaUploadTicketDto
@@ -10,6 +9,7 @@ import com.azuredevid.cassy.data.model.StoreCMSConfigInputDto
 import com.azuredevid.cassy.data.model.StorePaymentCredentialDto
 import com.azuredevid.cassy.data.model.StoreSettingsDto
 import com.azuredevid.cassy.data.model.StoreSettingsPatchDto
+import com.azuredevid.cassy.data.network.HttpErrorMapper
 import com.azuredevid.cassy.domain.model.MidtransEnvironment
 import com.azuredevid.cassy.domain.model.PaymentCredentialInput
 import com.azuredevid.cassy.domain.model.PaymentCredentials
@@ -21,8 +21,6 @@ import com.azuredevid.cassy.domain.model.StoreSettingsPatch
 import com.azuredevid.cassy.domain.repository.StoreGovernanceRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.patch
@@ -34,11 +32,9 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 
 class KtorStoreGovernanceRepository(
     private val httpClient: HttpClient,
@@ -47,60 +43,30 @@ class KtorStoreGovernanceRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : StoreGovernanceRepository {
 
-    constructor(
-        context: Context,
-        serverSettings: ServerSettingsRepository = SharedPreferencesServerSettingsRepository(context),
-        authTokenProvider: () -> String? = { KtorPaymentCredentialRepository(context).getStoredAuthToken() },
-        customHttpClient: HttpClient? = null
-    ) : this(
-        httpClient = customHttpClient ?: HttpClient(OkHttp) {
-            install(ContentNegotiation) {
-                json(Json {
-                    ignoreUnknownKeys = true
-                    isLenient = true
-                    encodeDefaults = true
-                })
-            }
-        },
-        serverSettings = serverSettings,
-        authTokenProvider = authTokenProvider
-    )
-
     override suspend fun getPaymentCredentials(): Result<PaymentCredentials> = withContext(ioDispatcher) {
         try {
-            val baseUrl = serverSettings.getBaseUrl().trimEnd('/')
+            val baseUrl = serverSettings.getBaseUrl()
             val token = authTokenProvider()
-            val response: HttpResponse = httpClient.get("$baseUrl/store/payment-credentials") {
+            val response: HttpResponse = httpClient.get("$baseUrl/api/v1/store/payment-credentials") {
                 if (!token.isNullOrBlank()) {
                     header(HttpHeaders.Authorization, "Bearer $token")
                 }
             }
-
             if (!response.status.isSuccess()) {
                 return@withContext Result.failure(
-                    IllegalStateException("Gagal memuat kredensial Midtrans: HTTP ${response.status}")
+                    HttpErrorMapper.toDomainException(response, "Gagal memuat kredensial Midtrans.")
                 )
             }
-
             val dto = response.body<StorePaymentCredentialDto>()
-            Result.success(
-                PaymentCredentials(
-                    environment = MidtransEnvironment.fromRaw(dto.environment),
-                    merchantId = dto.merchantId,
-                    clientKey = dto.clientKey,
-                    serverKeyMasked = dto.serverKeyMasked,
-                    isEnabled = dto.isEnabled,
-                    fallbackStaticQrisEnabled = dto.fallbackStaticQrisEnabled
-                )
-            )
-        } catch (e: Exception) {
-            Result.failure(e)
+            Result.success(dto.toDomain())
+        } catch (t: Throwable) {
+            Result.failure(HttpErrorMapper.fromThrowable(t, "Gagal memuat kredensial Midtrans."))
         }
     }
 
     override suspend fun savePaymentCredentials(input: PaymentCredentialInput): Result<PaymentCredentials> = withContext(ioDispatcher) {
         try {
-            val baseUrl = serverSettings.getBaseUrl().trimEnd('/')
+            val baseUrl = serverSettings.getBaseUrl()
             val token = authTokenProvider()
             val payload = PaymentCredentialInputDto(
                 environment = input.environment.raw,
@@ -112,62 +78,48 @@ class KtorStoreGovernanceRepository(
                 verifyLive = input.verifyLive
             )
 
-            val response: HttpResponse = httpClient.put("$baseUrl/store/payment-credentials") {
+            val response: HttpResponse = httpClient.put("$baseUrl/api/v1/store/payment-credentials") {
                 contentType(ContentType.Application.Json)
                 setBody(payload)
                 if (!token.isNullOrBlank()) {
                     header(HttpHeaders.Authorization, "Bearer $token")
                 }
             }
-
             if (!response.status.isSuccess()) {
                 return@withContext Result.failure(
-                    IllegalStateException("Gagal menyimpan kredensial Midtrans: HTTP ${response.status}")
+                    HttpErrorMapper.toDomainException(response, "Gagal menyimpan kredensial Midtrans.")
                 )
             }
-
             val dto = response.body<StorePaymentCredentialDto>()
-            Result.success(
-                PaymentCredentials(
-                    environment = MidtransEnvironment.fromRaw(dto.environment),
-                    merchantId = dto.merchantId,
-                    clientKey = dto.clientKey,
-                    serverKeyMasked = dto.serverKeyMasked,
-                    isEnabled = dto.isEnabled,
-                    fallbackStaticQrisEnabled = dto.fallbackStaticQrisEnabled
-                )
-            )
-        } catch (e: Exception) {
-            Result.failure(e)
+            Result.success(dto.toDomain())
+        } catch (t: Throwable) {
+            Result.failure(HttpErrorMapper.fromThrowable(t, "Gagal menyimpan kredensial Midtrans."))
         }
     }
 
     override suspend fun getStoreCMS(): Result<StoreCMSConfig> = withContext(ioDispatcher) {
         try {
-            val baseUrl = serverSettings.getBaseUrl().trimEnd('/')
+            val baseUrl = serverSettings.getBaseUrl()
             val token = authTokenProvider()
-            val response: HttpResponse = httpClient.get("$baseUrl/store/cms") {
+            val response: HttpResponse = httpClient.get("$baseUrl/api/v1/store/cms") {
                 if (!token.isNullOrBlank()) {
                     header(HttpHeaders.Authorization, "Bearer $token")
                 }
             }
-
             if (!response.status.isSuccess()) {
                 return@withContext Result.failure(
-                    IllegalStateException("Gagal memuat konfigurasi Store CMS: HTTP ${response.status}")
+                    HttpErrorMapper.toDomainException(response, "Gagal memuat konfigurasi Store CMS.")
                 )
             }
-
-            val dto = response.body<StoreCMSConfigDto>()
-            Result.success(dto.toDomain())
-        } catch (e: Exception) {
-            Result.failure(e)
+            Result.success(response.body<StoreCMSConfigDto>().toDomain())
+        } catch (t: Throwable) {
+            Result.failure(HttpErrorMapper.fromThrowable(t, "Gagal memuat konfigurasi Store CMS."))
         }
     }
 
     override suspend fun saveStoreCMS(input: StoreCMSConfigInput): Result<StoreCMSConfig> = withContext(ioDispatcher) {
         try {
-            val baseUrl = serverSettings.getBaseUrl().trimEnd('/')
+            val baseUrl = serverSettings.getBaseUrl()
             val token = authTokenProvider()
             val payload = StoreCMSConfigInputDto(
                 defaultLocale = input.defaultLocale,
@@ -184,53 +136,47 @@ class KtorStoreGovernanceRepository(
                 customDomain = input.customDomain
             )
 
-            val response: HttpResponse = httpClient.put("$baseUrl/store/cms") {
+            val response: HttpResponse = httpClient.put("$baseUrl/api/v1/store/cms") {
                 contentType(ContentType.Application.Json)
                 setBody(payload)
                 if (!token.isNullOrBlank()) {
                     header(HttpHeaders.Authorization, "Bearer $token")
                 }
             }
-
             if (!response.status.isSuccess()) {
                 return@withContext Result.failure(
-                    IllegalStateException("Gagal memperbarui konfigurasi Store CMS: HTTP ${response.status}")
+                    HttpErrorMapper.toDomainException(response, "Gagal memperbarui konfigurasi Store CMS.")
                 )
             }
-
-            val dto = response.body<StoreCMSConfigDto>()
-            Result.success(dto.toDomain())
-        } catch (e: Exception) {
-            Result.failure(e)
+            Result.success(response.body<StoreCMSConfigDto>().toDomain())
+        } catch (t: Throwable) {
+            Result.failure(HttpErrorMapper.fromThrowable(t, "Gagal memperbarui konfigurasi Store CMS."))
         }
     }
 
     override suspend fun getStoreSettings(): Result<StoreSettings> = withContext(ioDispatcher) {
         try {
-            val baseUrl = serverSettings.getBaseUrl().trimEnd('/')
+            val baseUrl = serverSettings.getBaseUrl()
             val token = authTokenProvider()
-            val response: HttpResponse = httpClient.get("$baseUrl/store/settings") {
+            val response: HttpResponse = httpClient.get("$baseUrl/api/v1/store/settings") {
                 if (!token.isNullOrBlank()) {
                     header(HttpHeaders.Authorization, "Bearer $token")
                 }
             }
-
             if (!response.status.isSuccess()) {
                 return@withContext Result.failure(
-                    IllegalStateException("Gagal memuat konfigurasi kebijakan gerai: HTTP ${response.status}")
+                    HttpErrorMapper.toDomainException(response, "Gagal memuat konfigurasi kebijakan gerai.")
                 )
             }
-
-            val dto = response.body<StoreSettingsDto>()
-            Result.success(dto.toDomain())
-        } catch (e: Exception) {
-            Result.failure(e)
+            Result.success(response.body<StoreSettingsDto>().toDomain())
+        } catch (t: Throwable) {
+            Result.failure(HttpErrorMapper.fromThrowable(t, "Gagal memuat konfigurasi kebijakan gerai."))
         }
     }
 
     override suspend fun updateStoreSettings(patch: StoreSettingsPatch): Result<StoreSettings> = withContext(ioDispatcher) {
         try {
-            val baseUrl = serverSettings.getBaseUrl().trimEnd('/')
+            val baseUrl = serverSettings.getBaseUrl()
             val token = authTokenProvider()
             val payload = StoreSettingsPatchDto(
                 qrServiceMode = patch.qrServiceMode?.raw,
@@ -241,34 +187,31 @@ class KtorStoreGovernanceRepository(
                 cashierHandlesBar = patch.cashierHandlesBar
             )
 
-            val response: HttpResponse = httpClient.patch("$baseUrl/store/settings") {
+            val response: HttpResponse = httpClient.patch("$baseUrl/api/v1/store/settings") {
                 contentType(ContentType.Application.Json)
                 setBody(payload)
                 if (!token.isNullOrBlank()) {
                     header(HttpHeaders.Authorization, "Bearer $token")
                 }
             }
-
             if (!response.status.isSuccess()) {
                 return@withContext Result.failure(
-                    IllegalStateException("Gagal memperbarui kebijakan gerai: HTTP ${response.status}")
+                    HttpErrorMapper.toDomainException(response, "Gagal memperbarui kebijakan gerai.")
                 )
             }
-
-            val dto = response.body<StoreSettingsDto>()
-            Result.success(dto.toDomain())
-        } catch (e: Exception) {
-            Result.failure(e)
+            Result.success(response.body<StoreSettingsDto>().toDomain())
+        } catch (t: Throwable) {
+            Result.failure(HttpErrorMapper.fromThrowable(t, "Gagal memperbarui kebijakan gerai."))
         }
     }
 
     override suspend fun uploadHeroBanner(imageBytes: ByteArray): Result<String> = withContext(ioDispatcher) {
         try {
-            val baseUrl = serverSettings.getBaseUrl().trimEnd('/')
+            val baseUrl = serverSettings.getBaseUrl()
             val token = authTokenProvider()
 
             // 1. Create upload ticket
-            val ticketResponse: HttpResponse = httpClient.post("$baseUrl/media/uploads") {
+            val ticketResponse: HttpResponse = httpClient.post("$baseUrl/api/v1/media/uploads") {
                 contentType(ContentType.Application.Json)
                 setBody(
                     CreateMediaUploadRequest(
@@ -280,94 +223,89 @@ class KtorStoreGovernanceRepository(
                     header(HttpHeaders.Authorization, "Bearer $token")
                 }
             }
-
             if (!ticketResponse.status.isSuccess()) {
                 return@withContext Result.failure(
-                    IllegalStateException("Gagal membuat tiket upload banner: HTTP ${ticketResponse.status}")
+                    HttpErrorMapper.toDomainException(ticketResponse, "Gagal membuat tiket upload banner.")
                 )
             }
-
             val ticket = ticketResponse.body<MediaUploadTicketDto>()
 
-            // 2. Direct PUT binary payload to presigned upload URL
+            // 2. Direct PUT binary payload to presigned R2 URL (Auth plugin excludes non-API hosts)
             val directPutResponse: HttpResponse = httpClient.put(ticket.uploadUrl) {
                 contentType(ContentType.parse("image/webp"))
                 setBody(imageBytes)
             }
-
             if (!directPutResponse.status.isSuccess()) {
                 return@withContext Result.failure(
-                    IllegalStateException("Gagal transfer gambar ke storage R2: HTTP ${directPutResponse.status}")
+                    HttpErrorMapper.toDomainException(directPutResponse, "Gagal transfer gambar ke storage R2.")
                 )
             }
 
             // 3. Complete upload
-            val completeResponse: HttpResponse = httpClient.post("$baseUrl/media/uploads/${ticket.id}/complete") {
+            val completeResponse: HttpResponse = httpClient.post("$baseUrl/api/v1/media/uploads/${ticket.id}/complete") {
                 contentType(ContentType.Application.Json)
                 if (!token.isNullOrBlank()) {
                     header(HttpHeaders.Authorization, "Bearer $token")
                 }
             }
-
             if (!completeResponse.status.isSuccess()) {
                 return@withContext Result.failure(
-                    IllegalStateException("Gagal finalisasi upload: HTTP ${completeResponse.status}")
+                    HttpErrorMapper.toDomainException(completeResponse, "Gagal finalisasi upload banner.")
                 )
             }
 
             val completed = completeResponse.body<CompletedMediaUploadDto>()
             Result.success(completed.publicUrl)
-        } catch (e: Exception) {
-            Result.failure(e)
+        } catch (t: Throwable) {
+            Result.failure(HttpErrorMapper.fromThrowable(t, "Gagal mengunggah banner gerai."))
         }
     }
 
     override suspend fun probeMidtransApi(serverKey: String, environment: String): Result<Boolean> = withContext(ioDispatcher) {
-        try {
-            val cleanKey = serverKey.trim()
-            if (cleanKey.length < 16) {
-                return@withContext Result.failure(IllegalArgumentException("Panjang Server Key minimal 16 karakter."))
-            }
-
-            val isSandbox = environment.equals("sandbox", ignoreCase = true) || cleanKey.startsWith("SB-")
-            if (isSandbox && !cleanKey.startsWith("SB-Mid-server-")) {
-                return@withContext Result.failure(IllegalArgumentException("Format Server Key Sandbox harus diawali 'SB-Mid-server-'."))
-            }
-            if (!isSandbox && !cleanKey.startsWith("Mid-server-")) {
-                return@withContext Result.failure(IllegalArgumentException("Format Server Key Produksi harus diawali 'Mid-server-'."))
-            }
-
-            Result.success(true)
-        } catch (e: Exception) {
-            Result.failure(e)
+        val cleanKey = serverKey.trim()
+        if (cleanKey.length < 16) {
+            return@withContext Result.failure(IllegalArgumentException("Panjang Server Key minimal 16 karakter."))
         }
+        val isSandbox = environment.equals("sandbox", ignoreCase = true) || cleanKey.startsWith("SB-")
+        if (isSandbox && !cleanKey.startsWith("SB-Mid-server-")) {
+            return@withContext Result.failure(IllegalArgumentException("Format Server Key Sandbox harus diawali 'SB-Mid-server-'."))
+        }
+        if (!isSandbox && (!cleanKey.startsWith("Mid-server-") || cleanKey.startsWith("SB-"))) {
+            return@withContext Result.failure(IllegalArgumentException("Format Server Key Produksi harus diawali 'Mid-server-'."))
+        }
+        Result.success(true)
     }
 
-    private fun StoreCMSConfigDto.toDomain(): StoreCMSConfig {
-        return StoreCMSConfig(
-            defaultLocale = defaultLocale,
-            supportedLocales = supportedLocales,
-            heroTitleId = heroTitleId,
-            heroTitleEn = heroTitleEn,
-            heroSubtitleId = heroSubtitleId,
-            heroSubtitleEn = heroSubtitleEn,
-            heroBannerUrl = heroBannerUrl,
-            primaryHex = primaryHex,
-            accentHex = accentHex,
-            highContrastMode = highContrastMode,
-            hidePoweredByBadge = hidePoweredByBadge,
-            customDomain = customDomain
-        )
-    }
+    private fun StorePaymentCredentialDto.toDomain(): PaymentCredentials = PaymentCredentials(
+        environment = MidtransEnvironment.fromRaw(environment),
+        merchantId = merchantId,
+        clientKey = clientKey,
+        serverKeyMasked = serverKeyMasked,
+        isEnabled = isEnabled,
+        fallbackStaticQrisEnabled = fallbackStaticQrisEnabled
+    )
 
-    private fun StoreSettingsDto.toDomain(): StoreSettings {
-        return StoreSettings(
-            qrServiceMode = QRServiceMode.fromRaw(qrServiceMode),
-            qrOrderingPaused = qrOrderingPaused,
-            tableTimeLimitMinutes = tableTimeLimitMinutes,
-            tableTimerWarningMinutes = tableTimerWarningMinutes,
-            staticQrisFallbackMode = staticQrisFallbackMode,
-            cashierHandlesBar = cashierHandlesBar
-        )
-    }
+    private fun StoreCMSConfigDto.toDomain(): StoreCMSConfig = StoreCMSConfig(
+        defaultLocale = defaultLocale,
+        supportedLocales = supportedLocales,
+        heroTitleId = heroTitleId,
+        heroTitleEn = heroTitleEn,
+        heroSubtitleId = heroSubtitleId,
+        heroSubtitleEn = heroSubtitleEn,
+        heroBannerUrl = heroBannerUrl,
+        primaryHex = primaryHex,
+        accentHex = accentHex,
+        highContrastMode = highContrastMode,
+        hidePoweredByBadge = hidePoweredByBadge,
+        customDomain = customDomain
+    )
+
+    private fun StoreSettingsDto.toDomain(): StoreSettings = StoreSettings(
+        qrServiceMode = QRServiceMode.fromRaw(qrServiceMode),
+        qrOrderingPaused = qrOrderingPaused,
+        tableTimeLimitMinutes = tableTimeLimitMinutes,
+        tableTimerWarningMinutes = tableTimerWarningMinutes,
+        staticQrisFallbackMode = staticQrisFallbackMode,
+        cashierHandlesBar = cashierHandlesBar
+    )
 }

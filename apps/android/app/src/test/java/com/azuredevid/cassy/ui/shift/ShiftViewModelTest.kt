@@ -115,10 +115,7 @@ class ShiftViewModelTest {
         }
     }
 
-    private class FakeServerSettings(private var pin: String = "1234") : ServerSettingsRepository {
-        override fun isSupervisorPinRequired(): Boolean = true
-        override fun verifySupervisorPin(pin: String): Boolean = pin.trim() == this.pin
-        override fun setSupervisorPin(pin: String) { this.pin = pin }
+    private class FakeServerSettings : ServerSettingsRepository {
         override fun getBaseUrl(): String = "http://10.0.2.2:8080"
         override fun setBaseUrl(url: String) {}
     }
@@ -283,15 +280,15 @@ class ShiftViewModelTest {
         assertNotNull(viewModel.uiState.value.errorMessage)
         assertTrue(viewModel.uiState.value.errorMessage!!.contains("Alasan wajib diisi"))
 
-        // Add reason but wrong PIN: blocked
+        // Add reason but invalid 4-digit PIN format: blocked locally before API call
         viewModel.onVarianceReasonChanged("Uang kembalian tercecer")
         viewModel.onSupervisorPinChanged("9999")
         viewModel.submitCloseShift()
         assertNotNull(viewModel.uiState.value.errorMessage)
-        assertTrue(viewModel.uiState.value.errorMessage!!.contains("PIN Supervisor tidak valid"))
+        assertTrue(viewModel.uiState.value.errorMessage!!.contains("PIN Owner 6 digit wajib diisi"))
 
-        // Add correct PIN: succeeds
-        viewModel.onSupervisorPinChanged("1234")
+        // Add 6-digit PIN (never checked against hardcoded 1234 locally; sent to backend): succeeds
+        viewModel.onSupervisorPinChanged("482913")
         viewModel.submitCloseShift()
         testDispatcher.scheduler.advanceUntilIdle()
 

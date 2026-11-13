@@ -2,73 +2,92 @@ package com.azuredevid.cassy
 
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.compose.rememberNavController
 import com.azuredevid.cassy.core.hardware.PrinterPort9100Manager
-import com.azuredevid.cassy.ui.pairing.StorePairingScreen
-import com.azuredevid.cassy.ui.pos.PosLandscapeScreen
-import com.azuredevid.cassy.ui.settings.StoreSettingsScreen
+import com.azuredevid.cassy.core.security.SessionManager
+import com.azuredevid.cassy.ui.navigation.CassyNavHost
+import com.azuredevid.cassy.ui.navigation.CassyRoute
+import com.azuredevid.cassy.ui.theme.CassyPandan
 import com.azuredevid.cassy.ui.theme.CassyTheme
 import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
-    private val printerManager = PrinterPort9100Manager()
+    private val printerManager: PrinterPort9100Manager by inject()
+    private val sessionManager: SessionManager by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             CassyTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    var currentScreen by rememberSaveable { mutableStateOf("pos") }
+                    var startRoute by remember { mutableStateOf<CassyRoute?>(null) }
 
-                    when (currentScreen) {
-                        "pos" -> {
-                            PosLandscapeScreen(
-                                onOpenDrawerKick = {
-                                    lifecycleScope.launch {
-                                        printerManager.openCashDrawer("192.168.10.200", 9100)
-                                            .onSuccess {
-                                                Toast.makeText(this@MainActivity, "Perintah Buka Laci Kasir Terkirim (RJ11)", Toast.LENGTH_SHORT).show()
-                                            }
-                                            .onFailure {
-                                                Toast.makeText(this@MainActivity, "Simulasi Buka Laci (Printer LAN tidak terjangkau)", Toast.LENGTH_SHORT).show()
-                                            }
-                                    }
-                                },
-                                onNavigateToSettings = {
-                                    currentScreen = "settings"
-                                },
-                                onNavigateToPairing = {
-                                    currentScreen = "pairing"
-                                }
-                            )
+                    LaunchedEffect(Unit) {
+                        val existing = sessionManager.awaitLoaded()
+                        startRoute = if (existing?.isAuthenticated == true) {
+                            CassyRoute.PosCashier
+                        } else {
+                            CassyRoute.StorePairing
                         }
-                        "settings" -> {
-                            StoreSettingsScreen(
-                                onNavigateBack = {
-                                    currentScreen = "pos"
-                                }
-                            )
+                    }
+
+                    val initial = startRoute
+                    if (initial == null) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = CassyPandan)
                         }
-                        "pairing" -> {
-                            StorePairingScreen(
-                                onPairingSuccess = { storeSlug, token ->
-                                    Toast.makeText(
-                                        this@MainActivity,
-                                        "Tablet berhasil terhubung ke gerai: $storeSlug",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                    currentScreen = "pos"
+                    } else {
+                        val navController = rememberNavController()
+                        CassyNavHost(
+                            navController = navController,
+                            startDestination = initial,
+                            sessionManager = sessionManager,
+                            onOpenCashDrawer = {
+                                lifecycleScope.launch {
+                                    printerManager.openCashDrawer("192.168.10.200", 9100)
+                                        .onSuccess {
+                                            Toast.makeText(
+                                                this@MainActivity,
+                                                "Perintah Buka Laci Kasir Terkirim (RJ11)",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                        .onFailure {
+                                            Toast.makeText(
+                                                this@MainActivity,
+                                                "Printer LAN tidak terjangkau",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                 }
-                            )
-                        }
+                            },
+                            onShowPairingToast = { storeName ->
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "Tablet terhubung ke gerai: $storeName",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        )
                     }
                 }
             }

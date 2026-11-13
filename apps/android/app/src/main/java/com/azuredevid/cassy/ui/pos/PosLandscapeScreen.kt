@@ -14,27 +14,16 @@ import com.azuredevid.cassy.core.hardware.EscPosReceiptBuilder
 import com.azuredevid.cassy.core.hardware.KdsTicketRouter
 import com.azuredevid.cassy.core.hardware.PrinterPort9100Manager
 import com.azuredevid.cassy.data.model.CatalogProduct
-import com.azuredevid.cassy.data.model.OrderQuote
 import com.azuredevid.cassy.data.model.OrderQuoteItem
 import com.azuredevid.cassy.data.model.OrderQuoteRequest
-import com.azuredevid.cassy.data.repository.KtorCatalogRepository
-import com.azuredevid.cassy.data.repository.KtorOrderQuoteRepository
-import com.azuredevid.cassy.data.repository.KtorPaymentCredentialRepository
-import com.azuredevid.cassy.data.repository.KtorShiftRepository
-import com.azuredevid.cassy.data.repository.SharedPreferencesServerSettingsRepository
-import com.azuredevid.cassy.domain.repository.CatalogRepository
-import com.azuredevid.cassy.domain.repository.OrderQuoteRepository
 import com.azuredevid.cassy.ui.shift.ShiftUiEffect
 import com.azuredevid.cassy.ui.shift.ShiftViewModel
 import com.azuredevid.cassy.ui.shift.components.CashMovementModal
 import com.azuredevid.cassy.ui.shift.components.CloseShiftModal
 import com.azuredevid.cassy.ui.shift.components.OpenShiftModal
 import com.azuredevid.cassy.ui.shift.components.ShiftStatusBanner
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.serialization.kotlinx.json.json
-import kotlinx.serialization.json.Json
+import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import com.azuredevid.cassy.ui.pos.components.*
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -42,9 +31,9 @@ import java.util.Locale
 
 data class CartItem(
     val product: CatalogProduct,
-    var quantity: Int = 1,
-    var notes: String = "",
-    var isSentToKitchen: Boolean = false
+    val quantity: Int = 1,
+    val notes: String = "",
+    val isSentToKitchen: Boolean = false
 )
 
 /**
@@ -53,10 +42,9 @@ data class CartItem(
  */
 @Composable
 fun PosLandscapeScreen(
-    catalogRepository: CatalogRepository? = null,
-    orderQuoteRepository: OrderQuoteRepository? = null,
-    shiftViewModel: ShiftViewModel? = null,
-    printerManager: PrinterPort9100Manager = remember { PrinterPort9100Manager() },
+    posViewModel: PosViewModel = koinViewModel(),
+    shiftViewModel: ShiftViewModel = koinViewModel(),
+    printerManager: PrinterPort9100Manager = koinInject(),
     stationConfigs: List<KdsTicketRouter.StationPrinterConfig> = remember {
         listOf(
             KdsTicketRouter.StationPrinterConfig("bar", "BARISTA", "192.168.10.201", "192.168.10.200"),
@@ -73,26 +61,11 @@ fun PosLandscapeScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val repo = remember(catalogRepository) {
-        catalogRepository ?: KtorCatalogRepository(context)
-    }
-    // shortcut: one client per screen until Koin and the shared Ktor client land in Android Release One PR 1.
-    val quoteRepo = remember(orderQuoteRepository) {
-        orderQuoteRepository ?: KtorOrderQuoteRepository(
-            httpClient = HttpClient(OkHttp) { install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) } },
-            apiBaseUrl = "https://api.abbdullaziz.online",
-            staffToken = { KtorPaymentCredentialRepository(context).getStoredAuthToken() }
-        )
-    }
     val ticketRouter = remember(printerManager) { KdsTicketRouter(printerManager) }
     val rupiahFormat = remember { NumberFormat.getIntegerInstance(Locale("id", "ID")) }
 
-    val shiftVm = remember(shiftViewModel) {
-        shiftViewModel ?: ShiftViewModel(
-            shiftRepository = KtorShiftRepository(context),
-            serverSettings = SharedPreferencesServerSettingsRepository(context)
-        )
-    }
+    val posState by posViewModel.uiState.collectAsState()
+    val shiftVm = shiftViewModel
     val shiftState by shiftVm.uiState.collectAsState()
 
     LaunchedEffect(shiftVm) {
@@ -114,29 +87,18 @@ fun PosLandscapeScreen(
         }
     }
 
-    var allProducts by remember { mutableStateOf<List<CatalogProduct>>(emptyList()) }
-    var isLoadingCatalog by remember { mutableStateOf(true) }
-
-    LaunchedEffect(Unit) {
-        repo.getCatalog("central-cafe")
-            .onSuccess {
-                allProducts = it
-                isLoadingCatalog = false
-            }
-            .onFailure {
-                isLoadingCatalog = false
-            }
-    }
-
-    var selectedCategoryId by rememberSaveable { mutableStateOf("all") }
-    var searchQuery by rememberSaveable { mutableStateOf("") }
-    val cart = remember { mutableStateListOf<CartItem>() }
+    val allProducts = posState.allProducts
+    val isLoadingCatalog = posState.isLoadingCatalog
+    val selectedCategoryId = posState.selectedCategoryId
+    val searchQuery = posState.searchQuery
+    val cart = posState.cart
+    val orderType = posState.orderType
+    val tableName = posState.tableName
+    val dineInRound = posState.dineInRound
+    val quote = posState.quote
 
     var showCashModal by remember { mutableStateOf(false) }
     var isPrinterOnline by remember { mutableStateOf(true) }
-    var orderType by rememberSaveable { mutableStateOf("DINE-IN") }
-    var tableName by rememberSaveable { mutableStateOf("Meja T-04") }
-    var dineInRound by rememberSaveable { mutableIntStateOf(1) }
     var failoverAlert by remember { mutableStateOf<String?>(null) }
 
     // Categories with adaptive i18n
@@ -169,15 +131,6 @@ fun PosLandscapeScreen(
         }
     }
 
-    // Totals come only from the server quote; the tablet never computes tax or totals (CLAUDE.md).
-    var quote by remember { mutableStateOf<OrderQuote?>(null) }
-    val cartKey = cart.map { it.product.id to it.quantity }
-    LaunchedEffect(cartKey, orderType) {
-        quote = null
-        if (cartKey.isEmpty()) return@LaunchedEffect
-        quote = quoteRepo.quote(quoteRequestOf(cart, orderType)).getOrNull()
-    }
-
     val deliveryMode = if (orderType == "DINE-IN") KdsTicketRouter.OrderDeliveryMode.DINE_IN else KdsTicketRouter.OrderDeliveryMode.TAKEAWAY
 
     BoxWithConstraints(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -189,7 +142,7 @@ fun PosLandscapeScreen(
                 railWidth = totalWidth * 0.10f,
                 categories = categories,
                 selectedCategoryId = selectedCategoryId,
-                onCategorySelected = { selectedCategoryId = it },
+                onCategorySelected = { posViewModel.selectCategory(it) },
                 allProducts = allProducts,
                 isPrinterOnline = isPrinterOnline,
                 onNavigateToSettings = onNavigateToSettings,
@@ -216,16 +169,9 @@ fun PosLandscapeScreen(
                     gridWidth = totalWidth * 0.55f,
                     displayedProducts = displayedProducts,
                     searchQuery = searchQuery,
-                    onSearchQueryChange = { searchQuery = it },
+                    onSearchQueryChange = { posViewModel.updateSearchQuery(it) },
                     isLoadingCatalog = isLoadingCatalog,
-                    onProductSelected = { product ->
-                        val existing = cart.find { it.product.id == product.id }
-                        if (existing != null) {
-                            existing.quantity += 1
-                        } else {
-                            cart.add(CartItem(product = product, quantity = 1))
-                        }
-                    },
+                    onProductSelected = { product -> posViewModel.addProductToCart(product) },
                     rupiahFormat = rupiahFormat,
                     modifier = Modifier.weight(1f)
                 )
@@ -238,19 +184,11 @@ fun PosLandscapeScreen(
                 panelWidth = totalWidth * 0.35f,
                 tableName = tableName,
                 orderType = orderType,
-                onToggleOrderType = {
-                    orderType = if (orderType == "DINE-IN") "TAKEAWAY" else "DINE-IN"
-                },
+                onToggleOrderType = { posViewModel.toggleOrderType() },
                 cart = cart,
                 isCartLocked = false,
-                onIncreaseQuantity = { item -> item.quantity += 1 },
-                onDecreaseQuantity = { item ->
-                    if (item.quantity > 1) {
-                        item.quantity -= 1
-                    } else {
-                        cart.remove(item)
-                    }
-                },
+                onIncreaseQuantity = { item -> posViewModel.increaseItemQuantity(item.product.id) },
+                onDecreaseQuantity = { item -> posViewModel.decreaseItemQuantity(item.product.id) },
                 quote = quote,
                 rupiahFormat = rupiahFormat,
                 onOpenDrawerKick = {
@@ -293,9 +231,8 @@ fun PosLandscapeScreen(
                             failoverAlert = null
                         }
 
-                        dineInRound++
-                        cart.forEach { it.isSentToKitchen = true }
-                        Toast.makeText(context, context.getString(R.string.toast_kitchen_sent, dineInRound - 1), Toast.LENGTH_LONG).show()
+                        posViewModel.markCartSentToKitchen()
+                        Toast.makeText(context, context.getString(R.string.toast_kitchen_sent, dineInRound), Toast.LENGTH_LONG).show()
                     }
                 },
                 onOpenCashModal = {
@@ -355,11 +292,11 @@ fun PosLandscapeScreen(
                         val orderNum = "ORD-" + System.currentTimeMillis().toString().takeLast(8)
                         val receiptBuilder = EscPosReceiptBuilder(EscPosReceiptBuilder.PaperWidth.WIDTH_80MM)
                         val receiptBytes = receiptBuilder.buildStoreReceipt(
-                            storeName = "Central Cafe Senopati",
-                            storeAddress = "Jl. Senopati No. 18, Jakarta Selatan",
+                            storeName = posState.storeName.ifBlank { "Cassy POS" },
+                            storeAddress = "",
                             orderId = orderNum,
                             tableName = tableName,
-                            cashierName = "Kasir 1",
+                            cashierName = posState.cashierName.ifBlank { "Kasir" },
                             items = cart.map { EscPosReceiptBuilder.ReceiptItem(it.product.name, it.quantity, it.product.basePriceIdr) },
                             subtotalIdr = pricedQuote.subtotalAmount,
                             pb1TaxIdr = pricedQuote.taxAmount,
@@ -393,8 +330,7 @@ fun PosLandscapeScreen(
 
                         Toast.makeText(context, context.getString(R.string.toast_cash_success), Toast.LENGTH_LONG).show()
                         showCashModal = false
-                        cart.clear()
-                        dineInRound = 1
+                        posViewModel.clearCartAfterPayment()
                     }
                 }
             )

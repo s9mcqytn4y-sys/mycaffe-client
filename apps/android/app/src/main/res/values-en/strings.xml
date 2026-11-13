@@ -124,5 +124,20 @@
     <string name="shift_banner_closed_badge">SHIFT CLOSED</string>
     <string name="shift_banner_closed_hint">Open cashier shift to accept payments and orders</string>
     <string name="shift_banner_open_btn">Open Shift</string>
+
+    <!-- Staff Login & Server Config -->
+    <string name="auth_email_label">Staff Email</string>
+    <string name="auth_pin_label">Staff PIN (6 Digits)</string>
+    <string name="auth_btn_sign_in">Sign In &amp; Connect Store</string>
+    <string name="auth_btn_server_config">Server Settings</string>
+    <string name="auth_err_store_slug_required">Store code is required.</string>
+    <string name="auth_err_email_required">Staff email or badge is required.</string>
+    <string name="auth_err_pin_six_digits">Staff PIN must be 6 numeric digits.</string>
+    <string name="auth_qr_scanned_hint">Device QR scanned. Enter your 6-digit staff PIN to continue.</string>
+    <string name="server_config_title">Server Endpoint Configuration</string>
+    <string name="server_config_url_label">API Server Base URL</string>
+    <string name="server_config_save">Save Server URL</string>
+    <string name="server_config_err_url">Enter a valid http:// or https:// URL.</string>
+    <string name="a11y_navigate_back">Navigate back</string>
 </resources>
 

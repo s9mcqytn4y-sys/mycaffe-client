@@ -20,9 +20,6 @@ import org.junit.Test
 class ShiftRepositoryTest {
 
     private class FakeServerSettings(private var url: String = "http://10.0.2.2:8080") : ServerSettingsRepository {
-        override fun isSupervisorPinRequired(): Boolean = true
-        override fun verifySupervisorPin(pin: String): Boolean = pin == "1234"
-        override fun setSupervisorPin(pin: String) {}
         override fun getBaseUrl(): String = url
         override fun setBaseUrl(url: String) { this.url = url }
     }

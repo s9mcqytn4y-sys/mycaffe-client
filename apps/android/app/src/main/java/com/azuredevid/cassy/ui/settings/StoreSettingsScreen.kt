@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -45,14 +47,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.azuredevid.cassy.R
-import com.azuredevid.cassy.data.repository.KtorStoreGovernanceRepository
-import com.azuredevid.cassy.data.repository.SharedPreferencesServerSettingsRepository
+import org.koin.androidx.compose.koinViewModel
 import com.azuredevid.cassy.ui.settings.components.MidtransCredentialsTab
 import com.azuredevid.cassy.ui.settings.components.StoreBrandCmsTab
 import com.azuredevid.cassy.ui.settings.components.StoreServiceModeTab
@@ -68,17 +70,11 @@ import com.azuredevid.cassy.ui.theme.StatusErrFgLight
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoreSettingsScreen(
-    viewModel: StoreSettingsViewModel? = null,
+    viewModel: StoreSettingsViewModel = koinViewModel(),
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val vm = remember(viewModel) {
-        viewModel ?: StoreSettingsViewModel(
-            repository = KtorStoreGovernanceRepository(context),
-            serverSettings = SharedPreferencesServerSettingsRepository(context)
-        )
-    }
+    val vm = viewModel
 
     val state by vm.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -136,13 +132,10 @@ fun StoreSettingsScreen(
                         onClick = onNavigateBack,
                         modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
                     ) {
-                        // Text back icon fallback or back arrow
-                        Text(
-                            text = "<",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = LightInk
-                            )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = stringResource(R.string.a11y_navigate_back),
+                            tint = LightInk
                         )
                     }
                 },

@@ -128,7 +128,7 @@ class StoreSettingsViewModel(
 
     private val _uiState = MutableStateFlow(
         StoreSettingsUiState(
-            isSupervisorAuthenticated = !serverSettings.isSupervisorPinRequired()
+            isSupervisorAuthenticated = true
         )
     )
     val uiState: StateFlow<StoreSettingsUiState> = _uiState.asStateFlow()
@@ -192,35 +192,21 @@ class StoreSettingsViewModel(
     fun onEvent(event: StoreSettingsUiEvent) {
         when (event) {
             is StoreSettingsUiEvent.SelectTab -> {
-                if (event.tabIndex == 0 && !_uiState.value.isSupervisorAuthenticated && serverSettings.isSupervisorPinRequired()) {
-                    _uiState.update { it.copy(showSupervisorPinModal = true) }
-                } else {
-                    _uiState.update { it.copy(selectedTabIndex = event.tabIndex) }
-                }
+                _uiState.update { it.copy(selectedTabIndex = event.tabIndex) }
             }
-            StoreSettingsUiEvent.RequestSupervisorAuth -> {
-                _uiState.update { it.copy(showSupervisorPinModal = true, supervisorPinInput = "", supervisorPinError = null) }
-            }
-            is StoreSettingsUiEvent.UpdateSupervisorPinInput -> {
-                _uiState.update { it.copy(supervisorPinInput = event.pin, supervisorPinError = null) }
-            }
-            StoreSettingsUiEvent.SubmitSupervisorPin -> {
-                val pin = _uiState.value.supervisorPinInput
-                if (serverSettings.verifySupervisorPin(pin)) {
-                    _uiState.update {
-                        it.copy(
-                            isSupervisorAuthenticated = true,
-                            showSupervisorPinModal = false,
-                            supervisorPinInput = "",
-                            supervisorPinError = null
-                        )
-                    }
-                } else {
-                    _uiState.update { it.copy(supervisorPinError = "PIN Supervisor tidak valid.") }
-                }
-            }
+            StoreSettingsUiEvent.RequestSupervisorAuth,
+            is StoreSettingsUiEvent.UpdateSupervisorPinInput,
+            StoreSettingsUiEvent.SubmitSupervisorPin,
             StoreSettingsUiEvent.DismissSupervisorPinModal -> {
-                _uiState.update { it.copy(showSupervisorPinModal = false, supervisorPinInput = "", supervisorPinError = null) }
+                // Otorisasi Midtrans BYOK divalidasi oleh RBAC sesi staf di server, bukan PIN lokal perangkat.
+                _uiState.update {
+                    it.copy(
+                        isSupervisorAuthenticated = true,
+                        showSupervisorPinModal = false,
+                        supervisorPinInput = "",
+                        supervisorPinError = null
+                    )
+                }
             }
             is StoreSettingsUiEvent.UpdateMerchantId -> _uiState.update { it.copy(merchantId = event.value) }
             is StoreSettingsUiEvent.UpdateClientKey -> _uiState.update { it.copy(clientKey = event.value) }
