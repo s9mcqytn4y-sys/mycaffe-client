@@ -15,6 +15,7 @@ import com.azuredevid.cassy.ui.pairing.StorePairingScreen
 import com.azuredevid.cassy.ui.pos.PosLandscapeScreen
 import com.azuredevid.cassy.ui.settings.ServerConfigScreen
 import com.azuredevid.cassy.ui.settings.StoreSettingsScreen
+import com.azuredevid.cassy.ui.table.TableManagementScreen
 
 @Composable
 fun CassyNavHost(
@@ -76,6 +77,9 @@ fun CassyNavHost(
                 onNavigateToCatalog = {
                     navController.navigate(CassyRoute.CatalogManagement)
                 },
+                onNavigateToTables = {
+                    navController.navigate(CassyRoute.TableManagement)
+                },
                 onNavigateToPairing = {
                     navController.navigate(CassyRoute.StorePairing)
                 }
@@ -90,6 +94,12 @@ fun CassyNavHost(
 
         composable<CassyRoute.CatalogManagement> {
             CatalogManagementScreen(
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+
+        composable<CassyRoute.TableManagement> {
+            TableManagementScreen(
                 onNavigateBack = { navController.navigateUp() }
             )
         }

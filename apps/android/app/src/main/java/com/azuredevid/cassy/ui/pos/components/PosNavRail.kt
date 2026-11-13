@@ -41,6 +41,7 @@ fun PosNavRail(
     isPrinterOnline: Boolean,
     onNavigateToSettings: () -> Unit,
     onNavigateToCatalog: () -> Unit = {},
+    onNavigateToTables: () -> Unit = {},
     onNavigateToPairing: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -158,12 +159,24 @@ fun PosNavRail(
                     )
                 }
 
-                OutlinedButton(
-                    onClick = onNavigateToCatalog,
-                    contentPadding = PaddingValues(2.dp),
-                    modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(stringResource(R.string.catalog_nav_label), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    OutlinedButton(
+                        onClick = onNavigateToCatalog,
+                        contentPadding = PaddingValues(2.dp),
+                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
+                    ) {
+                        Text(stringResource(R.string.catalog_nav_label), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    }
+                    OutlinedButton(
+                        onClick = onNavigateToTables,
+                        contentPadding = PaddingValues(2.dp),
+                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
+                    ) {
+                        Text(stringResource(R.string.table_nav_label), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    }
                 }
 
                 Row(
