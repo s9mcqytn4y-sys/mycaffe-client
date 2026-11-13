@@ -60,7 +60,7 @@ export function SplitView({ orderId, shares, onBack }: { orderId: string; shares
   };
 
   return (
-    <section className="mx-auto max-w-md px-5 py-8">
+    <section className="mx-auto max-w-md py-8 pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(1.25rem,env(safe-area-inset-right))] pt-[max(2rem,env(safe-area-inset-top))]">
       <h1 className="text-2xl font-bold">{t.splitTitle}</h1>
       <p className="mt-2 text-sm text-subink">{t.splitIntro}</p>
       <ul className="mt-6 space-y-3">
@@ -101,7 +101,7 @@ export function SplitView({ orderId, shares, onBack }: { orderId: string; shares
               ) : null}
               {copied === s.split_number ? <p role="status" className="mt-2 text-sm">{t.shareCopied}</p> : null}
               {qrFor === s.split_number && !done ? (
-                <div className="mt-3 inline-block rounded-xl bg-white p-3">
+                <div data-testid="split-qr-code" className="mt-3 inline-block rounded-xl bg-white p-3">
                   <QrCodeSvg value={urlOf(s)} size={200} />
                 </div>
               ) : null}

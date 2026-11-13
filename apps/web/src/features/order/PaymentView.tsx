@@ -198,7 +198,7 @@ export function PaymentView({
   const others = methods.filter((m) => m !== via);
 
   return (
-    <section className="mx-auto flex max-w-md flex-col items-center px-5 py-8 text-center">
+    <section className="mx-auto flex max-w-md flex-col items-center py-8 pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(1.25rem,env(safe-area-inset-right))] pt-[max(2rem,env(safe-area-inset-top))] text-center">
       <h1 className="text-2xl font-bold">{wallet ? METHOD_LABEL[via] : t.scanToPay}</h1>
       <p className="mt-2 text-sm text-subink">{wallet ? t.walletHint : t.scanHint}</p>
       <p className="mt-5 text-3xl font-bold">{formatIdr(payment.amount)}</p>

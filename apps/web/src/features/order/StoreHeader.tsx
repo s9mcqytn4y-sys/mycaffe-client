@@ -16,7 +16,7 @@ export function StoreHeader({
   announcement?: string;
 }) {
   return (
-    <header className="px-5 pt-5">
+    <header className="pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(1.25rem,env(safe-area-inset-right))] pt-[max(1.25rem,env(safe-area-inset-top))]">
       <div className="flex items-center gap-3">
         <CassyMonogram size={48} className="shrink-0 rounded-2xl bg-surface p-1.5 ring-1 ring-subtle" />
         <div className="min-w-0 flex-1">
