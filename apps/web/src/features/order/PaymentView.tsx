@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { CircleCheck, CircleX } from "lucide-react";
+import { Check, CircleCheck, CircleX, Copy } from "lucide-react";
 import { useLocale } from "@/components/Providers";
 import { QrCodeSvg } from "@/components/QrCodeSvg";
 import { apiFetch } from "@/lib/api";
 import { formatIdr } from "@/lib/format";
 import type { Messages } from "@/lib/messages";
-import { METHOD_LABEL, MidtransTrustFooter, PaymentChannelLogo } from "./PaymentMethodPicker";
+import { isValidEmail, normalizeSubmissionText } from "@/lib/sanitize";
+import { BankPicker, bankMeta, METHOD_LABEL, MidtransTrustFooter, PaymentChannelLogo } from "./PaymentMethodPicker";
 import { progressStep, safeDeeplink, type OrderPhase } from "./status";
-import type { PaymentInfo, PayMethod, ServiceMode } from "./types";
+import type { BankCode, PaymentInfo, PayMethod, ServiceMode } from "./types";
 
 // Status text per progressStep (0 received, 1 preparing, 2 ready, 3 served) and the steps drawn on the line.
 // Pickup ends when the order is ready at the bar; table service goes on until staff mark it delivered.
@@ -61,15 +62,19 @@ export function PaymentView({
   moneyTaken,
   orderId,
   orderNumber,
+  storeName,
   status,
   retrying,
   error,
   methods,
+  bank,
   serviceMode,
   muted,
   onToggleSound,
   onNewQr,
   onSwitch,
+  onSelectBank,
+  onNotify,
   onBack,
   onOrderAgain
 }: {
@@ -78,21 +83,27 @@ export function PaymentView({
   moneyTaken: boolean;
   orderId: string;
   orderNumber?: string;
+  storeName?: string;
   status?: string;
   retrying: boolean;
   error: string | null;
   methods: PayMethod[];
+  bank: BankCode;
   serviceMode: ServiceMode;
   muted: boolean;
   onToggleSound: () => void;
   onNewQr: () => void;
-  onSwitch: (method: PayMethod) => void;
+  onSwitch: (method: PayMethod, bank?: BankCode) => void;
+  onSelectBank: (bank: BankCode) => void;
+  onNotify?: (message: string) => void;
   onBack: () => void;
   onOrderAgain: () => void;
 }) {
   const { t, locale } = useLocale();
   const [expired, setExpired] = useState(false);
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<"idle" | "sending" | "sent" | "failed">("idle");
 
   useEffect(() => {
@@ -103,13 +114,30 @@ export function PaymentView({
     return () => clearTimeout(timer);
   }, [payment.expires_at, phase]);
 
+  const copyValue = async (field: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      onNotify?.(t.copiedToast);
+      setTimeout(() => setCopiedField((prev) => (prev === field ? null : prev)), 2500);
+    } catch {
+      // Clipboard may be restricted in non-HTTPS contexts.
+    }
+  };
+
   const sendReceipt = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanEmail = normalizeSubmissionText(email, 254);
+    if (!isValidEmail(cleanEmail)) {
+      setEmailError(t.invalidEmail);
+      return;
+    }
+    setEmailError(null);
     setReceipt("sending");
     try {
       await apiFetch(`/api/v1/public/guest/orders/${encodeURIComponent(orderId)}/receipt/send`, {
         method: "POST",
-        body: { channel: "email", to: email.trim() }
+        body: { channel: "email", to: cleanEmail }
       });
       setReceipt("sent");
     } catch {
@@ -158,7 +186,7 @@ export function PaymentView({
           {muted ? t.unmuteSound : t.muteSound}
         </button>
 
-        <form onSubmit={sendReceipt} className="mt-8">
+        <form onSubmit={sendReceipt} noValidate className="mt-8">
           <label htmlFor="receipt-email" className="block text-sm font-bold">
             {t.receiptEmail}
           </label>
@@ -168,9 +196,13 @@ export function PaymentView({
               type="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (emailError) setEmailError(null);
+              }}
               autoComplete="email"
-              aria-describedby="receipt-email-hint"
+              aria-invalid={emailError ? true : undefined}
+              aria-describedby={emailError ? "receipt-email-hint receipt-email-error" : "receipt-email-hint"}
               className="input-field min-w-0 flex-1"
             />
             <button type="submit" disabled={receipt === "sending"} className="btn-secondary min-h-[44px] px-4 font-semibold">
@@ -181,6 +213,11 @@ export function PaymentView({
             {t.receiptEmailHint}{" "}
             <a href="/legal" target="_blank" rel="noopener" className="underline">{t.legal}</a>
           </p>
+          {emailError ? (
+            <p id="receipt-email-error" role="alert" className="mt-1.5 text-xs font-semibold text-[var(--state-err-fg)]">
+              {emailError}
+            </p>
+          ) : null}
           {receipt === "sent" ? <p role="status" className="mt-2 text-sm">{t.receiptSent}</p> : null}
           {receipt === "failed" ? <p role="alert" className="mt-2 text-sm font-semibold">{t.receiptFailed}</p> : null}
         </form>
@@ -193,15 +230,17 @@ export function PaymentView({
   }
 
   const via = payment.method ?? "qris";
-  const wallet = via !== "qris";
+  const isVa = via === "bank_transfer";
+  const wallet = via !== "qris" && !isVa;
   const deeplink = wallet ? safeDeeplink(payment.deeplink_url) : null;
   const others = methods.filter((m) => m !== via);
+  const selectedBankInfo = bankMeta(payment.bank ?? bank);
 
   return (
     <section className="mx-auto flex max-w-md flex-col items-center py-8 pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(1.25rem,env(safe-area-inset-right))] pt-[max(2rem,env(safe-area-inset-top))] text-center">
-      <h1 className="text-2xl font-bold">{wallet ? METHOD_LABEL[via] : t.scanToPay}</h1>
-      <p className="mt-2 text-sm text-subink">{wallet ? t.walletHint : t.scanHint}</p>
-      <p className="mt-5 text-3xl font-bold">{formatIdr(payment.amount)}</p>
+      <h1 className="text-2xl font-bold">{isVa ? t.bankTransferLabel : wallet ? METHOD_LABEL[via] : t.scanToPay}</h1>
+      <p className="mt-2 text-sm text-subink">{isVa ? t.vaHint : wallet ? t.walletHint : t.scanHint}</p>
+      <p className="mt-5 text-3xl font-bold tabular-nums">{formatIdr(payment.amount)}</p>
 
       {expired ? (
         <div role="alert" className="mt-6 flex flex-col items-center">
@@ -215,7 +254,73 @@ export function PaymentView({
         </div>
       ) : (
         <>
-          {wallet ? (
+          {isVa ? (
+            <div className="mt-6 w-full space-y-3 rounded-2xl border border-subtle bg-surface p-5 text-left">
+              {selectedBankInfo ? (
+                <div className="flex items-center gap-2.5 border-b border-subtle pb-3">
+                  <span className="inline-flex h-8 items-center justify-center rounded bg-white px-2 ring-1 ring-black/10">
+                    <img src={selectedBankInfo.logo} alt="" aria-hidden="true" className="h-4 w-auto object-contain" />
+                  </span>
+                  <span className="text-base font-bold text-ink">{selectedBankInfo.label} Virtual Account</span>
+                </div>
+              ) : null}
+
+              {payment.biller_code ? (
+                <div>
+                  <p className="text-xs font-semibold text-subink">{t.billerCodeLabel}</p>
+                  <p className="mt-1 font-mono text-xl font-bold tracking-wider tabular-nums text-ink">{payment.biller_code}</p>
+                </div>
+              ) : null}
+
+              {payment.bill_key ? (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-subink">{t.billKeyLabel}</p>
+                    <p className="mt-1 break-all font-mono text-xl font-bold tracking-wider tabular-nums text-ink">{payment.bill_key}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void copyValue("bill_key", payment.bill_key!)}
+                    className="btn-secondary inline-flex min-h-[48px] shrink-0 items-center gap-1.5 px-3.5 text-sm font-semibold"
+                  >
+                    {copiedField === "bill_key" ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
+                    <span>{t.copyBillKey}</span>
+                  </button>
+                </div>
+              ) : null}
+
+              {payment.va_number ? (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-subink">{t.vaNumberLabel}</p>
+                    <p data-testid="va-number" className="mt-1 break-all font-mono text-xl font-bold tracking-wider tabular-nums text-ink">
+                      {payment.va_number}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void copyValue("va", payment.va_number!)}
+                    className="btn-secondary inline-flex min-h-[48px] shrink-0 items-center gap-1.5 px-3.5 text-sm font-semibold"
+                  >
+                    {copiedField === "va" ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
+                    <span>{t.copyVa}</span>
+                  </button>
+                </div>
+              ) : !payment.bill_key ? (
+                <p role="alert" className="text-sm font-semibold text-[var(--state-err-fg)]">{t.methodUnavailable}</p>
+              ) : null}
+
+              <BankPicker
+                selected={bank}
+                disabled={retrying}
+                label={t.selectBank}
+                onSelect={(nextBank) => {
+                  onSelectBank(nextBank);
+                  onSwitch("bank_transfer", nextBank);
+                }}
+              />
+            </div>
+          ) : wallet ? (
             deeplink ? (
               <a href={deeplink} className="btn-primary mt-6 inline-flex min-h-[56px] w-full items-center justify-center px-6 text-base font-bold">
                 {t.openWallet}
@@ -224,8 +329,22 @@ export function PaymentView({
               <p role="alert" className="mt-6 text-sm font-semibold">{t.methodUnavailable}</p>
             )
           ) : (
-            <div className="mt-6 rounded-xl bg-white p-4">
-              {payment.qr_string ? <QrCodeSvg value={payment.qr_string} size={240} /> : null}
+            <div className="mt-6 rounded-2xl border border-subtle bg-white p-4">
+              {payment.qr_string ? (
+                <QrCodeSvg
+                  value={payment.qr_string}
+                  size={240}
+                  downloadMeta={{
+                    storeName,
+                    orderLabel: orderNumber,
+                    amountLabel: formatIdr(payment.amount),
+                    filename: `cassy-qris-${orderNumber ?? orderId}`,
+                    pngLabel: t.downloadQrPng,
+                    svgLabel: t.downloadQrSvg,
+                    onDownloaded: () => onNotify?.(t.qrDownloaded)
+                  }}
+                />
+              ) : null}
             </div>
           )}
           {payment.expires_at ? (
@@ -255,7 +374,7 @@ export function PaymentView({
                 className="btn-secondary inline-flex min-h-[48px] items-center gap-2 px-4 text-sm font-semibold motion-safe:transition-transform motion-safe:active:scale-[0.98]"
               >
                 <PaymentChannelLogo method={m} className="h-4 w-auto" />
-                <span>{METHOD_LABEL[m]}</span>
+                <span>{m === "bank_transfer" ? t.bankTransferLabel : METHOD_LABEL[m]}</span>
               </button>
             ))}
           </div>

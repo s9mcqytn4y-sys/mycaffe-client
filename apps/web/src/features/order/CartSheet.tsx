@@ -5,9 +5,10 @@ import { Minus, Plus } from "lucide-react";
 import { useLocale } from "@/components/Providers";
 import { Sheet } from "@/components/Sheet";
 import { formatIdr } from "@/lib/format";
+import { isValidGuestName, stripControlChars } from "@/lib/sanitize";
 import { optionNames, type CartAction, type CartLine } from "./cart";
-import { METHOD_LABEL, PaymentMethodPicker } from "./PaymentMethodPicker";
-import type { PayMethod, Quote } from "./types";
+import { BankPicker, METHOD_LABEL, PaymentMethodPicker } from "./PaymentMethodPicker";
+import type { BankCode, PayMethod, Quote } from "./types";
 
 export { METHOD_LABEL };
 
@@ -36,6 +37,8 @@ export function CartSheet({
   methods,
   method,
   onMethod,
+  bank,
+  onBank,
   splitEnabled,
   splitCount,
   onSplitCount,
@@ -57,6 +60,8 @@ export function CartSheet({
   methods: PayMethod[];
   method: PayMethod;
   onMethod: (method: PayMethod) => void;
+  bank: BankCode;
+  onBank: (bank: BankCode) => void;
   splitEnabled: boolean;
   // null pays the whole bill alone; 2 to 20 splits it equally (W13).
   splitCount: number | null;
@@ -65,6 +70,7 @@ export function CartSheet({
   onClose: () => void;
 }) {
   const { t } = useLocale();
+  const invalidName = !isValidGuestName(guestName);
 
   return (
     <Sheet title={t.cart} onClose={onClose}>
@@ -140,16 +146,22 @@ export function CartSheet({
           <input
             id="guest-name"
             value={guestName}
-            onChange={(e) => onGuestName(e.target.value)}
+            onChange={(e) => onGuestName(stripControlChars(e.target.value, 60))}
             maxLength={60}
             autoComplete="given-name"
-            aria-describedby="guest-name-hint"
+            aria-invalid={invalidName || undefined}
+            aria-describedby={invalidName ? "guest-name-hint guest-name-error" : "guest-name-hint"}
             className="input-field mt-1 w-full"
           />
           <p id="guest-name-hint" className="mt-1 text-xs text-subink">
             {t.guestNameHint}{" "}
             <a href="/legal" target="_blank" rel="noopener" className="underline">{t.legal}</a>
           </p>
+          {invalidName ? (
+            <p id="guest-name-error" role="alert" className="mt-1 text-xs font-semibold text-[var(--state-err-fg)]">
+              {t.invalidGuestName}
+            </p>
+          ) : null}
 
           {splitEnabled ? (
             <div className="mt-4">
@@ -196,6 +208,9 @@ export function CartSheet({
             <fieldset className="mt-4">
               <legend className="text-base font-bold">{t.payMethod}</legend>
               <PaymentMethodPicker methods={methods} selected={method} onSelect={onMethod} />
+              {method === "bank_transfer" ? (
+                <BankPicker selected={bank} disabled={placing} label={t.selectBank} onSelect={onBank} />
+              ) : null}
             </fieldset>
           ) : null}
 
@@ -209,7 +224,7 @@ export function CartSheet({
             <div className="sticky bottom-0 -mx-5 mt-6 border-t border-subtle bg-surface px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
             <button
               type="button"
-              disabled={!quote || quoteLoading || placing}
+              disabled={!quote || quoteLoading || placing || invalidName}
               onClick={onPay}
               className="btn-primary min-h-[56px] w-full rounded-xl text-base font-bold"
             >

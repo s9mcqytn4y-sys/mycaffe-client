@@ -5,6 +5,7 @@ import { useLocale } from "@/components/Providers";
 import { Minus, Plus } from "lucide-react";
 import { Sheet } from "@/components/Sheet";
 import { formatIdr } from "@/lib/format";
+import { normalizeSubmissionText, stripControlChars } from "@/lib/sanitize";
 import type { CartLine, SelectedOption } from "./cart";
 import { ProductImage } from "./ProductImage";
 import type { CatalogGroup, CatalogProduct } from "./types";
@@ -114,7 +115,15 @@ export function ProductOptionsSheet({
         })
       )
     ].filter((d): d is string => Boolean(d));
-    onAdd({ productId: product.id, variantId, name: product.name, options, quantity, notes: notes.trim(), details });
+    onAdd({
+      productId: product.id,
+      variantId,
+      name: product.name,
+      options,
+      quantity,
+      notes: normalizeSubmissionText(notes, 200),
+      details
+    });
   };
 
   return (
@@ -164,7 +173,7 @@ export function ProductOptionsSheet({
       <textarea
         id="line-notes"
         value={notes}
-        onChange={(e) => setNotes(e.target.value)}
+        onChange={(e) => setNotes(stripControlChars(e.target.value, 200))}
         maxLength={200}
         rows={2}
         aria-describedby="line-notes-hint"

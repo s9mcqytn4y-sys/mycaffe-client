@@ -33,7 +33,7 @@ function AddButton({ product, needsChoice, onOpen, onQuickAdd }: { product: Cata
       type="button"
       aria-label={`${needsChoice ? t.choose : t.add} ${product.name}`}
       onClick={needsChoice ? onOpen : onQuickAdd}
-      className="btn-primary h-11 w-11 shrink-0 rounded-full"
+      className="btn-primary h-12 w-12 shrink-0 rounded-full motion-safe:transition-transform motion-safe:active:scale-[0.94]"
     >
       <Plus size={20} strokeWidth={2.5} />
     </button>
@@ -52,7 +52,7 @@ export function ProductCard({ product, canOrder, onOpen, onQuickAdd, eager = fal
   const { t } = useLocale();
   const item = useItem(product, canOrder);
   return (
-    <li className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-subtle bg-surface">
+    <li className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-subtle bg-surface motion-safe:transition-shadow hover:shadow-sm">
       <button type="button" aria-label={`${t.details} ${product.name}`} onClick={onOpen} className={`relative block w-full ${item.soldOut ? "opacity-50 grayscale" : ""}`}>
         {product.image_url ? (
           <ProductImage src={product.image_url} alt="" width={320} height={320} eager={eager} className="aspect-square w-full" />
@@ -62,11 +62,12 @@ export function ProductCard({ product, canOrder, onOpen, onQuickAdd, eager = fal
           </span>
         )}
       </button>
-      <div className="flex flex-1 flex-col gap-1 p-3">
-        <h3 className="line-clamp-2 text-[0.9375rem] font-semibold leading-snug">{product.name}</h3>
+      <div className="flex flex-1 flex-col gap-1.5 p-3.5">
+        <h3 className="line-clamp-2 min-h-[2.5rem] text-[0.9375rem] font-semibold leading-snug text-ink">{product.name}</h3>
+        {product.description ? <p className="line-clamp-2 text-xs leading-relaxed text-subink">{product.description}</p> : null}
         <Meta {...item} />
-        <div className="mt-auto flex items-end justify-between gap-2 pt-1">
-          <p className="text-base font-bold tabular-nums">{item.variant ? formatIdr(item.variant.price) : ""}</p>
+        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
+          <p className="text-base font-bold tabular-nums text-ink">{item.variant ? formatIdr(item.variant.price) : ""}</p>
           {item.showAdd ? <AddButton product={product} needsChoice={item.needsChoice} onOpen={onOpen} onQuickAdd={onQuickAdd} /> : null}
         </div>
       </div>

@@ -146,7 +146,22 @@ const id = {
   sharePaidTitle: "Bagian Anda sudah lunas",
   sharePaidBody: "Terima kasih. Pesanan diproses setelah semua bagian lunas.",
   shareMissingTitle: "Tautan bagian tidak berlaku",
-  shareMissingBody: "Tautan ini salah atau sudah kedaluwarsa. Minta tautan baru ke pemesan atau staf gerai."
+  shareMissingBody: "Tautan ini salah atau sudah kedaluwarsa. Minta tautan baru ke pemesan atau staf gerai.",
+  bankTransferLabel: "Transfer Bank (VA)",
+  selectBank: "Pilih bank tujuan",
+  vaNumberLabel: "Nomor Virtual Account",
+  billerCodeLabel: "Kode Perusahaan (Biller)",
+  billKeyLabel: "Nomor Tagihan (Bill Key)",
+  copyVa: "Salin nomor VA",
+  copyBillKey: "Salin bill key",
+  copiedToast: "Disalin ke clipboard.",
+  vaHint: "Transfer nominal persis ke Virtual Account ini sebelum waktu habis.",
+  downloadQrPng: "Unduh QR",
+  downloadQrSvg: "Simpan SVG",
+  qrDownloaded: "Kode QR Cassy disimpan.",
+  invalidEmail: "Masukkan alamat email yang benar.",
+  invalidGuestName: "Gunakan huruf atau angka tanpa karakter khusus.",
+  addedToCart: "Ditambahkan ke keranjang."
 };
 
 export type Messages = typeof id;
@@ -299,7 +314,22 @@ const en: Messages = {
   sharePaidTitle: "Your share is paid",
   sharePaidBody: "Thank you. The order is prepared once every share is paid.",
   shareMissingTitle: "This share link does not work",
-  shareMissingBody: "The link is wrong or has expired. Ask the person who ordered or the outlet staff for a new one."
+  shareMissingBody: "The link is wrong or has expired. Ask the person who ordered or the outlet staff for a new one.",
+  bankTransferLabel: "Bank Transfer (VA)",
+  selectBank: "Choose bank",
+  vaNumberLabel: "Virtual Account number",
+  billerCodeLabel: "Biller code",
+  billKeyLabel: "Bill key",
+  copyVa: "Copy VA number",
+  copyBillKey: "Copy bill key",
+  copiedToast: "Copied to clipboard.",
+  vaHint: "Transfer the exact amount to this Virtual Account before it expires.",
+  downloadQrPng: "Download QR",
+  downloadQrSvg: "Save SVG",
+  qrDownloaded: "Cassy QR code saved.",
+  invalidEmail: "Enter a valid email address.",
+  invalidGuestName: "Use standard letters or numbers.",
+  addedToCart: "Added to cart."
 };
 
 export const MESSAGES = { "id-ID": id, "en-US": en };
