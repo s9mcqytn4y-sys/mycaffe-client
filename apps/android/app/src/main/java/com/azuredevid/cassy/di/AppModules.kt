@@ -15,6 +15,7 @@ import com.azuredevid.cassy.data.repository.KtorOrderQuoteRepository
 import com.azuredevid.cassy.data.repository.KtorPaymentCredentialRepository
 import com.azuredevid.cassy.data.repository.KtorShiftRepository
 import com.azuredevid.cassy.data.repository.KtorStoreGovernanceRepository
+import com.azuredevid.cassy.data.repository.KtorTableRepository
 import com.azuredevid.cassy.data.repository.ServerSettingsRepository
 import com.azuredevid.cassy.data.repository.SharedPreferencesServerSettingsRepository
 import com.azuredevid.cassy.domain.repository.AuthRepository
@@ -23,12 +24,14 @@ import com.azuredevid.cassy.domain.repository.OrderQuoteRepository
 import com.azuredevid.cassy.domain.repository.PaymentCredentialRepository
 import com.azuredevid.cassy.domain.repository.ShiftRepository
 import com.azuredevid.cassy.domain.repository.StoreGovernanceRepository
+import com.azuredevid.cassy.domain.repository.TableRepository
 import com.azuredevid.cassy.ui.catalog.CatalogManagementViewModel
 import com.azuredevid.cassy.ui.pairing.StorePairingViewModel
 import com.azuredevid.cassy.ui.pos.PosViewModel
 import com.azuredevid.cassy.ui.settings.ServerConfigViewModel
 import com.azuredevid.cassy.ui.settings.StoreSettingsViewModel
 import com.azuredevid.cassy.ui.shift.ShiftViewModel
+import com.azuredevid.cassy.ui.table.TableManagementViewModel
 import io.ktor.client.HttpClient
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
@@ -109,6 +112,13 @@ val repositoryModule = module {
             authTokenProvider = { sessionManager.getAccessToken() }
         )
     }
+
+    single<TableRepository> {
+        KtorTableRepository(
+            httpClient = get(),
+            serverSettings = get()
+        )
+    }
 }
 
 val viewModelModule = module {
@@ -118,4 +128,5 @@ val viewModelModule = module {
     viewModel { ShiftViewModel(get(), get(), get(), get()) }
     viewModel { PosViewModel(get(), get(), get()) }
     viewModel { CatalogManagementViewModel(get(), get()) }
+    viewModel { TableManagementViewModel(get(), get(), get(), get()) }
 }

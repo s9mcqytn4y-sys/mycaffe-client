@@ -159,5 +159,26 @@
     <string name="catalog_empty">No products in this category yet.</string>
     <string name="catalog_photo_present">Photo uploaded</string>
     <string name="catalog_photo_missing">No photo</string>
+
+    <!-- Table Management (PR 5) -->
+    <string name="table_mgmt_title">Table &amp; QR Management</string>
+    <string name="table_nav_label">Tables</string>
+    <string name="table_add">Add Table</string>
+    <string name="table_edit">Edit Table</string>
+    <string name="table_refresh">Refresh</string>
+    <string name="table_section_all">All Sections</string>
+    <string name="table_empty">No tables in this section yet.</string>
+    <string name="table_status_available">Available</string>
+    <string name="table_status_occupied">Occupied</string>
+    <string name="table_status_settled">Settled</string>
+    <string name="table_open_session">Open Session</string>
+    <string name="table_close_session">Close Session</string>
+    <string name="table_poster_btn">QR Poster</string>
+    <string name="table_poster_hint">Scan the QR code to browse the menu and order from this table.</string>
+    <string name="table_print_thermal">Print 80mm</string>
+    <string name="table_print_pdf">Print A6 PDF</string>
+    <string name="table_rotate_qr_btn">Rotate QR</string>
+    <string name="table_rotate_qr_title">Rotate Table QR Token</string>
+    <string name="table_rotate_qr_confirm">The previous QR code for %1$s will stop working immediately. Print a new poster afterward. Continue?</string>
 </resources>
 

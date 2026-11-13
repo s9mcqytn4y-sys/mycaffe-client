@@ -159,4 +159,25 @@
     <string name="catalog_empty">Belum ada produk di kategori ini.</string>
     <string name="catalog_photo_present">Foto tersedia</string>
     <string name="catalog_photo_missing">Belum ada foto</string>
+
+    <!-- Table Management (PR 5) -->
+    <string name="table_mgmt_title">Manajemen Meja &amp; QR</string>
+    <string name="table_nav_label">Meja</string>
+    <string name="table_add">Tambah Meja</string>
+    <string name="table_edit">Ubah Meja</string>
+    <string name="table_refresh">Muat Ulang</string>
+    <string name="table_section_all">Semua Area</string>
+    <string name="table_empty">Belum ada meja di area ini.</string>
+    <string name="table_status_available">Tersedia</string>
+    <string name="table_status_occupied">Terisi</string>
+    <string name="table_status_settled">Selesai</string>
+    <string name="table_open_session">Buka Sesi</string>
+    <string name="table_close_session">Kosongkan</string>
+    <string name="table_poster_btn">Poster QR</string>
+    <string name="table_poster_hint">Pindai QR untuk melihat menu dan memesan langsung dari meja.</string>
+    <string name="table_print_thermal">Cetak 80mm</string>
+    <string name="table_print_pdf">Cetak PDF A6</string>
+    <string name="table_rotate_qr_btn">Putar QR</string>
+    <string name="table_rotate_qr_title">Putar Token QR Meja</string>
+    <string name="table_rotate_qr_confirm">QR lama untuk %1$s akan langsung tidak berlaku setelah diputar. Cetak poster baru setelahnya. Lanjutkan?</string>
 </resources>
