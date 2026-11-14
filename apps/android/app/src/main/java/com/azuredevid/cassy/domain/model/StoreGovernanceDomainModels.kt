@@ -26,7 +26,9 @@ data class PaymentCredentials(
     val clientKey: String,
     val serverKeyMasked: String,
     val isEnabled: Boolean,
-    val fallbackStaticQrisEnabled: Boolean
+    val fallbackStaticQrisEnabled: Boolean,
+    val validationStatus: String = "",
+    val lastVerifiedAt: String? = null
 )
 
 data class StoreCMSConfig(

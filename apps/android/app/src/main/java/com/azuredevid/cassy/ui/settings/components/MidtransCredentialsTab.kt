@@ -1,7 +1,7 @@
 package com.azuredevid.cassy.ui.settings.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,26 +30,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.azuredevid.cassy.R
 import com.azuredevid.cassy.ui.settings.StoreSettingsUiEvent
 import com.azuredevid.cassy.ui.settings.StoreSettingsUiState
-import com.azuredevid.cassy.ui.theme.LightAccent
-import com.azuredevid.cassy.ui.theme.LightBorder
-import com.azuredevid.cassy.ui.theme.LightInk
-import com.azuredevid.cassy.ui.theme.LightMuted
-import com.azuredevid.cassy.ui.theme.LightSecondaryInk
-import com.azuredevid.cassy.ui.theme.LightSurface
-import com.azuredevid.cassy.ui.theme.StatusErrBgLight
-import com.azuredevid.cassy.ui.theme.StatusErrFgLight
-import com.azuredevid.cassy.ui.theme.StatusOkBgLight
-import com.azuredevid.cassy.ui.theme.StatusOkFgLight
-import com.azuredevid.cassy.ui.theme.StatusWarnBgLight
-import com.azuredevid.cassy.ui.theme.StatusWarnFgLight
+import com.azuredevid.cassy.ui.theme.statusErrBg
+import com.azuredevid.cassy.ui.theme.statusErrFg
+import com.azuredevid.cassy.ui.theme.statusOkBg
+import com.azuredevid.cassy.ui.theme.statusOkFg
+import com.azuredevid.cassy.ui.theme.statusWarnBg
+import com.azuredevid.cassy.ui.theme.statusWarnFg
 
 @Composable
 fun MidtransCredentialsTab(
@@ -58,6 +55,7 @@ fun MidtransCredentialsTab(
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
+    val colors = MaterialTheme.colorScheme
 
     Column(
         modifier = modifier
@@ -66,11 +64,10 @@ fun MidtransCredentialsTab(
             .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Top Card: Environment & Status Banner
         Surface(
             shape = RoundedCornerShape(12.dp),
-            color = LightSurface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, LightBorder),
+            color = colors.surface,
+            border = BorderStroke(1.dp, colors.outline),
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
@@ -80,35 +77,62 @@ fun MidtransCredentialsTab(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     Text(
-                        text = "Lingkungan Integrasi Midtrans",
+                        text = stringResource(R.string.midtrans_env_title),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = LightInk
+                            color = colors.onSurface
                         )
                     )
                     Text(
-                        text = if (state.isSandbox) {
-                            "Mode Sandbox (Uji Coba Transaksi Simulasi)"
-                        } else {
-                            "Mode Produksi Live (Rekening Kafe Nyata)"
-                        },
-                        style = MaterialTheme.typography.bodySmall.copy(color = LightSecondaryInk)
+                        text = stringResource(
+                            if (state.isSandbox) {
+                                R.string.midtrans_env_sandbox
+                            } else {
+                                R.string.midtrans_env_production
+                            }
+                        ),
+                        style = MaterialTheme.typography.bodySmall.copy(color = colors.onSurfaceVariant)
                     )
+                    val statusLabel = state.validationStatus.ifBlank {
+                        stringResource(R.string.midtrans_status_unverified)
+                    }
+                    Text(
+                        text = stringResource(R.string.midtrans_status_badge, statusLabel),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = colors.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                    state.lastVerifiedAt?.takeIf { it.isNotBlank() }?.let { timestamp ->
+                        Text(
+                            text = stringResource(R.string.midtrans_last_verified, timestamp),
+                            style = MaterialTheme.typography.labelSmall.copy(color = colors.onSurfaceVariant)
+                        )
+                    }
                 }
 
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
-                        .background(if (state.isSandbox) StatusWarnBgLight else StatusOkBgLight)
+                        .background(if (state.isSandbox) statusWarnBg() else statusOkBg())
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = if (state.isSandbox) "SANDBOX" else "PRODUCTION LIVE",
+                        text = stringResource(
+                            if (state.isSandbox) {
+                                R.string.midtrans_badge_sandbox
+                            } else {
+                                R.string.midtrans_badge_production
+                            }
+                        ),
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
-                            color = if (state.isSandbox) StatusWarnFgLight else StatusOkFgLight,
+                            color = if (state.isSandbox) statusWarnFg() else statusOkFg(),
                             letterSpacing = 0.5.sp
                         )
                     )
@@ -116,11 +140,10 @@ fun MidtransCredentialsTab(
             }
         }
 
-        // Form Card
         Surface(
             shape = RoundedCornerShape(12.dp),
-            color = LightSurface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, LightBorder),
+            color = colors.surface,
+            border = BorderStroke(1.dp, colors.outline),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -129,88 +152,105 @@ fun MidtransCredentialsTab(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 1. Merchant ID
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "Merchant ID *",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = LightInk)
+                        text = stringResource(R.string.midtrans_merchant_id_label),
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = colors.onSurface
+                        )
                     )
                     OutlinedTextField(
                         value = state.merchantId,
                         onValueChange = { onEvent(StoreSettingsUiEvent.UpdateMerchantId(it)) },
-                        placeholder = { Text("Contoh: G357841497") },
+                        placeholder = { Text(stringResource(R.string.midtrans_merchant_id_placeholder)) },
                         singleLine = true,
                         isError = state.merchantId.isNotEmpty() && !state.isMerchantIdValid,
                         supportingText = {
                             if (state.merchantId.isNotEmpty() && !state.isMerchantIdValid) {
-                                Text("Merchant ID minimal 4 karakter.", color = StatusErrFgLight)
+                                Text(
+                                    text = stringResource(R.string.midtrans_merchant_id_error),
+                                    color = statusErrFg()
+                                )
                             } else {
-                                Text("Merchant ID resmi dari Dashboard Midtrans MAP")
+                                Text(stringResource(R.string.midtrans_merchant_id_help))
                             }
                         },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = LightAccent,
-                            unfocusedBorderColor = LightBorder
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outline
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
 
-                // 2. Client Key
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "Client Key *",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = LightInk)
+                        text = stringResource(R.string.midtrans_client_key_label),
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = colors.onSurface
+                        )
                     )
+                    val clientPrefix = if (state.isSandbox) "SB-Mid-client-" else "Mid-client-"
                     OutlinedTextField(
                         value = state.clientKey,
                         onValueChange = { onEvent(StoreSettingsUiEvent.UpdateClientKey(it)) },
-                        placeholder = { Text(if (state.isSandbox) "SB-Mid-client-xxx" else "Mid-client-xxx") },
+                        placeholder = { Text("${clientPrefix}xxx") },
                         singleLine = true,
                         isError = state.clientKey.isNotEmpty() && !state.isClientKeyValid,
                         supportingText = {
                             if (state.clientKey.isNotEmpty() && !state.isClientKeyValid) {
                                 Text(
-                                    "Format salah: Wajib diawali '${if (state.isSandbox) "SB-Mid-client-" else "Mid-client-"}' dan minimal 16 karakter.",
-                                    color = StatusErrFgLight
+                                    text = stringResource(R.string.midtrans_client_key_error, clientPrefix),
+                                    color = statusErrFg()
                                 )
                             } else {
-                                Text("Kunci publik untuk checkout pembayaran mandiri tamu")
+                                Text(stringResource(R.string.midtrans_client_key_help))
                             }
                         },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = LightAccent,
-                            unfocusedBorderColor = LightBorder
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outline
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
 
-                // 3. Server Key
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "Server Key (Kunci Rahasia) *",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = LightInk)
+                        text = stringResource(R.string.midtrans_server_key_label),
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = colors.onSurface
+                        )
                     )
+                    val serverPrefix = if (state.isSandbox) "SB-Mid-server-" else "Mid-server-"
                     OutlinedTextField(
                         value = state.serverKey,
                         onValueChange = { onEvent(StoreSettingsUiEvent.UpdateServerKey(it)) },
                         placeholder = {
-                            Text(
-                                if (state.serverKeyMasked.isNotEmpty()) {
-                                    state.serverKeyMasked
-                                } else {
-                                    if (state.isSandbox) "SB-Mid-server-xxx" else "Mid-server-xxx"
-                                }
-                            )
+                            Text(state.serverKeyMasked.ifEmpty { "${serverPrefix}xxx" })
                         },
-                        visualTransformation = if (state.isServerKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        visualTransformation = if (state.isServerKeyVisible) {
+                            VisualTransformation.None
+                        } else {
+                            PasswordVisualTransformation()
+                        },
                         trailingIcon = {
                             TextButton(
                                 onClick = { onEvent(StoreSettingsUiEvent.ToggleServerKeyVisibility) },
-                                modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+                                modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
                             ) {
-                                Text(if (state.isServerKeyVisible) "Sembunyikan" else "Intip")
+                                Text(
+                                    stringResource(
+                                        if (state.isServerKeyVisible) {
+                                            R.string.midtrans_key_hide
+                                        } else {
+                                            R.string.midtrans_key_show
+                                        }
+                                    )
+                                )
                             }
                         },
                         singleLine = true,
@@ -218,24 +258,24 @@ fun MidtransCredentialsTab(
                         supportingText = {
                             if (state.serverKey.isNotEmpty() && !state.isServerKeyValid) {
                                 Text(
-                                    "Format salah: Wajib diawali '${if (state.isSandbox) "SB-Mid-server-" else "Mid-server-"}' dan minimal 16 karakter.",
-                                    color = StatusErrFgLight
+                                    text = stringResource(R.string.midtrans_server_key_error, serverPrefix),
+                                    color = statusErrFg()
                                 )
                             } else {
-                                Text("Tersimpan aman terenkripsi di PostgreSQL (Secretbox AAD). Tidak dibocorkan ke log.")
+                                Text(stringResource(R.string.midtrans_server_key_help))
                             }
                         },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = LightAccent,
-                            unfocusedBorderColor = LightBorder
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outline
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
 
-                HorizontalDivider(color = LightBorder, thickness = 1.dp)
+                HorizontalDivider(color = colors.outline, thickness = 1.dp)
 
-                // 4. Fallback Static QRIS Switch
+                val fallbackSwitchLabel = stringResource(R.string.midtrans_fallback_qris_title)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -243,95 +283,108 @@ fun MidtransCredentialsTab(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Fallback QRIS Statis & Pembayaran Kasir",
+                            text = fallbackSwitchLabel,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.SemiBold,
-                                color = LightInk
+                                color = colors.onSurface
                             )
                         )
                         Text(
-                            text = "Izinkan pelanggan memilih bayar di kasir jika koneksi gateway bermasalah",
-                            style = MaterialTheme.typography.labelSmall.copy(color = LightSecondaryInk)
+                            text = stringResource(R.string.midtrans_fallback_qris_desc),
+                            style = MaterialTheme.typography.labelSmall.copy(color = colors.onSurfaceVariant)
                         )
                     }
                     Switch(
                         checked = state.fallbackStaticQris,
                         onCheckedChange = { onEvent(StoreSettingsUiEvent.ToggleFallbackStaticQris(it)) },
-                        colors = SwitchDefaults.colors(checkedThumbColor = LightAccent)
+                        colors = SwitchDefaults.colors(checkedThumbColor = colors.primary),
+                        modifier = Modifier
+                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                            .semantics { contentDescription = fallbackSwitchLabel }
                     )
                 }
             }
         }
 
-        // Live Probe Status Feedback Box
-        if (state.probeMessage != null) {
-            val isSuccess = state.probeStatus == "success"
+        if (state.verificationMessage != null) {
+            val isSuccess = state.verificationStatus == "success"
+            val isTesting = state.verificationStatus == "testing"
+            val boxBg = when {
+                isSuccess -> statusOkBg()
+                isTesting -> colors.surfaceVariant
+                else -> statusErrBg()
+            }
+            val boxFg = when {
+                isSuccess -> statusOkFg()
+                isTesting -> colors.onSurface
+                else -> statusErrFg()
+            }
             Surface(
-                color = if (isSuccess) StatusOkBgLight else StatusErrBgLight,
+                color = boxBg,
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = if (isSuccess) "Probe Sukses:" else "Probe Gagal:",
-                        fontWeight = FontWeight.Bold,
-                        color = if (isSuccess) StatusOkFgLight else StatusErrFgLight
-                    )
-                    Text(
-                        text = state.probeMessage,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (isSuccess) StatusOkFgLight else StatusErrFgLight
-                    )
-                }
+                Text(
+                    text = state.verificationMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = boxFg,
+                    modifier = Modifier.padding(14.dp)
+                )
             }
         }
 
-        // Security Advice & Rolling Keys
         Surface(
-            color = LightMuted.copy(alpha = 0.5f),
+            color = colors.surfaceVariant,
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
-                    text = "Perhatian Rolling Kunci API",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = LightInk)
+                    text = stringResource(R.string.midtrans_rolling_title),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onSurface
+                    )
                 )
                 Text(
-                    text = "Jika Anda mengganti kunci di Dashboard Midtrans MAP, segera perbarui Server Key di halaman ini. Kunci yang salah akan menyebabkan verifikasi tanda tangan webhook SHA-512 gagal dan transaksi tertolak otomatis.",
-                    style = MaterialTheme.typography.bodySmall.copy(color = LightSecondaryInk)
+                    text = stringResource(R.string.midtrans_rolling_body),
+                    style = MaterialTheme.typography.bodySmall.copy(color = colors.onSurfaceVariant)
                 )
             }
         }
 
-        // Action Buttons
+        val formReady = state.isMerchantIdValid && state.isClientKeyValid && state.isServerKeyValid
+        val busy = state.isSavingMidtrans || state.isVerifyingMidtrans
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedButton(
-                onClick = { onEvent(StoreSettingsUiEvent.RunLiveProbe) },
-                enabled = !state.isSavingMidtrans && state.probeStatus != "testing",
+                onClick = { onEvent(StoreSettingsUiEvent.VerifyAndSaveMidtrans) },
+                enabled = formReady && !busy,
                 modifier = Modifier
                     .weight(1f)
                     .defaultMinSize(minHeight = 48.dp),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                if (state.probeStatus == "testing") {
+                if (state.isVerifyingMidtrans) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("Uji Live Probe API")
+                    Text(stringResource(R.string.midtrans_btn_verify_live))
                 }
             }
 
             Button(
                 onClick = { onEvent(StoreSettingsUiEvent.SaveMidtransCredentials) },
-                enabled = state.isMerchantIdValid && (state.serverKey.isNotBlank() || state.serverKeyMasked.isNotBlank()) && !state.isSavingMidtrans,
-                colors = ButtonDefaults.buttonColors(containerColor = LightAccent),
+                enabled = formReady && !busy,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colors.primary,
+                    contentColor = colors.onPrimary
+                ),
                 modifier = Modifier
                     .weight(1f)
                     .defaultMinSize(minHeight = 48.dp),
@@ -341,13 +394,12 @@ fun MidtransCredentialsTab(
                     CircularProgressIndicator(
                         modifier = Modifier.size(18.dp),
                         strokeWidth = 2.dp,
-                        color = Color.White
+                        color = colors.onPrimary
                     )
                 } else {
-                    Text("Simpan Kredensial")
+                    Text(stringResource(R.string.midtrans_btn_save))
                 }
             }
         }
     }
 }
-

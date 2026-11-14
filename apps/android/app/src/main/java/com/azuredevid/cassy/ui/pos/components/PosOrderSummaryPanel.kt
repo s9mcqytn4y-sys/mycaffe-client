@@ -6,7 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -21,28 +21,31 @@ import androidx.compose.ui.unit.sp
 import com.azuredevid.cassy.R
 import com.azuredevid.cassy.data.model.OrderQuote
 import com.azuredevid.cassy.ui.pos.CartItem
-import com.azuredevid.cassy.ui.theme.StatusErrBgLight
-import com.azuredevid.cassy.ui.theme.StatusErrFgLight
-import com.azuredevid.cassy.ui.theme.StatusWarnBgLight
-import com.azuredevid.cassy.ui.theme.StatusWarnFgLight
+import com.azuredevid.cassy.ui.theme.statusErrBg
+import com.azuredevid.cassy.ui.theme.statusErrFg
+import com.azuredevid.cassy.ui.theme.statusWarnBg
+import com.azuredevid.cassy.ui.theme.statusWarnFg
 import java.text.NumberFormat
 
 /**
  * Panel 3: Active Order Summary & Settlement Panel (35% screen width).
- * Accessible with WCAG 2.2 AA compliant labels, 48dp touch targets, and full i18n support.
+ * Accessible with WCAG 2.2 AA compliant labels, 48dp touch targets, editable table name, and QRIS action.
  */
 @Composable
 fun PosOrderSummaryPanel(
     panelWidth: Dp,
     tableName: String,
     orderType: String,
+    onTableNameChanged: (String) -> Unit = {},
     onToggleOrderType: () -> Unit,
     cart: List<CartItem>,
     isCartLocked: Boolean,
+    isShiftOpen: Boolean = true,
+    isSubmittingOrder: Boolean = false,
     onIncreaseQuantity: (CartItem) -> Unit,
     onDecreaseQuantity: (CartItem) -> Unit,
-    // Server-priced totals; null until the server answers (or while no staff session exists).
     quote: OrderQuote?,
+    quoteError: String? = null,
     rupiahFormat: NumberFormat,
     onOpenDrawerKick: () -> Unit,
     onSendToKitchen: () -> Unit,
@@ -52,6 +55,8 @@ fun PosOrderSummaryPanel(
     onReprintStations: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showTableDialog by remember { mutableStateOf(false) }
+
     Surface(
         modifier = modifier
             .width(panelWidth)
@@ -66,15 +71,30 @@ fun PosOrderSummaryPanel(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                // Header Order Meja & Dine-In / Takeaway Toggle
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    val headingLabel = if (orderType == "TAKEAWAY") {
+                        stringResource(R.string.order_heading_takeaway)
+                    } else {
+                        val displayTable = tableName.ifBlank { stringResource(R.string.order_table_unspecified) }
+                        stringResource(R.string.order_heading, displayTable)
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
+                            .clickable(enabled = orderType == "DINE-IN" && !isCartLocked) {
+                                showTableDialog = true
+                            }
+                            .padding(end = 8.dp),
+                        verticalArrangement = Arrangement.Center
+                    ) {
                         Text(
-                            text = stringResource(R.string.order_heading, tableName),
+                            text = headingLabel,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -88,19 +108,25 @@ fun PosOrderSummaryPanel(
                         }
                     }
 
-                    // Order Type Pill Toggle
-                    val typeText = if (orderType == "DINE-IN") stringResource(R.string.order_type_dine_in) else stringResource(R.string.order_type_takeaway)
+                    val typeText = if (orderType == "DINE-IN") {
+                        stringResource(R.string.order_type_dine_in)
+                    } else {
+                        stringResource(R.string.order_type_takeaway)
+                    }
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = if (orderType == "DINE-IN") StatusWarnBgLight else MaterialTheme.colorScheme.secondaryContainer,
+                        color = if (orderType == "DINE-IN") statusWarnBg() else MaterialTheme.colorScheme.secondaryContainer,
                         modifier = Modifier
                             .defaultMinSize(minHeight = 48.dp)
                             .clickable(enabled = !isCartLocked) { onToggleOrderType() }
                     ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
                             Text(
                                 text = typeText,
-                                color = if (orderType == "DINE-IN") StatusWarnFgLight else MaterialTheme.colorScheme.onSecondaryContainer,
+                                color = if (orderType == "DINE-IN") statusWarnFg() else MaterialTheme.colorScheme.onSecondaryContainer,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold
                             )
@@ -108,12 +134,11 @@ fun PosOrderSummaryPanel(
                     }
                 }
 
-                // Failover Alert Banner
                 if (!failoverWarning.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = StatusErrBgLight,
+                        color = statusErrBg(),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -126,15 +151,20 @@ fun PosOrderSummaryPanel(
                             Text(
                                 text = failoverWarning,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = StatusErrFgLight,
+                                color = statusErrFg(),
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.weight(1f)
                             )
                             TextButton(
                                 onClick = onReprintStations,
+                                modifier = Modifier.defaultMinSize(minHeight = 48.dp),
                                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
                             ) {
-                                Text(stringResource(R.string.btn_reprint_stations), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                Text(
+                                    stringResource(R.string.btn_reprint_stations),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }
@@ -142,7 +172,6 @@ fun PosOrderSummaryPanel(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                // Cart Items List
                 if (cart.isEmpty()) {
                     Box(
                         modifier = Modifier
@@ -236,12 +265,17 @@ fun PosOrderSummaryPanel(
                 }
             }
 
-            // Bill Summary & Action Buttons
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 HorizontalDivider()
 
                 if (quote == null) {
-                    if (cart.isNotEmpty()) {
+                    if (!quoteError.isNullOrBlank()) {
+                        Text(
+                            text = quoteError,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = statusErrFg()
+                        )
+                    } else if (cart.isNotEmpty()) {
                         Text(stringResource(R.string.total_from_server), style = MaterialTheme.typography.bodySmall)
                     }
                 } else {
@@ -288,14 +322,15 @@ fun PosOrderSummaryPanel(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                // Action Row 1: RJ11 Kick & Dine-In "Kirim ke Dapur" Trigger
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     OutlinedButton(
                         onClick = onOpenDrawerKick,
-                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp),
                         contentPadding = PaddingValues(horizontal = 4.dp)
                     ) {
                         Text(stringResource(R.string.btn_kick_drawer), style = MaterialTheme.typography.labelSmall)
@@ -305,7 +340,9 @@ fun PosOrderSummaryPanel(
                         FilledTonalButton(
                             onClick = onSendToKitchen,
                             enabled = cart.isNotEmpty() && !isCartLocked,
-                            modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .defaultMinSize(minHeight = 48.dp),
                             contentPadding = PaddingValues(horizontal = 4.dp)
                         ) {
                             Text(stringResource(R.string.btn_send_to_kitchen), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
@@ -313,7 +350,6 @@ fun PosOrderSummaryPanel(
                     }
                 }
 
-                // Action Row 2: Settlement Buttons: Tunai vs QRIS Dinamis
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -321,22 +357,62 @@ fun PosOrderSummaryPanel(
                     Button(
                         onClick = onOpenCashModal,
                         enabled = quote != null && cart.isNotEmpty() && !isCartLocked,
-                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
                     ) {
                         Text(stringResource(R.string.btn_pay_cash), fontWeight = FontWeight.Bold)
                     }
 
                     Button(
                         onClick = onOpenQrisModal,
-                        // Dynamic QRIS comes from the server payment flow (Android Release One PR 7); off until then.
-                        enabled = false,
+                        enabled = isShiftOpen && quote != null && cart.isNotEmpty() && !isCartLocked && !isSubmittingOrder,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
-                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
+                        modifier = Modifier
+                            .weight(1f)
+                            .defaultMinSize(minHeight = 48.dp)
                     ) {
                         Text(stringResource(R.string.btn_pay_qris), fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
+    }
+
+    if (showTableDialog) {
+        var draft by remember(tableName) { mutableStateOf(tableName) }
+        AlertDialog(
+            onDismissRequest = { showTableDialog = false },
+            title = { Text(stringResource(R.string.order_table_dialog_title), fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(
+                    value = draft,
+                    onValueChange = { draft = it },
+                    label = { Text(stringResource(R.string.order_table_input_label)) },
+                    placeholder = { Text(stringResource(R.string.order_table_input_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onTableNameChanged(draft)
+                        showTableDialog = false
+                    },
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+                ) {
+                    Text(stringResource(R.string.btn_apply))
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { showTableDialog = false },
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+                ) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            }
+        )
     }
 }

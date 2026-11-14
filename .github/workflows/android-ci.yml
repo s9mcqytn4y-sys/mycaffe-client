@@ -35,10 +35,10 @@ jobs:
       - name: Run Android Unit & Compose Tests
         run: |
           cd apps/android
-          ./gradlew test --stacktrace
+          ./gradlew test --max-workers=2 --no-daemon --stacktrace
 
       - name: Assemble Debug APK
         run: |
           cd apps/android
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug --max-workers=2 --no-daemon --stacktrace
 

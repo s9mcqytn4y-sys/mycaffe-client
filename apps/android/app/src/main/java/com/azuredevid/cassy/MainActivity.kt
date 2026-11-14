@@ -19,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.azuredevid.cassy.core.hardware.PrinterPort9100Manager
 import com.azuredevid.cassy.core.security.SessionManager
+import com.azuredevid.cassy.domain.repository.PrinterSettingsRepository
 import com.azuredevid.cassy.ui.navigation.CassyNavHost
 import com.azuredevid.cassy.ui.navigation.CassyRoute
 import com.azuredevid.cassy.ui.theme.CassyPandan
@@ -29,6 +30,7 @@ import org.koin.android.ext.android.inject
 class MainActivity : FragmentActivity() {
 
     private val printerManager: PrinterPort9100Manager by inject()
+    private val printerSettings: PrinterSettingsRepository by inject()
     private val sessionManager: SessionManager by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,27 +65,37 @@ class MainActivity : FragmentActivity() {
                             sessionManager = sessionManager,
                             onOpenCashDrawer = {
                                 lifecycleScope.launch {
-                                    printerManager.openCashDrawer("192.168.10.200", 9100)
-                                        .onSuccess {
-                                            Toast.makeText(
-                                                this@MainActivity,
-                                                "Perintah Buka Laci Kasir Terkirim (RJ11)",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                        .onFailure {
-                                            Toast.makeText(
-                                                this@MainActivity,
-                                                "Printer LAN tidak terjangkau",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
+                                    val config = printerSettings.getConfig()
+                                    if (!config.hasCashierPrinter) {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            getString(R.string.printer_error_not_configured),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        return@launch
+                                    }
+                                    printerManager.openCashDrawer(
+                                        config.cashierPrinterIp,
+                                        config.cashierPrinterPort
+                                    ).onSuccess {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            getString(R.string.drawer_open_success),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }.onFailure {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            getString(R.string.printer_lan_unreachable),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                 }
                             },
                             onShowPairingToast = { storeName ->
                                 Toast.makeText(
                                     this@MainActivity,
-                                    "Tablet terhubung ke gerai: $storeName",
+                                    getString(R.string.pairing_connected_toast, storeName),
                                     Toast.LENGTH_LONG
                                 ).show()
                             }

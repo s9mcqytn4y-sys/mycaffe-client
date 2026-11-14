@@ -27,7 +27,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.json.JSONArray
 
 class KtorCatalogRepository(
     private val context: Context? = null,
@@ -38,24 +37,15 @@ class KtorCatalogRepository(
 
     override suspend fun getCatalog(storeSlug: String): Result<List<CatalogProduct>> = withContext(ioDispatcher) {
         try {
-            val baseUrl = serverSettings.getBaseUrl()
+            val baseUrl = serverSettings.getBaseUrl().trimEnd('/')
             val response = httpClient.get("$baseUrl/api/v1/public/stores/${storeSlug.trim()}/catalog")
             if (response.status.isSuccess()) {
                 val view = response.body<CatalogViewDto>()
-                val mapped = view.toSnapshot().products
-                if (mapped.isNotEmpty()) {
-                    return@withContext Result.success(mapped)
-                }
-                return@withContext Result.success(readBundledSeedCatalog())
+                return@withContext Result.success(view.toSnapshot().products)
             }
             Result.failure(HttpErrorMapper.toDomainException(response, "Gagal memuat katalog menu dari server."))
         } catch (t: Throwable) {
-            val seed = runCatching { readBundledSeedCatalog() }.getOrNull()
-            if (!seed.isNullOrEmpty()) {
-                Result.success(seed)
-            } else {
-                Result.failure(HttpErrorMapper.fromThrowable(t, "Gagal memuat katalog menu."))
-            }
+            Result.failure(HttpErrorMapper.fromThrowable(t, "Gagal memuat katalog menu."))
         }
     }
 
@@ -343,31 +333,6 @@ class KtorCatalogRepository(
         } catch (t: Throwable) {
             Result.failure(HttpErrorMapper.fromThrowable(t, "Gagal mengunggah foto produk."))
         }
-    }
-
-    private fun readBundledSeedCatalog(): List<CatalogProduct> {
-        val ctx = context ?: return emptyList()
-        val jsonString = ctx.assets.open("seeds/catalog_seed.json").bufferedReader().use { it.readText() }
-        val jsonArray = JSONArray(jsonString)
-        val products = mutableListOf<CatalogProduct>()
-        for (i in 0 until jsonArray.length()) {
-            val obj = jsonArray.getJSONObject(i)
-            products.add(
-                CatalogProduct(
-                    id = obj.getString("id"),
-                    name = obj.getString("name"),
-                    categoryId = obj.getString("categoryId"),
-                    categoryName = obj.getString("categoryName"),
-                    description = obj.optString("description", ""),
-                    basePriceIdr = obj.getLong("basePriceIdr"),
-                    imageUrl = obj.getString("imageUrl"),
-                    prepStation = obj.optString("prepStation", "bar"),
-                    isAvailable = obj.optBoolean("isAvailable", true),
-                    stockQuantity = obj.optInt("stockQuantity", 50)
-                )
-            )
-        }
-        return products
     }
 
     @Serializable

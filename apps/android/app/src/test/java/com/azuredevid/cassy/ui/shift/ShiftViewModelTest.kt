@@ -1,14 +1,34 @@
 package com.azuredevid.cassy.ui.shift
 
-import com.azuredevid.cassy.data.repository.ServerSettingsRepository
-import com.azuredevid.cassy.domain.model.*
+import com.azuredevid.cassy.domain.error.DomainError
+import com.azuredevid.cassy.domain.error.DomainException
+import com.azuredevid.cassy.domain.model.CashDrawer
+import com.azuredevid.cassy.domain.model.CashMovement
+import com.azuredevid.cassy.domain.model.CashMovementResult
+import com.azuredevid.cassy.domain.model.CashMovementType
+import com.azuredevid.cassy.domain.model.Shift
+import com.azuredevid.cassy.domain.model.ShiftCloseResult
+import com.azuredevid.cassy.domain.model.ShiftOpenResult
+import com.azuredevid.cassy.domain.model.ShiftStatus
+import com.azuredevid.cassy.domain.model.XReport
+import com.azuredevid.cassy.domain.model.ZReport
+import com.azuredevid.cassy.domain.repository.PrinterConfig
+import com.azuredevid.cassy.domain.repository.PrinterSettingsRepository
 import com.azuredevid.cassy.domain.repository.ShiftRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -18,13 +38,20 @@ class ShiftViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
 
     private class FakeShiftRepository : ShiftRepository {
+        var drawersMock: List<CashDrawer> = listOf(
+            CashDrawer(id = "drawer-1", storeId = "store-1", name = "Laci Utama", isActive = true)
+        )
         var currentShiftMock: Shift? = null
         var shouldFail: Boolean = false
+        var failCloseWithVarianceOverride: Boolean = false
         var lastOpenedFloat: Long = 0L
         var lastMovement: CashMovement? = null
         var lastCloseCountedCash: Long = 0L
 
-        override suspend fun getCurrentShift(): Result<Shift?> {
+        override suspend fun getDrawers(): Result<List<CashDrawer>> =
+            if (shouldFail) Result.failure(Exception("Network error")) else Result.success(drawersMock)
+
+        override suspend fun getCurrentShift(drawerId: String?): Result<Shift?> {
             if (shouldFail) return Result.failure(Exception("Network error"))
             return Result.success(currentShiftMock)
         }
@@ -33,7 +60,7 @@ class ShiftViewModelTest {
             openingFloat: Long,
             drawerId: String?,
             notes: String
-        ): Result<Shift> {
+        ): Result<ShiftOpenResult> {
             if (shouldFail) return Result.failure(Exception("Gagal buka shift"))
             lastOpenedFloat = openingFloat
             val newShift = Shift(
@@ -49,7 +76,7 @@ class ShiftViewModelTest {
                 notes = notes
             )
             currentShiftMock = newShift
-            return Result.success(newShift)
+            return Result.success(ShiftOpenResult(shift = newShift, openDrawer = true))
         }
 
         override suspend fun recordCashMovement(
@@ -58,7 +85,7 @@ class ShiftViewModelTest {
             reason: String,
             shiftId: String?,
             drawerId: String?
-        ): Result<CashMovement> {
+        ): Result<CashMovementResult> {
             if (shouldFail) return Result.failure(Exception("Gagal catat mutasi"))
             val movement = CashMovement(
                 id = "mov-1",
@@ -71,7 +98,7 @@ class ShiftViewModelTest {
                 createdAt = "2026-11-13T09:00:00Z"
             )
             lastMovement = movement
-            return Result.success(movement)
+            return Result.success(CashMovementResult(movement = movement, openDrawer = false))
         }
 
         override suspend fun closeShift(
@@ -80,7 +107,17 @@ class ShiftViewModelTest {
             ownerPin: String?,
             varianceReason: String?,
             notes: String?
-        ): Result<ZReport> {
+        ): Result<ShiftCloseResult> {
+            if (failCloseWithVarianceOverride && ownerPin.isNullOrBlank()) {
+                return Result.failure(
+                    DomainException(
+                        DomainError.Validation(
+                            message = "Selisih kas melebihi toleransi. Masukkan alasan dan PIN owner.",
+                            code = "VARIANCE_EXCEEDS_TOLERANCE"
+                        )
+                    )
+                )
+            }
             if (shouldFail) return Result.failure(Exception("Gagal tutup shift"))
             lastCloseCountedCash = countedCash
             val report = ZReport(
@@ -98,36 +135,52 @@ class ShiftViewModelTest {
                 notes = notes
             )
             currentShiftMock = null
-            return Result.success(report)
+            return Result.success(ShiftCloseResult(report = report, openDrawer = true))
         }
 
-        override suspend fun getZReport(shiftId: String): Result<ZReport> {
-            return Result.success(
-                ZReport(
-                    shiftId = shiftId,
-                    storeId = "store-1",
-                    drawerId = "drawer-1",
-                    openedBy = "staff-1",
-                    openedAt = "2026-11-13T08:00:00Z",
-                    status = ShiftStatus.CLOSED
-                )
+        override suspend fun getXReport(shiftId: String): Result<XReport> = Result.success(
+            XReport(
+                shiftId = shiftId,
+                storeId = "store-1",
+                drawerId = "drawer-1",
+                openedBy = "staff-1",
+                openedAt = "2026-11-13T08:00:00Z",
+                generatedAt = "2026-11-13T12:00:00Z",
+                expectedRedacted = true,
+                expectedCash = null
             )
-        }
+        )
+
+        override suspend fun getZReport(shiftId: String): Result<ZReport> = Result.success(
+            ZReport(
+                shiftId = shiftId,
+                storeId = "store-1",
+                drawerId = "drawer-1",
+                openedBy = "staff-1",
+                openedAt = "2026-11-13T08:00:00Z",
+                status = ShiftStatus.CLOSED
+            )
+        )
     }
 
-    private class FakeServerSettings : ServerSettingsRepository {
-        override fun getBaseUrl(): String = "http://10.0.2.2:8080"
-        override fun setBaseUrl(url: String) {}
+    private class FakePrinterSettingsRepository(
+        initial: PrinterConfig = PrinterConfig()
+    ) : PrinterSettingsRepository {
+        private val flow = MutableStateFlow(initial)
+        override val configFlow: Flow<PrinterConfig> = flow
+        override suspend fun getConfig(): PrinterConfig = flow.value
+        override suspend fun saveConfig(config: PrinterConfig) { flow.value = config }
+        override suspend fun clearConfig() { flow.value = PrinterConfig() }
     }
 
     private lateinit var shiftRepository: FakeShiftRepository
-    private lateinit var serverSettings: FakeServerSettings
+    private lateinit var printerSettings: FakePrinterSettingsRepository
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         shiftRepository = FakeShiftRepository()
-        serverSettings = FakeServerSettings()
+        printerSettings = FakePrinterSettingsRepository()
     }
 
     @After
@@ -136,7 +189,7 @@ class ShiftViewModelTest {
     }
 
     @Test
-    fun initialLoad_whenShiftActive_setsShiftOpen() = runTest {
+    fun initialLoad_whenShiftActive_setsShiftOpenAndDrawers() = runTest {
         shiftRepository.currentShiftMock = Shift(
             id = "shift-001",
             storeId = "store-1",
@@ -149,13 +202,14 @@ class ShiftViewModelTest {
             expectedCash = 450000L
         )
 
-        val viewModel = ShiftViewModel(shiftRepository, serverSettings)
+        val viewModel = ShiftViewModel(shiftRepository, printerSettings)
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
         assertTrue(state.isShiftOpen)
-        assertNotNull(state.currentShift)
+        assertEquals(1, state.drawers.size)
+        assertEquals("drawer-1", state.selectedDrawerId)
         assertEquals("shift-001", state.currentShift?.id)
         assertEquals(450000L, state.currentShift?.expectedCash)
     }
@@ -164,7 +218,7 @@ class ShiftViewModelTest {
     fun initialLoad_whenNoActiveShift_setsShiftClosed() = runTest {
         shiftRepository.currentShiftMock = null
 
-        val viewModel = ShiftViewModel(shiftRepository, serverSettings)
+        val viewModel = ShiftViewModel(shiftRepository, printerSettings)
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -176,10 +230,11 @@ class ShiftViewModelTest {
     @Test
     fun submitOpenShift_success_opensShiftAndUpdatesState() = runTest {
         shiftRepository.currentShiftMock = null
-        val viewModel = ShiftViewModel(shiftRepository, serverSettings)
+        val viewModel = ShiftViewModel(shiftRepository, printerSettings)
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.openShiftModal()
+        testDispatcher.scheduler.advanceUntilIdle()
         viewModel.onOpeningFloatChanged("500000")
         viewModel.onOpenShiftNotesChanged("Shift Siang")
 
@@ -205,7 +260,7 @@ class ShiftViewModelTest {
             status = ShiftStatus.OPEN,
             expectedCash = 200000L
         )
-        val viewModel = ShiftViewModel(shiftRepository, serverSettings)
+        val viewModel = ShiftViewModel(shiftRepository, printerSettings)
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.openCashMovementModal()
@@ -224,7 +279,7 @@ class ShiftViewModelTest {
     }
 
     @Test
-    fun closeShift_blindCashCount_varianceCalculation() = runTest {
+    fun closeShift_whenBlindCountRedacted_reliesOnServerVarianceOverride() = runTest {
         shiftRepository.currentShiftMock = Shift(
             id = "shift-001",
             storeId = "store-1",
@@ -233,69 +288,88 @@ class ShiftViewModelTest {
             openingFloat = 500000L,
             openedAt = "2026-11-13T07:00:00Z",
             status = ShiftStatus.OPEN,
-            expectedCash = 500000L
+            expectedCash = null
         )
-        val viewModel = ShiftViewModel(shiftRepository, serverSettings)
+        shiftRepository.failCloseWithVarianceOverride = true
+
+        val viewModel = ShiftViewModel(shiftRepository, printerSettings)
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.openCloseShiftModal()
+        viewModel.onCountedCashChanged("350000")
 
-        // 1. Enter exact amount: variance = 0
-        viewModel.onCountedCashChanged("500000")
-        assertEquals(0L, viewModel.uiState.value.calculatedVariance)
+        // Blind count: variance cannot be computed client-side when expectedCash is redacted
+        assertNull(viewModel.uiState.value.calculatedVariance)
         assertFalse(viewModel.uiState.value.isSupervisorAuthRequired)
 
-        // 2. Small variance within Rp 50.000 (e.g. Rp 20.000): does not require supervisor
-        viewModel.onCountedCashChanged("520000")
-        assertEquals(20000L, viewModel.uiState.value.calculatedVariance)
-        assertFalse(viewModel.uiState.value.isSupervisorAuthRequired)
-
-        // 3. Large variance exceeding Rp 50.000 (e.g. short Rp 60.000): requires supervisor PIN & reason
-        viewModel.onCountedCashChanged("440000")
-        assertEquals(-60000L, viewModel.uiState.value.calculatedVariance)
-        assertTrue(viewModel.uiState.value.isSupervisorAuthRequired)
-    }
-
-    @Test
-    fun closeShift_whenVarianceExceedsTolerance_requiresValidSupervisorPin() = runTest {
-        shiftRepository.currentShiftMock = Shift(
-            id = "shift-001",
-            storeId = "store-1",
-            drawerId = "drawer-1",
-            openedBy = "staff-1",
-            openingFloat = 500000L,
-            openedAt = "2026-11-13T07:00:00Z",
-            status = ShiftStatus.OPEN,
-            expectedCash = 500000L
-        )
-        val viewModel = ShiftViewModel(shiftRepository, serverSettings)
+        // Server rejects close with VARIANCE_EXCEEDS_TOLERANCE -> VM opens override inputs
+        viewModel.submitCloseShift()
         testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.openCloseShiftModal()
-        viewModel.onCountedCashChanged("400000") // Short by 100k
         assertTrue(viewModel.uiState.value.isSupervisorAuthRequired)
 
-        // Attempt submit without reason: blocked
-        viewModel.submitCloseShift()
-        assertNotNull(viewModel.uiState.value.errorMessage)
-        assertTrue(viewModel.uiState.value.errorMessage!!.contains("Alasan wajib diisi"))
-
-        // Add reason but invalid 4-digit PIN format: blocked locally before API call
-        viewModel.onVarianceReasonChanged("Uang kembalian tercecer")
-        viewModel.onSupervisorPinChanged("9999")
-        viewModel.submitCloseShift()
-        assertNotNull(viewModel.uiState.value.errorMessage)
-        assertTrue(viewModel.uiState.value.errorMessage!!.contains("PIN Owner 6 digit wajib diisi"))
-
-        // Add 6-digit PIN (never checked against hardcoded 1234 locally; sent to backend): succeeds
+        // Supply reason + 6-digit PIN and retry -> succeeds
+        viewModel.onVarianceReasonChanged("Kembalian kurang")
         viewModel.onSupervisorPinChanged("482913")
         viewModel.submitCloseShift()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val state = viewModel.uiState.value
-        assertFalse(state.isShiftOpen)
-        assertFalse(state.showCloseShiftModal)
-        assertNotNull(state.lastZReport)
+        assertFalse(viewModel.uiState.value.isShiftOpen)
+        assertFalse(viewModel.uiState.value.showCloseShiftModal)
+        assertNotNull(viewModel.uiState.value.lastZReport)
+    }
+
+    @Test
+    fun closeShift_whenOwnerExpectedVisible_calculatesVarianceAndRequiresValidPin() = runTest {
+        shiftRepository.currentShiftMock = Shift(
+            id = "shift-001",
+            storeId = "store-1",
+            drawerId = "drawer-1",
+            openedBy = "staff-1",
+            openingFloat = 500000L,
+            openedAt = "2026-11-13T07:00:00Z",
+            status = ShiftStatus.OPEN,
+            expectedCash = 500000L
+        )
+        val viewModel = ShiftViewModel(shiftRepository, printerSettings)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.openCloseShiftModal()
+        viewModel.onCountedCashChanged("400000")
+        assertEquals(-100000L, viewModel.uiState.value.calculatedVariance)
+        assertTrue(viewModel.uiState.value.isSupervisorAuthRequired)
+
+        viewModel.submitCloseShift()
+        assertNotNull(viewModel.uiState.value.errorMessage)
+
+        viewModel.onVarianceReasonChanged("Uang kembalian tercecer")
+        viewModel.onSupervisorPinChanged("482913")
+        viewModel.submitCloseShift()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isShiftOpen)
+        assertNotNull(viewModel.uiState.value.lastZReport)
         assertEquals(400000L, shiftRepository.lastCloseCountedCash)
+    }
+
+    @Test
+    fun openXReportModal_loadsRedactedReport() = runTest {
+        shiftRepository.currentShiftMock = Shift(
+            id = "shift-001",
+            storeId = "store-1",
+            drawerId = "drawer-1",
+            openedBy = "staff-1",
+            openingFloat = 500000L,
+            openedAt = "2026-11-13T07:00:00Z",
+            status = ShiftStatus.OPEN
+        )
+        val viewModel = ShiftViewModel(shiftRepository, printerSettings)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.openXReportModal()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.showXReportModal)
+        assertNotNull(viewModel.uiState.value.currentXReport)
+        assertTrue(viewModel.uiState.value.currentXReport!!.expectedRedacted)
     }
 }

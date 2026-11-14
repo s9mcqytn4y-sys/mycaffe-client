@@ -1,17 +1,26 @@
 package com.azuredevid.cassy.ui.settings
 
-import com.azuredevid.cassy.data.repository.ServerSettingsRepository
+import androidx.datastore.core.DataStore
+import com.azuredevid.cassy.core.security.DataStoreSessionManager
 import com.azuredevid.cassy.domain.model.MidtransEnvironment
 import com.azuredevid.cassy.domain.model.PaymentCredentialInput
 import com.azuredevid.cassy.domain.model.PaymentCredentials
 import com.azuredevid.cassy.domain.model.QRServiceMode
+import com.azuredevid.cassy.domain.model.StaffIdentity
 import com.azuredevid.cassy.domain.model.StoreCMSConfig
 import com.azuredevid.cassy.domain.model.StoreCMSConfigInput
 import com.azuredevid.cassy.domain.model.StoreSettings
 import com.azuredevid.cassy.domain.model.StoreSettingsPatch
+import com.azuredevid.cassy.domain.model.StoredSession
+import com.azuredevid.cassy.domain.repository.PrinterConfig
+import com.azuredevid.cassy.domain.repository.PrinterSettingsRepository
 import com.azuredevid.cassy.domain.repository.StoreGovernanceRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -30,6 +39,30 @@ class StoreSettingsViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
 
+    private class InMemorySessionDataStore(
+        initial: StoredSession = StoredSession()
+    ) : DataStore<StoredSession> {
+        private val state = MutableStateFlow(initial)
+        private val mutex = Mutex()
+        override val data: Flow<StoredSession> = state
+        override suspend fun updateData(transform: suspend (t: StoredSession) -> StoredSession): StoredSession =
+            mutex.withLock {
+                val updated = transform(state.value)
+                state.value = updated
+                updated
+            }
+    }
+
+    private class FakePrinterSettingsRepository(
+        initial: PrinterConfig = PrinterConfig()
+    ) : PrinterSettingsRepository {
+        private val state = MutableStateFlow(initial)
+        override val configFlow: Flow<PrinterConfig> = state
+        override suspend fun getConfig(): PrinterConfig = state.value
+        override suspend fun saveConfig(config: PrinterConfig) { state.value = config }
+        override suspend fun clearConfig() { state.value = PrinterConfig() }
+    }
+
     private class FakeStoreGovernanceRepository : StoreGovernanceRepository {
         var currentCreds = PaymentCredentials(
             environment = MidtransEnvironment.SANDBOX,
@@ -37,7 +70,8 @@ class StoreSettingsViewModelTest {
             clientKey = "SB-Mid-client-12345678",
             serverKeyMasked = "SB-Mid-server-••••••••497",
             isEnabled = true,
-            fallbackStaticQrisEnabled = true
+            fallbackStaticQrisEnabled = true,
+            validationStatus = "verified"
         )
 
         var currentCMS = StoreCMSConfig(
@@ -48,8 +82,8 @@ class StoreSettingsViewModelTest {
             heroSubtitleId = "Subjudul Id",
             heroSubtitleEn = "Subtitle En",
             heroBannerUrl = "",
-            primaryHex = "#2C1A12",
-            accentHex = "#C68B59",
+            primaryHex = "#1F5F52",
+            accentHex = "#E9A23B",
             highContrastMode = false,
             hidePoweredByBadge = false,
             customDomain = ""
@@ -85,14 +119,6 @@ class StoreSettingsViewModelTest {
             patchedSettings = patch
             return Result.success(currentSettings)
         }
-
-        override suspend fun uploadHeroBanner(imageBytes: ByteArray): Result<String> = Result.success("https://cdn.cassy.pos/banner_new.webp")
-        override suspend fun probeMidtransApi(serverKey: String, environment: String): Result<Boolean> = Result.success(true)
-    }
-
-    private class FakeServerSettings : ServerSettingsRepository {
-        override fun getBaseUrl(): String = "http://10.0.2.2:8080"
-        override fun setBaseUrl(url: String) {}
     }
 
     @Before
@@ -113,79 +139,102 @@ class StoreSettingsViewModelTest {
     }
 
     @Test
-    fun initialLoad_populatesUiStateCorrectly() = runTest {
+    fun ownerSession_populatesUiStateAndAllowsLiveMidtransVerify() = runTest {
+        val sessionManager = DataStoreSessionManager(InMemorySessionDataStore(), backgroundScope)
+        sessionManager.saveLoginSession(
+            accessToken = "jwt-owner",
+            accessTokenExpiresAt = "2026-11-14T21:00:00Z",
+            sessionExpiresAt = "2026-11-15T21:00:00Z",
+            staff = StaffIdentity("u1", "Owner", "owner@cassy.id", "owner", "s1", "cassy", "Cassy")
+        )
         val repo = FakeStoreGovernanceRepository()
-        val serverSettings = FakeServerSettings()
-        val vm = StoreSettingsViewModel(repo, serverSettings)
+        val printerSettings = FakePrinterSettingsRepository()
+        val vm = StoreSettingsViewModel(repo, sessionManager, printerSettings)
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = vm.uiState.value
+        assertTrue(state.hasManageAccess)
         assertEquals("G357841497", state.merchantId)
-        assertEquals("SB-Mid-client-12345678", state.clientKey)
+        assertEquals("verified", state.validationStatus)
         assertEquals("Judul Id Asli", state.heroTitleId)
         assertEquals(QRServiceMode.TABLE, state.qrServiceMode)
-        assertEquals(90, state.tableTimeLimitMinutes)
-        assertTrue(state.isSupervisorAuthenticated)
+
+        // Blank serverKey must be rejected before calling API
+        vm.onEvent(StoreSettingsUiEvent.VerifyAndSaveMidtrans)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertNull(repo.savedCredsInput)
+
+        // Full serverKey triggers verify_live = true
+        vm.onEvent(StoreSettingsUiEvent.UpdateServerKey("SB-Mid-server-secretkey123456"))
+        vm.onEvent(StoreSettingsUiEvent.VerifyAndSaveMidtrans)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertNotNull(repo.savedCredsInput)
+        assertTrue(repo.savedCredsInput!!.verifyLive)
     }
 
     @Test
-    fun midtransTab_neverUsesLocalPinBypass() = runTest {
+    fun cashierWithoutManagePermission_failsClosedOnGovernanceLoadsAndSaves() = runTest {
+        val sessionManager = DataStoreSessionManager(InMemorySessionDataStore(), backgroundScope)
+        sessionManager.saveLoginSession(
+            accessToken = "jwt-cashier",
+            accessTokenExpiresAt = "2026-11-14T21:00:00Z",
+            sessionExpiresAt = "2026-11-15T21:00:00Z",
+            staff = StaffIdentity("u2", "Kasir", "kasir@cassy.id", "cashier", "s1", "cassy", "Cassy"),
+            permissions = listOf("pos.order.create")
+        )
         val repo = FakeStoreGovernanceRepository()
-        val serverSettings = FakeServerSettings()
-        val vm = StoreSettingsViewModel(repo, serverSettings)
+        val printerSettings = FakePrinterSettingsRepository()
+        val vm = StoreSettingsViewModel(repo, sessionManager, printerSettings)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        vm.onEvent(StoreSettingsUiEvent.SelectTab(0))
-        assertFalse(vm.uiState.value.showSupervisorPinModal)
-        assertEquals(0, vm.uiState.value.selectedTabIndex)
+        assertFalse(vm.uiState.value.hasManageAccess)
+        assertEquals("", vm.uiState.value.merchantId)
+
+        // Attempt to save service settings is blocked
+        vm.onEvent(StoreSettingsUiEvent.SaveStoreSettings)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertNull(repo.patchedSettings)
+
+        // Cashier can still configure local LAN printer
+        vm.onEvent(StoreSettingsUiEvent.UpdateCashierPrinterIp("192.168.10.210"))
+        vm.onEvent(StoreSettingsUiEvent.SavePrinterConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals("192.168.10.210", printerSettings.getConfig().cashierPrinterIp)
     }
 
     @Test
-    fun serviceMode_switchAndSave() = runTest {
+    fun serviceMode_and_storeCMS_updateAndSave() = runTest {
+        val sessionManager = DataStoreSessionManager(InMemorySessionDataStore(), backgroundScope)
+        sessionManager.saveLoginSession(
+            accessToken = "jwt-mgr",
+            accessTokenExpiresAt = "2026-11-14T21:00:00Z",
+            sessionExpiresAt = "2026-11-15T21:00:00Z",
+            staff = StaffIdentity("u3", "Manager", "mgr@cassy.id", "manager", "s1", "cassy", "Cassy"),
+            permissions = listOf("store.settings.manage")
+        )
         val repo = FakeStoreGovernanceRepository()
-        val serverSettings = FakeServerSettings()
-        val vm = StoreSettingsViewModel(repo, serverSettings)
+        val printerSettings = FakePrinterSettingsRepository()
+        val vm = StoreSettingsViewModel(repo, sessionManager, printerSettings)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Switch to PICKUP mode
         vm.onEvent(StoreSettingsUiEvent.SetServiceMode(QRServiceMode.PICKUP))
-        assertEquals(QRServiceMode.PICKUP, vm.uiState.value.qrServiceMode)
-
-        // Toggle Emergency Pause
         vm.onEvent(StoreSettingsUiEvent.ToggleEmergencyQrPause(true))
-        assertTrue(vm.uiState.value.qrOrderingPaused)
-
-        // Change Table Limit
         vm.onEvent(StoreSettingsUiEvent.UpdateTableTimeLimit(120))
-        assertEquals(120, vm.uiState.value.tableTimeLimitMinutes)
-
-        // Save
         vm.onEvent(StoreSettingsUiEvent.SaveStoreSettings)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val patch = repo.patchedSettings
-        assertNotNull(patch)
-        assertEquals(QRServiceMode.PICKUP, patch?.qrServiceMode)
-        assertEquals(true, patch?.qrOrderingPaused)
-        assertEquals(120, patch?.tableTimeLimitMinutes)
-    }
-
-    @Test
-    fun storeCMS_updateAndSave() = runTest {
-        val repo = FakeStoreGovernanceRepository()
-        val serverSettings = FakeServerSettings()
-        val vm = StoreSettingsViewModel(repo, serverSettings)
-        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(QRServiceMode.PICKUP, repo.patchedSettings?.qrServiceMode)
+        assertEquals(true, repo.patchedSettings?.qrOrderingPaused)
+        assertEquals(120, repo.patchedSettings?.tableTimeLimitMinutes)
 
         vm.onEvent(StoreSettingsUiEvent.UpdateHeroTitleId("Kopi Mantap"))
+        vm.onEvent(StoreSettingsUiEvent.UpdateHeroBannerUrl("https://cdn.cassy.id/banner.webp"))
         vm.onEvent(StoreSettingsUiEvent.ToggleWhiteLabel(true))
         vm.onEvent(StoreSettingsUiEvent.SaveStoreCms)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val input = repo.savedCMSInput
-        assertNotNull(input)
-        assertEquals("Kopi Mantap", input?.heroTitleId)
-        assertTrue(input?.hidePoweredByBadge == true)
+        assertEquals("Kopi Mantap", repo.savedCMSInput?.heroTitleId)
+        assertEquals("https://cdn.cassy.id/banner.webp", repo.savedCMSInput?.heroBannerUrl)
+        assertTrue(repo.savedCMSInput?.hidePoweredByBadge == true)
     }
 }
-

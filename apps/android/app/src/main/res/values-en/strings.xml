@@ -22,8 +22,8 @@
 
     <!-- Catalog Grid -->
     <string name="catalog_title">Menu Catalog (%1$d Items)</string>
-    <string name="catalog_source_cdn">Cloudflare R2 CDN WebP</string>
-    <string name="search_placeholder">Search 38 official items (Espresso, Latte, Croissant...)</string>
+    <string name="catalog_source_cdn">Store Active Catalog</string>
+    <string name="search_placeholder">Search menu name or description…</string>
     <string name="a11y_clear_search">Clear search text</string>
     <string name="catalog_loading">Loading product catalog...</string>
     <string name="catalog_empty_search">No products matching \"%1$s\"</string>
@@ -159,5 +159,158 @@
     <string name="catalog_empty">No products in this category yet.</string>
     <string name="catalog_photo_present">Photo uploaded</string>
     <string name="catalog_photo_missing">No photo</string>
+
+    <!-- Shift Drawer, Blind Count, X-Report & POS Settlement -->
+    <string name="shift_drawer_select_label">Select Cash Drawer</string>
+    <string name="shift_banner_cashier_label">Cashier: %1$s</string>
+    <string name="shift_banner_expected_cash">Expected Cash: IDR %1$s</string>
+    <string name="shift_banner_cashier_default">Cashier</string>
+    <string name="shift_banner_xreport_btn">X-Report</string>
+    <string name="shift_blind_count_hint">Blind count: the server verifies cash variance on close.</string>
+    <string name="shift_xreport_title">Shift Cash Reading (X-Report)</string>
+    <string name="shift_xreport_opening_float">Opening Float</string>
+    <string name="shift_xreport_cash_sales">Cash Sales</string>
+    <string name="shift_xreport_cash_ins">Cash In</string>
+    <string name="shift_xreport_paid_outs">Paid Out</string>
+    <string name="shift_xreport_refunds">Cash Refunds</string>
+    <string name="shift_xreport_expected_cash">System Expected Cash</string>
+    <string name="shift_xreport_expected_redacted">Redacted (Cashier Mode)</string>
+    <string name="shift_xreport_unsettled_tabs">Open tabs: %1$d (IDR %2$s)</string>
+    <string name="shift_xreport_print_btn">Print X-Report</string>
+    <string name="shift_xreport_close_btn">Close</string>
+    <string name="printer_error_not_configured">Cashier printer is not configured. Set the printer IP in Settings.</string>
+    <string name="order_heading_takeaway">Takeaway</string>
+    <string name="order_table_unspecified">Select Table</string>
+    <string name="order_table_dialog_title">Table Number</string>
+    <string name="order_table_input_label">Table Name / Number</string>
+    <string name="order_table_input_hint">Example: Table 04</string>
+    <string name="btn_apply">Apply</string>
+    <string name="btn_retry">Retry</string>
+    <string name="catalog_sold_out_badge">SOLD OUT</string>
+    <string name="qris_order_number_label">Order No: %1$s</string>
+    <string name="qris_total_label">Amount Due: %1$s</string>
+    <string name="shift_required_for_payment">Open a cashier shift first to process payments</string>
+    <string name="shift_required_for_kitchen">Open a cashier shift first to send orders</string>
+    <string name="drawer_open_success">Cash drawer kick command sent.</string>
+    <string name="printer_lan_unreachable">LAN printer is unreachable.</string>
+    <string name="pairing_connected_toast">Tablet connected to store: %1$s</string>
+
+    <!-- Store Governance & Settings -->
+    <string name="settings_title">Store &amp; Hardware Settings</string>
+    <string name="settings_subtitle">Midtrans BYOK, Guest Branding, Service Mode, and LAN Printers</string>
+    <string name="settings_loading">Loading store configuration…</string>
+    <string name="settings_access_badge_allowed">Manage Access</string>
+    <string name="settings_access_badge_denied">Restricted Access</string>
+    <string name="settings_access_denied_title">Store Management Permission Required</string>
+    <string name="settings_access_denied_body">Your staff account lacks the store.settings.manage permission. Ask the store owner to update Midtrans, guest branding, or service policies.</string>
+    <string name="settings_tab_midtrans">Midtrans BYOK</string>
+    <string name="settings_tab_cms">Guest Branding</string>
+    <string name="settings_tab_service">Service Mode</string>
+    <string name="settings_tab_printer">LAN Printers</string>
+
+    <!-- Midtrans Tab -->
+    <string name="midtrans_env_title">Midtrans Integration Environment</string>
+    <string name="midtrans_env_sandbox">Sandbox Mode (Test Transactions)</string>
+    <string name="midtrans_env_production">Live Production Mode</string>
+    <string name="midtrans_badge_sandbox">SANDBOX</string>
+    <string name="midtrans_badge_production">PRODUCTION LIVE</string>
+    <string name="midtrans_merchant_id_label">Merchant ID *</string>
+    <string name="midtrans_merchant_id_placeholder">Example: G357841497</string>
+    <string name="midtrans_merchant_id_error">Merchant ID must be at least 4 characters.</string>
+    <string name="midtrans_merchant_id_help">Official Merchant ID from Midtrans MAP Dashboard.</string>
+    <string name="midtrans_client_key_label">Client Key *</string>
+    <string name="midtrans_client_key_error">Must start with %1$s and be at least 16 characters.</string>
+    <string name="midtrans_client_key_help">Public key used for guest web checkout.</string>
+    <string name="midtrans_server_key_label">Server Key (Secret Key) *</string>
+    <string name="midtrans_server_key_error">Must start with %1$s and be 16 to 128 characters.</string>
+    <string name="midtrans_server_key_help">Enter the full Server Key whenever saving or verifying. Never stored on the device.</string>
+    <string name="midtrans_key_show">Show</string>
+    <string name="midtrans_key_hide">Hide</string>
+    <string name="midtrans_fallback_qris_title">Static QRIS &amp; Pay-at-Cashier Fallback</string>
+    <string name="midtrans_fallback_qris_desc">Allow guests to pay at the cashier when the gateway is unavailable.</string>
+    <string name="midtrans_rolling_title">API Key Rotation Notice</string>
+    <string name="midtrans_rolling_body">Whenever you roll keys in the Midtrans MAP Dashboard, update the Server Key here so SHA-512 webhook verification stays valid.</string>
+    <string name="midtrans_btn_verify_live">Verify Live &amp; Save</string>
+    <string name="midtrans_btn_save">Save Credentials</string>
+    <string name="midtrans_status_badge">Verification Status: %1$s</string>
+    <string name="midtrans_last_verified">Last verified: %1$s</string>
+    <string name="midtrans_status_unverified">Not Verified Yet</string>
+
+    <!-- Brand CMS Tab -->
+    <string name="cms_section_title">Brand Identity &amp; Guest Display</string>
+    <string name="cms_section_desc">Configure hero titles, HTTPS banner URL, colour palette, and white-label options for guests.</string>
+    <string name="cms_header_card_title">Guest Header Copy</string>
+    <string name="cms_hero_title_id">Main Title (Indonesian)</string>
+    <string name="cms_hero_title_en">Main Title (English)</string>
+    <string name="cms_hero_subtitle_id">Subtitle (Indonesian)</string>
+    <string name="cms_hero_subtitle_en">Subtitle (English)</string>
+    <string name="cms_colors_title">Brand Accent Colours</string>
+    <string name="cms_presets_label">Quick Presets:</string>
+    <string name="cms_preset_neutral">Neutral</string>
+    <string name="cms_preset_pandan">Pandan</string>
+    <string name="cms_preset_kunyit">Kunyit</string>
+    <string name="cms_preset_tinta">Tinta</string>
+    <string name="cms_preset_batu">Batu</string>
+    <string name="cms_primary_hex_label">Primary Colour (HEX)</string>
+    <string name="cms_accent_hex_label">Accent Colour (HEX)</string>
+    <string name="cms_hex_error">Use #RRGGBB format or leave blank.</string>
+    <string name="cms_banner_card_title">Banner &amp; White Label</string>
+    <string name="cms_banner_url_label">Hero Banner URL (HTTPS)</string>
+    <string name="cms_banner_url_placeholder">https://cdn.yourdomain.com/banner.webp</string>
+    <string name="cms_banner_url_error">Banner URL must start with https:// or be blank.</string>
+    <string name="cms_banner_preview_cd">Hero Banner Preview</string>
+    <string name="cms_white_label_title">Hide Cassy Badge</string>
+    <string name="cms_white_label_desc">Enable white-label footer on the guest ordering storefront.</string>
+    <string name="cms_btn_saving">Saving Display…</string>
+    <string name="cms_btn_save">Save Guest Branding</string>
+    <string name="cms_preview_heading">Live Guest Preview</string>
+    <string name="cms_preview_cat_1">Specialty Coffee</string>
+    <string name="cms_preview_cat_2">Pastry &amp; Bakery</string>
+    <string name="cms_preview_item_name">Espresso Single Origin</string>
+    <string name="cms_preview_item_price">IDR 28,000</string>
+    <string name="cms_preview_cart_count">1 Item • IDR 28,000</string>
+    <string name="cms_preview_cart_cta">View Cart</string>
+    <string name="cms_preview_powered_by">Powered by Cassy</string>
+    <string name="cms_preview_white_label">Self-Order at Table</string>
+
+    <!-- Service Mode Tab -->
+    <string name="service_section_title">Service Mode &amp; Table Policy</string>
+    <string name="service_section_desc">Configure QR order delivery flow, table duration limits, and emergency ordering pause.</string>
+    <string name="service_qr_mode_title">QR Order Delivery Method</string>
+    <string name="service_qr_mode_desc">Choose how staff fulfil orders placed from table QR codes.</string>
+    <string name="service_mode_table_title">Table Delivery</string>
+    <string name="service_mode_table_desc">Waitstaff deliver orders directly to the guest table once ready.</string>
+    <string name="service_mode_pickup_title">Bar Counter Pickup</string>
+    <string name="service_mode_pickup_desc">Guests collect ready orders at the barista pickup counter.</string>
+    <string name="service_pause_title">Emergency QR Ordering Pause</string>
+    <string name="service_pause_active_desc">QR ordering is paused. Guests are directed to order at the cashier.</string>
+    <string name="service_pause_idle_desc">Temporarily pause QR self-ordering when the kitchen queue is overloaded.</string>
+    <string name="service_table_limit_title">Table Time Limit &amp; Warning</string>
+    <string name="service_table_limit_label">Table Session Limit</string>
+    <string name="service_table_limit_unlimited">Unlimited session duration</string>
+    <string name="service_table_limit_minutes">%1$d minutes per table session</string>
+    <string name="service_table_limit_chip">%1$d min</string>
+    <string name="service_table_warning_label">Expiry Warning Threshold</string>
+    <string name="service_table_warning_desc">Cashier table cards highlight a warning %1$d minutes before the limit ends.</string>
+    <string name="service_table_warning_value">%1$d min</string>
+    <string name="service_btn_saving">Saving Policy…</string>
+    <string name="service_btn_save">Save Operational Policy</string>
+
+    <!-- Printer LAN Tab -->
+    <string name="printer_tab_title">LAN Thermal Printer Configuration (Port 9100)</string>
+    <string name="printer_tab_desc">Set local ESC/POS printer IP addresses for cashier, bar, kitchen, pastry, and expediter stations. Leave unused stations blank.</string>
+    <string name="printer_cashier_ip_label">Cashier &amp; RJ11 Drawer Printer IP</string>
+    <string name="printer_ip_placeholder">Example: 192.168.10.200</string>
+    <string name="printer_port_label">Cashier TCP Port</string>
+    <string name="printer_kitchen_ip_label">Kitchen Printer IP</string>
+    <string name="printer_bar_ip_label">Bar Printer IP</string>
+    <string name="printer_pastry_ip_label">Pastry Printer IP</string>
+    <string name="printer_expediter_ip_label">Expediter Printer IP</string>
+    <string name="printer_paper_width_label">Receipt Paper Width</string>
+    <string name="printer_paper_58">58 mm</string>
+    <string name="printer_paper_80">80 mm</string>
+    <string name="printer_btn_test">Test Cashier Connection</string>
+    <string name="printer_btn_save">Save Printer Settings</string>
+    <string name="printer_btn_saving">Saving Printers…</string>
 </resources>
 

@@ -1,9 +1,9 @@
 package com.azuredevid.cassy.ui.pos.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -21,10 +22,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.azuredevid.cassy.R
 import com.azuredevid.cassy.data.model.CatalogProduct
-import com.azuredevid.cassy.ui.theme.StatusErrBgLight
-import com.azuredevid.cassy.ui.theme.StatusErrFgLight
-import com.azuredevid.cassy.ui.theme.StatusOkBgLight
-import com.azuredevid.cassy.ui.theme.StatusOkFgLight
+import com.azuredevid.cassy.ui.theme.statusErrBg
+import com.azuredevid.cassy.ui.theme.statusErrFg
+import com.azuredevid.cassy.ui.theme.statusOkBg
+import com.azuredevid.cassy.ui.theme.statusOkFg
 
 /**
  * Panel 1: Vertical Navigation Rail (10% screen width in Landscape POS).
@@ -107,7 +108,11 @@ fun PosNavRail(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .defaultMinSize(minHeight = 48.dp)
-                                .clickable { onCategorySelected(catId) }
+                                .selectable(
+                                    selected = isSelected,
+                                    role = Role.Tab,
+                                    onClick = { onCategorySelected(catId) }
+                                )
                         ) {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -145,12 +150,12 @@ fun PosNavRail(
                 val lanText = if (isPrinterOnline) stringResource(R.string.lan_status_ok) else stringResource(R.string.lan_status_off)
                 Surface(
                     shape = RoundedCornerShape(4.dp),
-                    color = if (isPrinterOnline) StatusOkBgLight else StatusErrBgLight,
+                    color = if (isPrinterOnline) statusOkBg() else statusErrBg(),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = lanText,
-                        color = if (isPrinterOnline) StatusOkFgLight else StatusErrFgLight,
+                        color = if (isPrinterOnline) statusOkFg() else statusErrFg(),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(vertical = 6.dp),

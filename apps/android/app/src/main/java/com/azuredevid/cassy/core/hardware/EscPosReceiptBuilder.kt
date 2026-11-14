@@ -169,15 +169,21 @@ class EscPosReceiptBuilder(
         paymentMethod: String,
         cashTenderedIdr: Long? = null,
         changeIdr: Long? = null,
-        footerNotes: String = "Terima kasih atas kunjungan Anda!\nWiFi Pass: cassycaffe2026"
+        footerNotes: String = "Terima kasih atas kunjungan Anda!",
+        serviceChargeIdr: Long = 0L,
+        discountIdr: Long = 0L,
+        roundingIdr: Long = 0L,
+        taxLabel: String = "Pajak:"
     ): ByteArray {
         title(storeName)
-        alignCenter()
-        text(storeAddress)
+        if (storeAddress.isNotBlank()) {
+            alignCenter()
+            text(storeAddress)
+        }
         separator()
         
         alignLeft()
-        row("No. Pesanan:", orderId.takeLast(10).uppercase())
+        row("No. Pesanan:", orderId.takeLast(12).uppercase())
         row("Meja / Tipe:", tableName)
         row("Kasir:", cashierName)
         row("Waktu:", dateFormat.format(Date()))
@@ -189,7 +195,19 @@ class EscPosReceiptBuilder(
 
         separator()
         row("Subtotal:", "Rp " + rupiahFormat.format(subtotalIdr))
-        row("PB1 (10%):", "Rp " + rupiahFormat.format(pb1TaxIdr))
+        if (discountIdr > 0L) {
+            row("Diskon:", "-Rp " + rupiahFormat.format(discountIdr))
+        }
+        if (serviceChargeIdr > 0L) {
+            row("Layanan:", "Rp " + rupiahFormat.format(serviceChargeIdr))
+        }
+        if (pb1TaxIdr > 0L) {
+            row(taxLabel, "Rp " + rupiahFormat.format(pb1TaxIdr))
+        }
+        if (roundingIdr != 0L) {
+            val prefix = if (roundingIdr > 0L) "+Rp " else "-Rp "
+            row("Pembulatan:", prefix + rupiahFormat.format(kotlin.math.abs(roundingIdr)))
+        }
         bold(true)
         row("TOTAL TAGIHAN:", "Rp " + rupiahFormat.format(grandTotalIdr))
         bold(false)
@@ -202,8 +220,10 @@ class EscPosReceiptBuilder(
         }
         separator()
 
-        alignCenter()
-        text(footerNotes)
+        if (footerNotes.isNotBlank()) {
+            alignCenter()
+            text(footerNotes)
+        }
         emptyLine(1)
         feedAndCut()
 
