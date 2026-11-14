@@ -6,7 +6,11 @@ sealed interface DomainError {
     data class Unauthorized(override val message: String) : DomainError
     data class Forbidden(override val message: String) : DomainError
     data class Conflict(override val message: String, val code: String? = null) : DomainError
-    data class Validation(override val message: String, val field: String? = null) : DomainError
+    data class Validation(
+        override val message: String,
+        val field: String? = null,
+        val code: String? = null
+    ) : DomainError
     data class RateLimited(override val message: String, val retryAfterSeconds: Long? = null) : DomainError
     data class NetworkUnavailable(override val message: String) : DomainError
     data class ServerError(override val message: String, val statusCode: Int? = null) : DomainError

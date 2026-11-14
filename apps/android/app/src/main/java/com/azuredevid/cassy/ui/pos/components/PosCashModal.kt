@@ -12,21 +12,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.azuredevid.cassy.R
-import com.azuredevid.cassy.ui.theme.StatusErrBgLight
-import com.azuredevid.cassy.ui.theme.StatusErrFgLight
-import com.azuredevid.cassy.ui.theme.StatusOkBgLight
-import com.azuredevid.cassy.ui.theme.StatusOkFgLight
+import com.azuredevid.cassy.ui.theme.statusErrBg
+import com.azuredevid.cassy.ui.theme.statusErrFg
+import com.azuredevid.cassy.ui.theme.statusOkBg
+import com.azuredevid.cassy.ui.theme.statusOkFg
 import java.text.NumberFormat
 
 /**
- * Cash settlement modal with preset chips (Pas, 50k, 100k, 200k),
- * manual tender input, and real-time change calculation.
- * Supports dual-language i18n and WCAG 2.2 AA accessibility.
+ * Cash settlement modal with preset chips, manual tender input, and server-backed submit state.
  */
 @Composable
 fun PosCashModal(
     grandTotal: Long,
     rupiahFormat: NumberFormat,
+    isSubmitting: Boolean = false,
+    errorMessage: String? = null,
     onDismiss: () -> Unit,
     onConfirmCashPayment: (tendered: Long, change: Long) -> Unit
 ) {
@@ -36,7 +36,7 @@ fun PosCashModal(
     val isSufficient = tenderedLong >= grandTotal
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSubmitting) onDismiss() },
         title = {
             Text(stringResource(R.string.modal_cash_title), fontWeight = FontWeight.Bold)
         },
@@ -106,7 +106,7 @@ fun PosCashModal(
                 // Kembalian Banner
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = if (isSufficient) StatusOkBgLight else StatusErrBgLight,
+                    color = if (isSufficient) statusOkBg() else statusErrBg(),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(10.dp)) {
@@ -116,32 +116,50 @@ fun PosCashModal(
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontFamily = FontFamily.Monospace,
-                                color = StatusOkFgLight
+                                color = statusOkFg()
                             )
                         } else {
                             Text(
                                 text = stringResource(R.string.insufficient_cash, "Rp ${rupiahFormat.format(grandTotal - tenderedLong)}"),
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = StatusErrFgLight
+                                color = statusErrFg()
                             )
                         }
                     }
+                }
+
+                if (!errorMessage.isNullOrBlank()) {
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = statusErrFg(),
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         },
         confirmButton = {
             Button(
                 onClick = { onConfirmCashPayment(tenderedLong, change) },
-                enabled = isSufficient,
+                enabled = isSufficient && !isSubmitting,
                 modifier = Modifier.defaultMinSize(minHeight = 48.dp)
             ) {
-                Text(stringResource(R.string.btn_complete_and_print), fontWeight = FontWeight.Bold)
+                if (isSubmitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(stringResource(R.string.btn_complete_and_print), fontWeight = FontWeight.Bold)
+                }
             }
         },
         dismissButton = {
             OutlinedButton(
                 onClick = onDismiss,
+                enabled = !isSubmitting,
                 modifier = Modifier.defaultMinSize(minHeight = 48.dp)
             ) {
                 Text(stringResource(R.string.btn_cancel))

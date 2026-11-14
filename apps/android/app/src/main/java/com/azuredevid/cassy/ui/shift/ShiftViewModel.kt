@@ -4,12 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.azuredevid.cassy.core.hardware.PrinterPort9100Manager
 import com.azuredevid.cassy.core.hardware.ShiftReportThermalBuilder
-import com.azuredevid.cassy.data.repository.ServerSettingsRepository
-import com.azuredevid.cassy.domain.model.CashMovement
+import com.azuredevid.cassy.core.security.SessionManager
+import com.azuredevid.cassy.domain.error.DomainError
+import com.azuredevid.cassy.domain.error.DomainException
+import com.azuredevid.cassy.domain.model.CashDrawer
 import com.azuredevid.cassy.domain.model.CashMovementType
 import com.azuredevid.cassy.domain.model.Shift
 import com.azuredevid.cassy.domain.model.ShiftStatus
+import com.azuredevid.cassy.domain.model.XReport
 import com.azuredevid.cassy.domain.model.ZReport
+import com.azuredevid.cassy.domain.repository.PrinterSettingsRepository
 import com.azuredevid.cassy.domain.repository.ShiftRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,19 +23,23 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 data class ShiftUiState(
     val isLoading: Boolean = false,
+    val drawers: List<CashDrawer> = emptyList(),
+    val selectedDrawerId: String? = null,
     val currentShift: Shift? = null,
     val isShiftOpen: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
-    
+
     // Modal controls
     val showOpenShiftModal: Boolean = false,
     val showCloseShiftModal: Boolean = false,
     val showCashMovementModal: Boolean = false,
-    
+    val showXReportModal: Boolean = false,
+
     // Open shift form
     val openingFloatInput: String = "200000",
     val openShiftNotes: String = "",
@@ -53,8 +61,10 @@ data class ShiftUiState(
     val isSupervisorAuthRequired: Boolean = false,
     val isClosingShift: Boolean = false,
 
-    // Print state
-    val isPrintingZReport: Boolean = false,
+    // Reports & Printing
+    val currentXReport: XReport? = null,
+    val isLoadingXReport: Boolean = false,
+    val isPrintingReport: Boolean = false,
     val lastZReport: ZReport? = null
 )
 
@@ -67,7 +77,8 @@ sealed interface ShiftUiEffect {
 
 class ShiftViewModel(
     private val shiftRepository: ShiftRepository,
-    private val serverSettings: ServerSettingsRepository,
+    private val printerSettings: PrinterSettingsRepository,
+    private val sessionManager: SessionManager? = null,
     private val printerManager: PrinterPort9100Manager = PrinterPort9100Manager(),
     private val thermalBuilder: ShiftReportThermalBuilder = ShiftReportThermalBuilder()
 ) : ViewModel() {
@@ -80,45 +91,80 @@ class ShiftViewModel(
 
     companion object {
         const val VARIANCE_TOLERANCE_RUPIAH = 50_000L
+        private const val CODE_VARIANCE_EXCEEDS_TOLERANCE = "VARIANCE_EXCEEDS_TOLERANCE"
     }
 
     init {
-        loadCurrentShift()
+        loadDrawersAndCurrentShift()
+    }
+
+    fun loadDrawersAndCurrentShift() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            val drawers = shiftRepository.getDrawers().getOrDefault(emptyList())
+            val selectedId = _uiState.value.selectedDrawerId
+                ?.takeIf { id -> drawers.any { it.id == id } }
+                ?: drawers.firstOrNull()?.id
+
+            _uiState.update { it.copy(drawers = drawers, selectedDrawerId = selectedId) }
+            fetchCurrentShiftInternal(selectedId)
+        }
     }
 
     fun loadCurrentShift() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            shiftRepository.getCurrentShift()
-                .onSuccess { shift ->
-                    val isOpen = shift != null && shift.status == ShiftStatus.OPEN
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            currentShift = shift,
-                            isShiftOpen = isOpen
-                        )
-                    }
-                }
-                .onFailure { error ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = error.message ?: "Gagal memeriksa status shift"
-                        )
-                    }
-                }
+            fetchCurrentShiftInternal(_uiState.value.selectedDrawerId)
         }
     }
 
+    private suspend fun fetchCurrentShiftInternal(drawerId: String?) {
+        shiftRepository.getCurrentShift(drawerId)
+            .onSuccess { shift ->
+                val isOpen = shift != null && shift.status == ShiftStatus.OPEN
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        currentShift = shift,
+                        isShiftOpen = isOpen,
+                        selectedDrawerId = shift?.drawerId ?: it.selectedDrawerId
+                    )
+                }
+            }
+            .onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = error.message ?: "Gagal memeriksa status shift"
+                    )
+                }
+            }
+    }
+
+    fun onDrawerSelected(drawerId: String) {
+        _uiState.update { it.copy(selectedDrawerId = drawerId) }
+        loadCurrentShift()
+    }
+
     fun openShiftModal() {
-        _uiState.update {
-            it.copy(
-                showOpenShiftModal = true,
-                openingFloatInput = "200000",
-                openShiftNotes = "",
-                errorMessage = null
-            )
+        viewModelScope.launch {
+            if (_uiState.value.drawers.isEmpty()) {
+                val drawers = shiftRepository.getDrawers().getOrDefault(emptyList())
+                _uiState.update {
+                    it.copy(
+                        drawers = drawers,
+                        selectedDrawerId = it.selectedDrawerId ?: drawers.firstOrNull()?.id
+                    )
+                }
+            }
+            _uiState.update {
+                it.copy(
+                    showOpenShiftModal = true,
+                    openingFloatInput = "200000",
+                    openShiftNotes = "",
+                    errorMessage = null
+                )
+            }
         }
     }
 
@@ -137,36 +183,44 @@ class ShiftViewModel(
 
     fun submitOpenShift() {
         val amount = _uiState.value.openingFloatInput.toLongOrNull() ?: 0L
-        if (amount < 0) {
+        if (amount < 0L) {
             _uiState.update { it.copy(errorMessage = "Saldo awal tidak boleh negatif") }
             return
         }
 
+        val drawerId = _uiState.value.selectedDrawerId
+        val notes = _uiState.value.openShiftNotes
+
         viewModelScope.launch {
             _uiState.update { it.copy(isOpeningShift = true, errorMessage = null) }
-            val notes = _uiState.value.openShiftNotes
-            shiftRepository.openShift(openingFloat = amount, notes = notes)
-                .onSuccess { shift ->
-                    _uiState.update {
-                        it.copy(
-                            isOpeningShift = false,
-                            showOpenShiftModal = false,
-                            currentShift = shift,
-                            isShiftOpen = true,
-                            successMessage = "Shift berhasil dibuka dengan modal awal Rp $amount"
-                        )
-                    }
-                    _effects.emit(ShiftUiEffect.ShiftOpenedSuccessfully(shift))
-                    _effects.emit(ShiftUiEffect.ShowToast("Shift kasir berhasil dibuka"))
+            shiftRepository.openShift(
+                openingFloat = amount,
+                drawerId = drawerId,
+                notes = notes
+            ).onSuccess { result ->
+                _uiState.update {
+                    it.copy(
+                        isOpeningShift = false,
+                        showOpenShiftModal = false,
+                        currentShift = result.shift,
+                        isShiftOpen = result.shift.status == ShiftStatus.OPEN,
+                        selectedDrawerId = result.shift.drawerId,
+                        successMessage = "Shift berhasil dibuka dengan modal awal Rp $amount"
+                    )
                 }
-                .onFailure { error ->
-                    _uiState.update {
-                        it.copy(
-                            isOpeningShift = false,
-                            errorMessage = error.message ?: "Gagal membuka shift"
-                        )
-                    }
+                if (result.openDrawer) {
+                    kickDrawerIfConfigured()
                 }
+                _effects.emit(ShiftUiEffect.ShiftOpenedSuccessfully(result.shift))
+                _effects.emit(ShiftUiEffect.ShowToast("Shift kasir berhasil dibuka"))
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isOpeningShift = false,
+                        errorMessage = error.message ?: "Gagal membuka shift"
+                    )
+                }
+            }
         }
     }
 
@@ -210,7 +264,7 @@ class ShiftViewModel(
         val amount = _uiState.value.movementAmountInput.toLongOrNull() ?: 0L
         val reason = _uiState.value.movementReason.trim()
 
-        if (amount <= 0) {
+        if (amount <= 0L) {
             _uiState.update { it.copy(errorMessage = "Nominal kas harus lebih dari Rp 0") }
             return
         }
@@ -221,6 +275,7 @@ class ShiftViewModel(
 
         val type = _uiState.value.movementType
         val shiftId = _uiState.value.currentShift?.id
+        val drawerId = _uiState.value.currentShift?.drawerId ?: _uiState.value.selectedDrawerId
 
         viewModelScope.launch {
             _uiState.update { it.copy(isRecordingMovement = true, errorMessage = null) }
@@ -228,14 +283,18 @@ class ShiftViewModel(
                 movementType = type,
                 amount = amount,
                 reason = reason,
-                shiftId = shiftId
-            ).onSuccess { movement ->
+                shiftId = shiftId,
+                drawerId = drawerId
+            ).onSuccess { result ->
                 _uiState.update {
                     it.copy(
                         isRecordingMovement = false,
                         showCashMovementModal = false,
                         successMessage = "Mutasi kas berhasil dicatat"
                     )
+                }
+                if (result.openDrawer) {
+                    kickDrawerIfConfigured()
                 }
                 _effects.emit(ShiftUiEffect.ShowToast("Mutasi kas berhasil disimpan"))
                 loadCurrentShift()
@@ -247,6 +306,64 @@ class ShiftViewModel(
                     )
                 }
             }
+        }
+    }
+
+    fun openXReportModal() {
+        val shift = _uiState.value.currentShift
+        if (!_uiState.value.isShiftOpen || shift == null) {
+            viewModelScope.launch {
+                _effects.emit(ShiftUiEffect.ShowToast("Tidak ada shift aktif untuk X-Report"))
+            }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(showXReportModal = true, isLoadingXReport = true, errorMessage = null) }
+            shiftRepository.getXReport(shift.id)
+                .onSuccess { report ->
+                    _uiState.update {
+                        it.copy(
+                            isLoadingXReport = false,
+                            currentXReport = report
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(
+                            isLoadingXReport = false,
+                            showXReportModal = false,
+                            errorMessage = error.message ?: "Gagal memuat X-Report"
+                        )
+                    }
+                    _effects.emit(ShiftUiEffect.ShowToast(error.message ?: "Gagal memuat X-Report"))
+                }
+        }
+    }
+
+    fun closeXReportModal() {
+        _uiState.update { it.copy(showXReportModal = false) }
+    }
+
+    fun printCurrentXReport() {
+        val report = _uiState.value.currentXReport ?: return
+        viewModelScope.launch {
+            val config = printerSettings.getConfig()
+            if (!config.hasCashierPrinter) {
+                _effects.emit(ShiftUiEffect.ShowToast("Printer kasir belum dikonfigurasi. Atur IP printer di Pengaturan."))
+                return@launch
+            }
+            _uiState.update { it.copy(isPrintingReport = true) }
+            val payload = thermalBuilder.buildXReportReceipt(resolveStoreName(), report)
+            printerManager.printRawBytes(config.cashierPrinterIp, payload, config.cashierPrinterPort)
+                .onSuccess {
+                    _uiState.update { it.copy(isPrintingReport = false) }
+                    _effects.emit(ShiftUiEffect.ShowToast("X-Report berhasil dicetak"))
+                }
+                .onFailure {
+                    _uiState.update { it.copy(isPrintingReport = false) }
+                    _effects.emit(ShiftUiEffect.ShowToast("Gagal mencetak X-Report: printer kasir tidak terjangkau"))
+                }
         }
     }
 
@@ -277,16 +394,18 @@ class ShiftViewModel(
 
     fun onCountedCashChanged(input: String) {
         val sanitized = input.filter { it.isDigit() }
-        val counted = sanitized.toLongOrNull() ?: 0L
-        val expected = _uiState.value.currentShift?.expectedCash ?: 0L
-        val variance = counted - expected
-        val requiresSupervisor = Math.abs(variance) > VARIANCE_TOLERANCE_RUPIAH
+        val counted = sanitized.toLongOrNull()
+        val expected = _uiState.value.currentShift?.expectedCash
+
+        // When expectedCash is null (blind count for cashier role), never synthesize variance vs 0.
+        val variance = if (counted != null && expected != null) counted - expected else null
+        val requiresSupervisor = variance != null && abs(variance) > VARIANCE_TOLERANCE_RUPIAH
 
         _uiState.update {
             it.copy(
                 countedCashInput = sanitized,
                 calculatedVariance = variance,
-                isSupervisorAuthRequired = requiresSupervisor
+                isSupervisorAuthRequired = requiresSupervisor || it.isSupervisorAuthRequired
             )
         }
     }
@@ -308,7 +427,7 @@ class ShiftViewModel(
         _uiState.update { it.copy(printReceiptOnClose = enabled) }
     }
 
-    fun submitCloseShift(cashierPrinterIp: String = "192.168.10.200") {
+    fun submitCloseShift() {
         val counted = _uiState.value.countedCashInput.toLongOrNull()
         if (counted == null) {
             _uiState.update { it.copy(errorMessage = "Masukkan jumlah fisik uang kas riil") }
@@ -342,30 +461,36 @@ class ShiftViewModel(
             shiftRepository.closeShift(
                 shiftId = shift.id,
                 countedCash = counted,
-                ownerPin = if (isSupervisorRequired) supervisorPin else null,
-                varianceReason = if (isSupervisorRequired) varianceReason else null,
+                ownerPin = if (isSupervisorRequired || supervisorPin.length == 6) supervisorPin.ifBlank { null } else null,
+                varianceReason = varianceReason.ifBlank { null },
                 notes = notes
-            ).onSuccess { report ->
+            ).onSuccess { result ->
                 _uiState.update {
                     it.copy(
                         isClosingShift = false,
                         showCloseShiftModal = false,
                         currentShift = null,
                         isShiftOpen = false,
-                        lastZReport = report,
+                        lastZReport = result.report,
                         successMessage = "Shift berhasil ditutup"
                     )
                 }
-                _effects.emit(ShiftUiEffect.ShiftClosedSuccessfully(report))
+                if (result.openDrawer) {
+                    kickDrawerIfConfigured()
+                }
+                _effects.emit(ShiftUiEffect.ShiftClosedSuccessfully(result.report))
                 _effects.emit(ShiftUiEffect.ShowToast("Shift berhasil ditutup"))
 
                 if (_uiState.value.printReceiptOnClose) {
-                    printZReport(report, cashierPrinterIp)
+                    printZReport(result.report)
                 }
             }.onFailure { error ->
+                val isVarianceGate = error is DomainException &&
+                    (error.error as? DomainError.Validation)?.code == CODE_VARIANCE_EXCEEDS_TOLERANCE
                 _uiState.update {
                     it.copy(
                         isClosingShift = false,
+                        isSupervisorAuthRequired = it.isSupervisorAuthRequired || isVarianceGate,
                         errorMessage = error.message ?: "Gagal menutup shift"
                     )
                 }
@@ -373,20 +498,43 @@ class ShiftViewModel(
         }
     }
 
-    fun printZReport(report: ZReport, printerIp: String, storeName: String = "CASSY POS") {
+    fun printZReport(report: ZReport) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isPrintingZReport = true) }
-            val payload = thermalBuilder.buildZReportReceipt(storeName, report)
-            printerManager.printRawBytes(printerIp, payload)
+            val config = printerSettings.getConfig()
+            if (!config.hasCashierPrinter) {
+                _effects.emit(ShiftUiEffect.ShowToast("Printer kasir belum dikonfigurasi. Atur IP printer di Pengaturan."))
+                return@launch
+            }
+            _uiState.update { it.copy(isPrintingReport = true) }
+            val payload = thermalBuilder.buildZReportReceipt(resolveStoreName(), report)
+            printerManager.printRawBytes(config.cashierPrinterIp, payload, config.cashierPrinterPort)
                 .onSuccess {
-                    _uiState.update { it.copy(isPrintingZReport = false) }
+                    _uiState.update { it.copy(isPrintingReport = false) }
                     _effects.emit(ShiftUiEffect.ShowToast("Struk Z-Report berhasil dicetak"))
                 }
                 .onFailure {
-                    _uiState.update { it.copy(isPrintingZReport = false) }
-                    _effects.emit(ShiftUiEffect.ShowToast("Simulasi Cetak Z-Report (Printer tidak terjangkau)"))
+                    _uiState.update { it.copy(isPrintingReport = false) }
+                    _effects.emit(ShiftUiEffect.ShowToast("Gagal mencetak Z-Report: printer kasir tidak terjangkau"))
                 }
         }
+    }
+
+    private suspend fun kickDrawerIfConfigured() {
+        val config = printerSettings.getConfig()
+        if (!config.hasCashierPrinter) {
+            _effects.emit(ShiftUiEffect.ShowToast("Laci tidak terpicu: IP printer kasir belum dikonfigurasi"))
+            return
+        }
+        printerManager.openCashDrawer(config.cashierPrinterIp, config.cashierPrinterPort)
+            .onFailure {
+                _effects.emit(ShiftUiEffect.ShowToast("Gagal membuka laci kasir LAN (${config.cashierPrinterIp})"))
+            }
+    }
+
+    private fun resolveStoreName(): String {
+        return sessionManager?.currentSession()?.staff?.storeName
+            ?.takeIf { it.isNotBlank() }
+            ?: "KASIR POS"
     }
 
     fun clearFeedback() {

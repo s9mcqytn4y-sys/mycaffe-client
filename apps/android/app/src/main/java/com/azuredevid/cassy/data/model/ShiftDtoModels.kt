@@ -5,6 +5,31 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class CashDrawerDto(
+    @SerialName("id")
+    val id: String,
+    @SerialName("store_id")
+    val storeId: String,
+    @SerialName("name")
+    val name: String,
+    @SerialName("is_active")
+    val isActive: Boolean = true
+) {
+    fun toDomain(): CashDrawer = CashDrawer(
+        id = id,
+        storeId = storeId,
+        name = name,
+        isActive = isActive
+    )
+}
+
+@Serializable
+data class CashDrawersResponseDto(
+    @SerialName("drawers")
+    val drawers: List<CashDrawerDto> = emptyList()
+)
+
+@Serializable
 data class OpenShiftRequestDto(
     @SerialName("drawer_id")
     val drawerId: String? = null,
@@ -12,6 +37,14 @@ data class OpenShiftRequestDto(
     val openingFloat: Long? = null,
     @SerialName("notes")
     val notes: String? = null
+)
+
+@Serializable
+data class OpenShiftResponseDto(
+    @SerialName("shift")
+    val shift: ShiftDto,
+    @SerialName("open_drawer")
+    val openDrawer: Boolean = false
 )
 
 @Serializable
@@ -24,12 +57,16 @@ data class ShiftDto(
     val drawerId: String,
     @SerialName("opened_by")
     val openedBy: String,
+    @SerialName("opened_by_name")
+    val openedByName: String = "",
     @SerialName("opening_float")
     val openingFloat: Long = 0L,
     @SerialName("opened_at")
     val openedAt: String,
     @SerialName("closed_by")
     val closedBy: String? = null,
+    @SerialName("closed_by_name")
+    val closedByName: String? = null,
     @SerialName("closed_at")
     val closedAt: String? = null,
     @SerialName("status")
@@ -42,6 +79,8 @@ data class ShiftDto(
     val variance: Long? = null,
     @SerialName("variance_reason")
     val varianceReason: String? = null,
+    @SerialName("owner_override_by")
+    val ownerOverrideBy: String? = null,
     @SerialName("notes")
     val notes: String? = null
 ) {
@@ -51,15 +90,18 @@ data class ShiftDto(
             storeId = storeId,
             drawerId = drawerId,
             openedBy = openedBy,
+            openedByName = openedByName,
             openingFloat = openingFloat,
             openedAt = openedAt,
             closedBy = closedBy,
+            closedByName = closedByName,
             closedAt = closedAt,
             status = ShiftStatus.fromString(status),
             expectedCash = expectedCash,
             countedCash = countedCash,
             variance = variance,
             varianceReason = varianceReason,
+            ownerOverrideBy = ownerOverrideBy,
             notes = notes
         )
     }
@@ -77,6 +119,14 @@ data class CashMovementRequestDto(
     val amount: Long,
     @SerialName("reason")
     val reason: String
+)
+
+@Serializable
+data class CreateCashMovementResponseDto(
+    @SerialName("movement")
+    val movement: CashMovementDto,
+    @SerialName("open_drawer")
+    val openDrawer: Boolean = false
 )
 
 @Serializable
@@ -122,6 +172,14 @@ data class CloseShiftRequestDto(
     val ownerPin: String? = null,
     @SerialName("notes")
     val notes: String? = null
+)
+
+@Serializable
+data class CloseShiftResponseDto(
+    @SerialName("report")
+    val report: ZReportDto,
+    @SerialName("open_drawer")
+    val openDrawer: Boolean = false
 )
 
 @Serializable
@@ -174,7 +232,9 @@ data class UnsettledTabSummaryDto(
     @SerialName("total_amount")
     val totalAmount: Long = 0L,
     @SerialName("created_at")
-    val createdAt: String = ""
+    val createdAt: String = "",
+    @SerialName("is_overdue_business_date")
+    val isOverdueBusinessDate: Boolean = false
 ) {
     fun toDomain(): UnsettledTabSummary {
         return UnsettledTabSummary(
@@ -182,7 +242,62 @@ data class UnsettledTabSummaryDto(
             label = label,
             status = status,
             totalAmount = totalAmount,
-            createdAt = createdAt
+            createdAt = createdAt,
+            isOverdueBusinessDate = isOverdueBusinessDate
+        )
+    }
+}
+
+@Serializable
+data class XReportDto(
+    @SerialName("shift_id")
+    val shiftId: String,
+    @SerialName("store_id")
+    val storeId: String,
+    @SerialName("drawer_id")
+    val drawerId: String,
+    @SerialName("drawer_name")
+    val drawerName: String = "",
+    @SerialName("opened_by")
+    val openedBy: String,
+    @SerialName("opened_by_name")
+    val openedByName: String = "",
+    @SerialName("opened_at")
+    val openedAt: String,
+    @SerialName("generated_at")
+    val generatedAt: String = "",
+    @SerialName("status")
+    val status: String = "",
+    @SerialName("summary")
+    val summary: ShiftCashSummaryDto = ShiftCashSummaryDto(),
+    @SerialName("expected_cash")
+    val expectedCash: Long? = null,
+    @SerialName("expected_redacted")
+    val expectedRedacted: Boolean = false,
+    @SerialName("unsettled_open_tabs_count")
+    val unsettledOpenTabsCount: Int = 0,
+    @SerialName("unsettled_open_tabs_total_amount")
+    val unsettledOpenTabsTotalAmount: Long = 0L,
+    @SerialName("unsettled_open_tabs")
+    val unsettledOpenTabs: List<UnsettledTabSummaryDto> = emptyList()
+) {
+    fun toDomain(): XReport {
+        return XReport(
+            shiftId = shiftId,
+            storeId = storeId,
+            drawerId = drawerId,
+            drawerName = drawerName,
+            openedBy = openedBy,
+            openedByName = openedByName,
+            openedAt = openedAt,
+            generatedAt = generatedAt,
+            status = ShiftStatus.fromString(status),
+            summary = summary.toDomain(),
+            expectedCash = expectedCash,
+            expectedRedacted = expectedRedacted,
+            unsettledOpenTabsCount = unsettledOpenTabsCount,
+            unsettledOpenTabsTotalAmount = unsettledOpenTabsTotalAmount,
+            unsettledOpenTabs = unsettledOpenTabs.map { it.toDomain() }
         )
     }
 }
@@ -221,6 +336,10 @@ data class ZReportDto(
     val variance: Long = 0L,
     @SerialName("variance_reason")
     val varianceReason: String? = null,
+    @SerialName("owner_override_by")
+    val ownerOverrideBy: String? = null,
+    @SerialName("override_by_name")
+    val overrideByName: String? = null,
     @SerialName("notes")
     val notes: String? = null,
     @SerialName("unsettled_open_tabs_count")
@@ -228,7 +347,15 @@ data class ZReportDto(
     @SerialName("unsettled_open_tabs_total_amount")
     val unsettledOpenTabsTotalAmount: Long = 0L,
     @SerialName("unsettled_open_tabs")
-    val unsettledOpenTabs: List<UnsettledTabSummaryDto> = emptyList()
+    val unsettledOpenTabs: List<UnsettledTabSummaryDto> = emptyList(),
+    @SerialName("amended")
+    val amended: Boolean = false,
+    @SerialName("amended_at")
+    val amendedAt: String? = null,
+    @SerialName("late_offline_orders")
+    val lateOfflineOrders: Int = 0,
+    @SerialName("late_offline_amount")
+    val lateOfflineAmount: Long = 0L
 ) {
     fun toDomain(): ZReport {
         return ZReport(
@@ -248,10 +375,16 @@ data class ZReportDto(
             countedCash = countedCash,
             variance = variance,
             varianceReason = varianceReason,
+            ownerOverrideBy = ownerOverrideBy,
+            overrideByName = overrideByName,
             notes = notes,
             unsettledOpenTabsCount = unsettledOpenTabsCount,
             unsettledOpenTabsTotalAmount = unsettledOpenTabsTotalAmount,
-            unsettledOpenTabs = unsettledOpenTabs.map { it.toDomain() }
+            unsettledOpenTabs = unsettledOpenTabs.map { it.toDomain() },
+            amended = amended,
+            amendedAt = amendedAt,
+            lateOfflineOrders = lateOfflineOrders,
+            lateOfflineAmount = lateOfflineAmount
         )
     }
 }

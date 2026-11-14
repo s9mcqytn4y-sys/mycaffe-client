@@ -1,14 +1,14 @@
 package com.azuredevid.cassy.ui.settings.components
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -26,7 +26,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -40,20 +39,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.azuredevid.cassy.core.util.ImageCompressor
+import com.azuredevid.cassy.R
 import com.azuredevid.cassy.ui.settings.StoreSettingsUiEvent
 import com.azuredevid.cassy.ui.settings.StoreSettingsUiState
-import com.azuredevid.cassy.ui.theme.LightAccent
-import com.azuredevid.cassy.ui.theme.LightBorder
-import com.azuredevid.cassy.ui.theme.LightInk
-import com.azuredevid.cassy.ui.theme.LightMuted
-import com.azuredevid.cassy.ui.theme.LightSecondaryInk
-import com.azuredevid.cassy.ui.theme.LightSurface
+import com.azuredevid.cassy.ui.theme.CassyKunyit
+import com.azuredevid.cassy.ui.theme.CassyPandan
+import com.azuredevid.cassy.ui.theme.CassyTinta
+import com.azuredevid.cassy.ui.theme.statusErrFg
 
 private fun parseHexColor(hex: String, fallback: Color): Color {
     val clean = hex.trim().removePrefix("#")
@@ -66,41 +66,28 @@ private fun parseHexColor(hex: String, fallback: Color): Color {
     }
 }
 
-// Neutral ink shown for an outlet without its own colour (PRD v4 Q9).
-private val NeutralInk = Color(0xFF17211E)
-
-private val COLOR_PRESETS = listOf(
-    Pair("Netral", ""),
-    Pair("Charcoal", "#1F2937"),
-    Pair("Forest", "#1B4D3E"),
-    Pair("Amber", "#B45309"),
-    Pair("Navy", "#1E3A8A")
+private data class BrandPreset(
+    val labelRes: Int,
+    val hex: String
 )
 
+private val COLOR_PRESETS = listOf(
+    BrandPreset(R.string.cms_preset_neutral, ""),
+    BrandPreset(R.string.cms_preset_pandan, "#1F5F52"),
+    BrandPreset(R.string.cms_preset_kunyit, "#E9A23B"),
+    BrandPreset(R.string.cms_preset_tinta, "#17211E"),
+    BrandPreset(R.string.cms_preset_batu, "#3E4C47")
+)
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun StoreBrandCmsTab(
     state: StoreSettingsUiState,
     onEvent: (StoreSettingsUiEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     val scrollState = rememberScrollState()
-
-    val bannerPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            try {
-                val rawBytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                if (rawBytes != null && rawBytes.isNotEmpty()) {
-                    val compressed = ImageCompressor.compressBytes(rawBytes)
-                    onEvent(StoreSettingsUiEvent.UploadBanner(compressed))
-                }
-            } catch (_: Exception) {
-                // Handled gracefully in ViewModel effect
-            }
-        }
-    }
+    val colors = MaterialTheme.colorScheme
 
     Row(
         modifier = modifier
@@ -108,18 +95,16 @@ fun StoreBrandCmsTab(
             .padding(20.dp),
         horizontalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // Left Column: CMS Configuration Form (60% width)
         Column(
             modifier = Modifier
                 .weight(0.6f)
                 .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Section Header
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = LightSurface,
-                border = androidx.compose.foundation.BorderStroke(1.dp, LightBorder),
+                color = colors.surface,
+                border = BorderStroke(1.dp, colors.outline),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -129,24 +114,23 @@ fun StoreBrandCmsTab(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = "Identitas Merek dan Tampilan WPA Tamu",
+                        text = stringResource(R.string.cms_section_title),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = LightInk
+                            color = colors.onSurface
                         )
                     )
                     Text(
-                        text = "Konfigurasi judul, banner sambutan, palet warna, dan opsi label brand yang tampil pada browser tamu.",
-                        style = MaterialTheme.typography.bodySmall.copy(color = LightSecondaryInk)
+                        text = stringResource(R.string.cms_section_desc),
+                        style = MaterialTheme.typography.bodySmall.copy(color = colors.onSurfaceVariant)
                     )
                 }
             }
 
-            // Hero Titles & Subtitles Card
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = LightSurface,
-                border = androidx.compose.foundation.BorderStroke(1.dp, LightBorder),
+                color = colors.surface,
+                border = BorderStroke(1.dp, colors.outline),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -156,64 +140,63 @@ fun StoreBrandCmsTab(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "Teks Sambutan Header Tamu",
+                        text = stringResource(R.string.cms_header_card_title),
                         style = MaterialTheme.typography.titleSmall.copy(
                             fontWeight = FontWeight.Bold,
-                            color = LightInk
+                            color = colors.onSurface
                         )
                     )
 
                     OutlinedTextField(
                         value = state.heroTitleId,
                         onValueChange = { onEvent(StoreSettingsUiEvent.UpdateHeroTitleId(it)) },
-                        label = { Text("Judul Utama (Bahasa Indonesia)") },
+                        label = { Text(stringResource(R.string.cms_hero_title_id)) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = LightAccent,
-                            unfocusedBorderColor = LightBorder
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outline
                         )
                     )
 
                     OutlinedTextField(
                         value = state.heroTitleEn,
                         onValueChange = { onEvent(StoreSettingsUiEvent.UpdateHeroTitleEn(it)) },
-                        label = { Text("Main Title (English)") },
+                        label = { Text(stringResource(R.string.cms_hero_title_en)) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = LightAccent,
-                            unfocusedBorderColor = LightBorder
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outline
                         )
                     )
 
                     OutlinedTextField(
                         value = state.heroSubtitleId,
                         onValueChange = { onEvent(StoreSettingsUiEvent.UpdateHeroSubtitleId(it)) },
-                        label = { Text("Subjudul (Bahasa Indonesia)") },
+                        label = { Text(stringResource(R.string.cms_hero_subtitle_id)) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = LightAccent,
-                            unfocusedBorderColor = LightBorder
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outline
                         )
                     )
 
                     OutlinedTextField(
                         value = state.heroSubtitleEn,
                         onValueChange = { onEvent(StoreSettingsUiEvent.UpdateHeroSubtitleEn(it)) },
-                        label = { Text("Subtitle (English)") },
+                        label = { Text(stringResource(R.string.cms_hero_subtitle_en)) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = LightAccent,
-                            unfocusedBorderColor = LightBorder
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outline
                         )
                     )
                 }
             }
 
-            // Colors & Palette Card
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = LightSurface,
-                border = androidx.compose.foundation.BorderStroke(1.dp, LightBorder),
+                color = colors.surface,
+                border = BorderStroke(1.dp, colors.outline),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -223,43 +206,45 @@ fun StoreBrandCmsTab(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "Warna Aksen Merek (Design Tokens)",
+                        text = stringResource(R.string.cms_colors_title),
                         style = MaterialTheme.typography.titleSmall.copy(
                             fontWeight = FontWeight.Bold,
-                            color = LightInk
+                            color = colors.onSurface
                         )
                     )
 
-                    // Color Presets
                     Text(
-                        text = "Pilihan Preset Cepat:",
+                        text = stringResource(R.string.cms_presets_label),
                         style = MaterialTheme.typography.bodySmall.copy(
-                            color = LightSecondaryInk,
+                            color = colors.onSurfaceVariant,
                             fontWeight = FontWeight.Medium
                         )
                     )
-                    Row(
+
+                    FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        COLOR_PRESETS.forEach { (name, hex) ->
-                            val presetColor = parseHexColor(hex, NeutralInk)
-                            val isSelected = state.primaryHex.equals(hex, ignoreCase = true)
+                        COLOR_PRESETS.forEach { preset ->
+                            val presetColor = parseHexColor(preset.hex, CassyTinta)
+                            val isSelected = state.primaryHex.equals(preset.hex, ignoreCase = true)
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = if (isSelected) LightMuted else Color.Transparent,
-                                border = androidx.compose.foundation.BorderStroke(
+                                color = if (isSelected) colors.surfaceVariant else Color.Transparent,
+                                border = BorderStroke(
                                     if (isSelected) 2.dp else 1.dp,
-                                    if (isSelected) LightAccent else LightBorder
+                                    if (isSelected) colors.primary else colors.outline
                                 ),
                                 modifier = Modifier
+                                    .defaultMinSize(minHeight = 48.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .clickable {
-                                        onEvent(StoreSettingsUiEvent.UpdatePrimaryHex(hex))
+                                    .clickable(role = Role.RadioButton) {
+                                        onEvent(StoreSettingsUiEvent.UpdatePrimaryHex(preset.hex))
                                     }
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
@@ -270,8 +255,8 @@ fun StoreBrandCmsTab(
                                             .background(presetColor)
                                     )
                                     Text(
-                                        text = name,
-                                        style = MaterialTheme.typography.labelSmall.copy(color = LightInk)
+                                        text = stringResource(preset.labelRes),
+                                        style = MaterialTheme.typography.labelMedium.copy(color = colors.onSurface)
                                     )
                                 }
                             }
@@ -285,51 +270,62 @@ fun StoreBrandCmsTab(
                         OutlinedTextField(
                             value = state.primaryHex,
                             onValueChange = { onEvent(StoreSettingsUiEvent.UpdatePrimaryHex(it)) },
-                            label = { Text("Warna Primer (HEX)") },
+                            label = { Text(stringResource(R.string.cms_primary_hex_label)) },
+                            isError = !state.isPrimaryHexValid,
+                            supportingText = if (!state.isPrimaryHexValid) {
+                                { Text(stringResource(R.string.cms_hex_error), color = statusErrFg()) }
+                            } else {
+                                null
+                            },
                             leadingIcon = {
                                 Box(
                                     modifier = Modifier
                                         .size(20.dp)
                                         .clip(CircleShape)
-                                        .background(parseHexColor(state.primaryHex, NeutralInk))
-                                        .border(1.dp, LightBorder, CircleShape)
+                                        .background(parseHexColor(state.primaryHex, CassyTinta))
+                                        .border(1.dp, colors.outline, CircleShape)
                                 )
                             },
                             modifier = Modifier.weight(1f),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = LightAccent,
-                                unfocusedBorderColor = LightBorder
+                                focusedBorderColor = colors.primary,
+                                unfocusedBorderColor = colors.outline
                             )
                         )
 
                         OutlinedTextField(
                             value = state.accentHex,
                             onValueChange = { onEvent(StoreSettingsUiEvent.UpdateAccentHex(it)) },
-                            label = { Text("Warna Aksen (HEX)") },
+                            label = { Text(stringResource(R.string.cms_accent_hex_label)) },
+                            isError = !state.isAccentHexValid,
+                            supportingText = if (!state.isAccentHexValid) {
+                                { Text(stringResource(R.string.cms_hex_error), color = statusErrFg()) }
+                            } else {
+                                null
+                            },
                             leadingIcon = {
                                 Box(
                                     modifier = Modifier
                                         .size(20.dp)
                                         .clip(CircleShape)
-                                        .background(parseHexColor(state.accentHex, LightAccent))
-                                        .border(1.dp, LightBorder, CircleShape)
+                                        .background(parseHexColor(state.accentHex, CassyKunyit))
+                                        .border(1.dp, colors.outline, CircleShape)
                                 )
                             },
                             modifier = Modifier.weight(1f),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = LightAccent,
-                                unfocusedBorderColor = LightBorder
+                                focusedBorderColor = colors.primary,
+                                unfocusedBorderColor = colors.outline
                             )
                         )
                     }
                 }
             }
 
-            // Banner Image & White Label Card
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = LightSurface,
-                border = androidx.compose.foundation.BorderStroke(1.dp, LightBorder),
+                color = colors.surface,
+                border = BorderStroke(1.dp, colors.outline),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -339,74 +335,58 @@ fun StoreBrandCmsTab(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Text(
-                        text = "Banner dan Opsi White Label",
+                        text = stringResource(R.string.cms_banner_card_title),
                         style = MaterialTheme.typography.titleSmall.copy(
                             fontWeight = FontWeight.Bold,
-                            color = LightInk
+                            color = colors.onSurface
                         )
                     )
 
-                    // Banner Upload Area
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (state.heroBannerUrl.isNotBlank()) {
+                        if (state.heroBannerUrl.isNotBlank() && state.isHeroBannerUrlValid) {
                             AsyncImage(
                                 model = state.heroBannerUrl,
-                                contentDescription = "Pratinjau Banner Hero",
+                                contentDescription = stringResource(R.string.cms_banner_preview_cd),
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .size(width = 120.dp, height = 64.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .border(1.dp, LightBorder, RoundedCornerShape(8.dp))
+                                    .border(1.dp, colors.outline, RoundedCornerShape(8.dp))
                             )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .size(width = 120.dp, height = 64.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(LightMuted)
-                                    .border(1.dp, LightBorder, RoundedCornerShape(8.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "Tanpa Foto",
-                                    style = MaterialTheme.typography.labelSmall.copy(color = LightSecondaryInk)
-                                )
-                            }
                         }
 
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            OutlinedButton(
-                                onClick = { bannerPickerLauncher.launch("image/*") },
-                                enabled = !state.isUploadingBanner,
-                                modifier = Modifier.defaultMinSize(minHeight = 48.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = LightInk)
-                            ) {
-                                if (state.isUploadingBanner) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
-                                        strokeWidth = 2.dp,
-                                        color = LightInk
+                        OutlinedTextField(
+                            value = state.heroBannerUrl,
+                            onValueChange = { onEvent(StoreSettingsUiEvent.UpdateHeroBannerUrl(it)) },
+                            label = { Text(stringResource(R.string.cms_banner_url_label)) },
+                            placeholder = { Text(stringResource(R.string.cms_banner_url_placeholder)) },
+                            singleLine = true,
+                            isError = !state.isHeroBannerUrlValid,
+                            supportingText = if (!state.isHeroBannerUrlValid) {
+                                {
+                                    Text(
+                                        text = stringResource(R.string.cms_banner_url_error),
+                                        color = statusErrFg()
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Mengunggah WebP...")
-                                } else {
-                                    Text("Pilih Banner Gerai")
                                 }
-                            }
-                            Text(
-                                text = "Format didukung: JPG, PNG, WebP (kompresi otomatis maks 300 KB)",
-                                style = MaterialTheme.typography.labelSmall.copy(color = LightSecondaryInk)
+                            } else {
+                                null
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = colors.primary,
+                                unfocusedBorderColor = colors.outline
                             )
-                        }
+                        )
                     }
 
-                    HorizontalDivider(color = LightBorder)
+                    HorizontalDivider(color = colors.outline)
 
-                    // White-Label Switch
+                    val whiteLabelTitle = stringResource(R.string.cms_white_label_title)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -414,58 +394,62 @@ fun StoreBrandCmsTab(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Sembunyikan Label 'Didukung oleh Cassy'",
+                                text = whiteLabelTitle,
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.SemiBold,
-                                    color = LightInk
+                                    color = colors.onSurface
                                 )
                             )
                             Text(
-                                text = "Aktifkan mode White-Label eksklusif pada halaman pemesanan tamu.",
-                                style = MaterialTheme.typography.bodySmall.copy(color = LightSecondaryInk)
+                                text = stringResource(R.string.cms_white_label_desc),
+                                style = MaterialTheme.typography.bodySmall.copy(color = colors.onSurfaceVariant)
                             )
                         }
                         Switch(
                             checked = state.hidePoweredByBadge,
                             onCheckedChange = { onEvent(StoreSettingsUiEvent.ToggleWhiteLabel(it)) },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = LightAccent
+                                checkedThumbColor = colors.onPrimary,
+                                checkedTrackColor = colors.primary
                             ),
-                            modifier = Modifier.padding(start = 8.dp)
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                .semantics { contentDescription = whiteLabelTitle }
                         )
                     }
                 }
             }
 
-            // Save CMS Button
             Button(
                 onClick = { onEvent(StoreSettingsUiEvent.SaveStoreCms) },
-                enabled = !state.isSavingCms,
+                enabled = !state.isSavingCms &&
+                    state.isHeroBannerUrlValid &&
+                    state.isPrimaryHexValid &&
+                    state.isAccentHexValid,
                 modifier = Modifier
                     .fillMaxWidth()
                     .defaultMinSize(minHeight = 48.dp),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = LightInk,
-                    contentColor = Color.White
+                    containerColor = colors.primary,
+                    contentColor = colors.onPrimary
                 )
             ) {
                 if (state.isSavingCms) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
-                        color = Color.White
+                        color = colors.onPrimary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Menyimpan Tampilan WPA...")
+                    Text(stringResource(R.string.cms_btn_saving))
                 } else {
-                    Text("Simpan Pengaturan Tampilan WPA")
+                    Text(stringResource(R.string.cms_btn_save))
                 }
             }
         }
 
-        // Right Column: Live WPA Mobile Preview Frame (40% width)
         Column(
             modifier = Modifier
                 .weight(0.4f)
@@ -474,86 +458,43 @@ fun StoreBrandCmsTab(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Pratinjau Langsung Tamu (WPA Mobile)",
+                text = stringResource(R.string.cms_preview_heading),
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontWeight = FontWeight.Bold,
-                    color = LightInk
+                    color = colors.onSurface
                 )
             )
 
-            // Simulated Smartphone Frame
             val primaryColor = remember(state.primaryHex) {
-                parseHexColor(state.primaryHex, LightInk)
+                parseHexColor(state.primaryHex, CassyPandan)
             }
             val accentColor = remember(state.accentHex) {
-                parseHexColor(state.accentHex, LightAccent)
+                parseHexColor(state.accentHex, CassyKunyit)
             }
 
             Surface(
                 modifier = Modifier
                     .width(310.dp)
-                    .height(560.dp),
+                    .height(540.dp),
                 shape = RoundedCornerShape(28.dp),
-                color = Color.White,
-                border = androidx.compose.foundation.BorderStroke(4.dp, LightInk),
+                color = colors.surface,
+                border = BorderStroke(4.dp, colors.onSurface),
                 shadowElevation = 8.dp
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    // Mobile Status Bar Mock
+                Column(modifier = Modifier.fillMaxWidth()) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(primaryColor)
-                            .padding(horizontal = 16.dp, vertical = 6.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "10:30",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = Color.White.copy(alpha = 0.8f),
-                                    fontSize = 10.sp
-                                )
-                            )
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(
-                                    text = "4G",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        color = Color.White.copy(alpha = 0.8f),
-                                        fontSize = 10.sp
-                                    )
-                                )
-                                Text(
-                                    text = "100%",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        color = Color.White.copy(alpha = 0.8f),
-                                        fontSize = 10.sp
-                                    )
-                                )
-                            }
-                        }
-                    }
-
-                    // Mobile App Header Banner
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(130.dp)
+                            .height(132.dp)
                             .background(primaryColor)
                     ) {
-                        if (state.heroBannerUrl.isNotBlank()) {
+                        if (state.heroBannerUrl.isNotBlank() && state.isHeroBannerUrlValid) {
                             AsyncImage(
                                 model = state.heroBannerUrl,
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.matchParentSize()
                             )
-                            // Subtle gradient overlay for readability
                             Box(
                                 modifier = Modifier
                                     .matchParentSize()
@@ -568,7 +509,7 @@ fun StoreBrandCmsTab(
                             verticalArrangement = Arrangement.Bottom
                         ) {
                             Text(
-                                text = state.heroTitleId.ifBlank { "Pesan & Bayar dari Meja" },
+                                text = state.heroTitleId.ifBlank { stringResource(R.string.cms_hero_title_id) },
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
@@ -577,7 +518,7 @@ fun StoreBrandCmsTab(
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = state.heroSubtitleId.ifBlank { "Pindai QR, pilih menu, lalu bayar dari meja" },
+                                text = state.heroSubtitleId.ifBlank { stringResource(R.string.cms_hero_subtitle_id) },
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = accentColor,
                                     fontSize = 11.sp
@@ -586,11 +527,10 @@ fun StoreBrandCmsTab(
                         }
                     }
 
-                    // Category Bar Mock
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(LightMuted)
+                            .background(colors.surfaceVariant)
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
@@ -599,7 +539,7 @@ fun StoreBrandCmsTab(
                             color = primaryColor
                         ) {
                             Text(
-                                text = "Kopi Spesialti",
+                                text = stringResource(R.string.cms_preview_cat_1),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = Color.White,
                                     fontSize = 10.sp
@@ -609,13 +549,13 @@ fun StoreBrandCmsTab(
                         }
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = Color.White,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, LightBorder)
+                            color = colors.surface,
+                            border = BorderStroke(1.dp, colors.outline)
                         ) {
                             Text(
-                                text = "Pastry & Roti",
+                                text = stringResource(R.string.cms_preview_cat_2),
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = LightSecondaryInk,
+                                    color = colors.onSurfaceVariant,
                                     fontSize = 10.sp
                                 ),
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -623,7 +563,6 @@ fun StoreBrandCmsTab(
                         }
                     }
 
-                    // Sample Product Mock Card
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -633,43 +572,28 @@ fun StoreBrandCmsTab(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = LightSurface,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, LightBorder),
+                            color = colors.surface,
+                            border = BorderStroke(1.dp, colors.outline),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    .padding(10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(LightMuted),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "MENU",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontSize = 9.sp,
-                                            color = LightSecondaryInk
-                                        )
-                                    )
-                                }
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Espresso Single Origin",
+                                        text = stringResource(R.string.cms_preview_item_name),
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 11.sp,
-                                            color = LightInk
+                                            color = colors.onSurface
                                         )
                                     )
                                     Text(
-                                        text = "Rp 28.000",
+                                        text = stringResource(R.string.cms_preview_item_price),
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             color = accentColor,
                                             fontWeight = FontWeight.SemiBold,
@@ -695,7 +619,6 @@ fun StoreBrandCmsTab(
                         }
                     }
 
-                    // Bottom Cart Floating Mock
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -711,7 +634,7 @@ fun StoreBrandCmsTab(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "1 Sajian • Rp 28.000",
+                                text = stringResource(R.string.cms_preview_cart_count),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
@@ -719,7 +642,7 @@ fun StoreBrandCmsTab(
                                 )
                             )
                             Text(
-                                text = "Lihat Keranjang",
+                                text = stringResource(R.string.cms_preview_cart_cta),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = accentColor,
                                     fontWeight = FontWeight.Bold,
@@ -729,34 +652,28 @@ fun StoreBrandCmsTab(
                         }
                     }
 
-                    // White-Label / Powered By Footer Mock
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (!state.hidePoweredByBadge) {
-                            Text(
-                                text = "Didukung oleh Cassy",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = LightSecondaryInk.copy(alpha = 0.6f),
-                                    fontSize = 9.sp
-                                )
+                        Text(
+                            text = stringResource(
+                                if (!state.hidePoweredByBadge) {
+                                    R.string.cms_preview_powered_by
+                                } else {
+                                    R.string.cms_preview_white_label
+                                }
+                            ),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = colors.onSurfaceVariant,
+                                fontSize = 9.sp
                             )
-                        } else {
-                            Text(
-                                text = "Pemesanan Mandiri Meja",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = LightSecondaryInk.copy(alpha = 0.5f),
-                                    fontSize = 9.sp
-                                )
-                            )
-                        }
+                        )
                     }
                 }
             }
         }
     }
 }
-

@@ -3,6 +3,7 @@ package com.azuredevid.cassy.ui.shift.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -10,8 +11,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -20,9 +21,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.azuredevid.cassy.R
 import com.azuredevid.cassy.domain.model.Shift
-import com.azuredevid.cassy.ui.theme.*
+import com.azuredevid.cassy.ui.theme.statusErrFg
+import com.azuredevid.cassy.ui.theme.statusOkBg
+import com.azuredevid.cassy.ui.theme.statusOkFg
+import com.azuredevid.cassy.ui.theme.statusWarnBg
+import com.azuredevid.cassy.ui.theme.statusWarnFg
 import java.text.NumberFormat
 import java.util.Locale
+import kotlin.math.abs
 
 @Composable
 fun CloseShiftModal(
@@ -47,6 +53,7 @@ fun CloseShiftModal(
 ) {
     val rupiahFormatter = NumberFormat.getIntegerInstance(Locale("id", "ID"))
     val countedAmount = countedCashInput.toLongOrNull()
+    val colors = MaterialTheme.colorScheme
 
     Dialog(onDismissRequest = { if (!isClosing) onDismiss() }) {
         Surface(
@@ -54,7 +61,7 @@ fun CloseShiftModal(
                 .fillMaxWidth()
                 .padding(16.dp),
             shape = RoundedCornerShape(16.dp),
-            color = LightSurface,
+            color = colors.surface,
             tonalElevation = 6.dp
         ) {
             Column(
@@ -67,18 +74,17 @@ fun CloseShiftModal(
                     text = stringResource(R.string.shift_close_title),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = LightInk
+                    color = colors.onSurface
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = stringResource(R.string.shift_close_subtitle),
                     fontSize = 14.sp,
-                    color = LightSecondaryInk
+                    color = colors.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // Input Fisik Uang Kas (Blind Cash Count)
                 OutlinedTextField(
                     value = countedCashInput,
                     onValueChange = onCountedCashChanged,
@@ -86,21 +92,32 @@ fun CloseShiftModal(
                     placeholder = { Text("0") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = CassyPandan,
-                        focusedLabelColor = CassyPandan,
-                        cursorColor = CassyPandan
-                    )
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                // Variance evaluation preview if user has inputted counted cash
+                if (currentShift?.expectedCash == null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.shift_blind_count_hint),
+                        fontSize = 12.sp,
+                        color = colors.onSurfaceVariant
+                    )
+                }
+
                 if (countedAmount != null && calculatedVariance != null) {
                     Spacer(modifier = Modifier.height(14.dp))
                     val isBalance = calculatedVariance == 0L
                     val isOver = calculatedVariance > 0L
-                    val bgBox = if (isBalance) StatusOkBgLight else if (isSupervisorAuthRequired) StatusWarnBgLight else LightCanvas
-                    val textCol = if (isBalance) StatusOkFgLight else if (isSupervisorAuthRequired) StatusWarnFgLight else LightInk
+                    val bgBox = when {
+                        isBalance -> statusOkBg()
+                        isSupervisorAuthRequired -> statusWarnBg()
+                        else -> colors.background
+                    }
+                    val textCol = when {
+                        isBalance -> statusOkFg()
+                        isSupervisorAuthRequired -> statusWarnFg()
+                        else -> colors.onSurface
+                    }
 
                     Box(
                         modifier = Modifier
@@ -112,12 +129,12 @@ fun CloseShiftModal(
                             Text(
                                 text = stringResource(R.string.shift_variance_status_label),
                                 fontSize = 12.sp,
-                                color = LightSecondaryInk
+                                color = colors.onSurfaceVariant
                             )
                             val varianceStr = when {
                                 isBalance -> stringResource(R.string.shift_variance_balance)
                                 isOver -> stringResource(R.string.shift_variance_over, rupiahFormatter.format(calculatedVariance))
-                                else -> stringResource(R.string.shift_variance_short, rupiahFormatter.format(Math.abs(calculatedVariance)))
+                                else -> stringResource(R.string.shift_variance_short, rupiahFormatter.format(abs(calculatedVariance)))
                             }
                             Text(
                                 text = varianceStr,
@@ -129,19 +146,18 @@ fun CloseShiftModal(
                     }
                 }
 
-                // Supervisor Gate if |variance| > 50.000
                 if (isSupervisorAuthRequired) {
                     Spacer(modifier = Modifier.height(14.dp))
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(StatusWarnBgLight, RoundedCornerShape(10.dp))
+                            .background(statusWarnBg(), RoundedCornerShape(10.dp))
                             .padding(12.dp)
                     ) {
                         Text(
                             text = stringResource(R.string.shift_supervisor_gate_warning),
                             fontSize = 12.sp,
-                            color = StatusWarnFgLight,
+                            color = statusWarnFg(),
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -154,12 +170,7 @@ fun CloseShiftModal(
                         label = { Text(stringResource(R.string.shift_variance_reason_label)) },
                         placeholder = { Text(stringResource(R.string.shift_variance_reason_placeholder)) },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = CassyKunyit,
-                            focusedLabelColor = CassyKunyit,
-                            cursorColor = CassyKunyit
-                        )
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -168,55 +179,49 @@ fun CloseShiftModal(
                         value = supervisorPinInput,
                         onValueChange = onSupervisorPinChanged,
                         label = { Text(stringResource(R.string.shift_supervisor_pin_label)) },
-                        placeholder = { Text("****") },
+                        placeholder = { Text("******") },
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = CassyKunyit,
-                            focusedLabelColor = CassyKunyit,
-                            cursorColor = CassyKunyit
-                        )
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Optional Notes
                 OutlinedTextField(
                     value = notes,
                     onValueChange = onNotesChanged,
                     label = { Text(stringResource(R.string.shift_notes_label)) },
                     placeholder = { Text(stringResource(R.string.shift_close_notes_placeholder)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = CassyPandan,
-                        focusedLabelColor = CassyPandan,
-                        cursorColor = CassyPandan
-                    )
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Print Z-Report Checkbox
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .defaultMinSize(minHeight = 48.dp),
+                        .defaultMinSize(minHeight = 48.dp)
+                        .toggleable(
+                            value = printReceiptOnClose,
+                            role = Role.Checkbox,
+                            onValueChange = onPrintReceiptToggled
+                        )
+                        .padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
                         checked = printReceiptOnClose,
-                        onCheckedChange = onPrintReceiptToggled,
-                        colors = CheckboxDefaults.colors(checkedColor = CassyPandan)
+                        onCheckedChange = null,
+                        colors = CheckboxDefaults.colors(checkedColor = colors.primary)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.shift_print_zreport_checkbox),
                         fontSize = 14.sp,
-                        color = LightInk
+                        color = colors.onSurface
                     )
                 }
 
@@ -225,14 +230,13 @@ fun CloseShiftModal(
                     Text(
                         text = errorMessage,
                         fontSize = 12.sp,
-                        color = StatusErrFgLight,
+                        color = statusErrFg(),
                         fontWeight = FontWeight.Medium
                     )
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Action Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -245,7 +249,7 @@ fun CloseShiftModal(
                             .defaultMinSize(minHeight = 48.dp),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text(text = stringResource(R.string.btn_cancel), color = LightInk)
+                        Text(text = stringResource(R.string.btn_cancel), color = colors.onSurface)
                     }
 
                     Button(
@@ -254,19 +258,21 @@ fun CloseShiftModal(
                         modifier = Modifier
                             .weight(1f)
                             .defaultMinSize(minHeight = 48.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = CassyTinta),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colors.onSurface,
+                            contentColor = colors.surface
+                        ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         if (isClosing) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
-                                color = Color.White,
+                                color = colors.surface,
                                 strokeWidth = 2.dp
                             )
                         } else {
                             Text(
                                 text = stringResource(R.string.shift_btn_close),
-                                color = Color.White,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }

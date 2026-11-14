@@ -33,7 +33,7 @@ object HttpErrorMapper {
             HttpStatusCode.Forbidden -> DomainError.Forbidden(message)
             HttpStatusCode.Conflict -> DomainError.Conflict(message, parsed?.code)
             HttpStatusCode.BadRequest, HttpStatusCode.UnprocessableEntity ->
-                DomainError.Validation(message, parsed?.field)
+                DomainError.Validation(message, parsed?.field, parsed?.code)
             HttpStatusCode.TooManyRequests -> {
                 val retryAfter = response.headers["Retry-After"]?.toLongOrNull()
                 DomainError.RateLimited(message, retryAfter)

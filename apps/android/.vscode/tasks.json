@@ -2,19 +2,12 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Android: Test + bundleDebug (PR gate)",
+      "label": "Android: Test + bundleDevDebug (PR gate)",
       "type": "shell",
-      "command": ".\\gradlew.bat testDebugUnitTest bundleDebug --console=plain",
-      "group": {
-        "kind": "test",
-        "isDefault": false
+      "command": ".\\gradlew.bat testDevDebugUnitTest bundleDevDebug --no-daemon --console=plain",
+      "options": {
+        "cwd": "${workspaceFolder}"
       },
-      "problemMatcher": []
-    },
-    {
-      "label": "Android: Unit tests",
-      "type": "shell",
-      "command": ".\\gradlew.bat testDebugUnitTest --console=plain",
       "group": {
         "kind": "test",
         "isDefault": true
@@ -22,16 +15,32 @@
       "problemMatcher": []
     },
     {
-      "label": "Android: Unit tests for one class",
+      "label": "Android: Unit tests (devDebug)",
       "type": "shell",
-      "command": ".\\gradlew.bat testDebugUnitTest --console=plain --tests \"${input:testClass}\"",
+      "command": ".\\gradlew.bat testDevDebugUnitTest --no-daemon --console=plain",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
       "group": "test",
       "problemMatcher": []
     },
     {
-      "label": "Android: Assemble debug APK",
+      "label": "Android: All flavors unit tests + bundleDebug (CI parity)",
       "type": "shell",
-      "command": ".\\gradlew.bat assembleDebug --console=plain",
+      "command": ".\\gradlew.bat test bundleDebug --max-workers=2 --no-daemon --console=plain",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Android: Assemble devDebug APK",
+      "type": "shell",
+      "command": ".\\gradlew.bat assembleDevDebug --no-daemon --console=plain",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
       "group": {
         "kind": "build",
         "isDefault": true
@@ -39,45 +48,42 @@
       "problemMatcher": []
     },
     {
-      "label": "Android: Install and launch on device (ADB)",
+      "label": "Android: Install and launch devDebug on device (ADB)",
       "type": "shell",
-      "command": "adb install -r app/build/outputs/apk/debug/app-debug.apk && adb shell monkey -p com.azuredevid.cassy -c android.intent.category.LAUNCHER 1",
-      "dependsOn": "Android: Assemble debug APK",
+      "command": "adb install -r app/build/outputs/apk/dev/debug/app-dev-debug.apk; if ($LASTEXITCODE -eq 0) { adb shell am start -W -n com.azuredevid.cassy.dev/com.azuredevid.cassy.MainActivity }",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "none",
       "problemMatcher": []
     },
     {
-      "label": "Android: Logcat (Cassy only)",
+      "label": "Android: Start headless tablet emulator",
       "type": "shell",
-      "command": "adb logcat -v color --pid=$(adb shell pidof -s com.azuredevid.cassy)",
+      "command": "emulator -avd Medium_Tablet -no-window -no-audio -no-boot-anim",
       "isBackground": true,
+      "group": "none",
       "problemMatcher": []
     },
     {
-      "label": "Android: Start tablet emulator (Medium_Tablet)",
+      "label": "Android: Capture emulator screen",
       "type": "shell",
-      "command": "& \"$env:LOCALAPPDATA/Android/Sdk/emulator/emulator.exe\" -avd Medium_Tablet -gpu host -memory 4096",
-      "isBackground": true,
+      "command": "adb exec-out screencap -p > emulator_screen.png",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "none",
       "problemMatcher": []
     },
     {
-      "label": "Android: Reverse demo API to device (adb reverse 8080)",
+      "label": "Android: Dump UI hierarchy (Android CLI)",
       "type": "shell",
-      "command": "adb reverse tcp:8080 tcp:8080",
+      "command": "android layout --pretty",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "none",
       "problemMatcher": []
-    },
-    {
-      "label": "Android: Clean",
-      "type": "shell",
-      "command": ".\\gradlew.bat clean --console=plain",
-      "problemMatcher": []
-    }
-  ],
-  "inputs": [
-    {
-      "id": "testClass",
-      "type": "promptString",
-      "description": "Test class or pattern",
-      "default": "com.azuredevid.cassy.*"
     }
   ]
 }

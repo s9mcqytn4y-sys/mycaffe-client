@@ -9,10 +9,11 @@ import com.azuredevid.cassy.core.security.DataStoreSessionManager
 import com.azuredevid.cassy.core.security.SessionManager
 import com.azuredevid.cassy.data.network.CassyHttpClientFactory
 import com.azuredevid.cassy.data.network.CassyRealtimeClient
+import com.azuredevid.cassy.data.repository.DataStorePrinterSettingsRepository
 import com.azuredevid.cassy.data.repository.KtorAuthRepository
 import com.azuredevid.cassy.data.repository.KtorCatalogRepository
 import com.azuredevid.cassy.data.repository.KtorOrderQuoteRepository
-import com.azuredevid.cassy.data.repository.KtorPaymentCredentialRepository
+import com.azuredevid.cassy.data.repository.KtorPosOrderRepository
 import com.azuredevid.cassy.data.repository.KtorShiftRepository
 import com.azuredevid.cassy.data.repository.KtorStoreGovernanceRepository
 import com.azuredevid.cassy.data.repository.ServerSettingsRepository
@@ -20,7 +21,8 @@ import com.azuredevid.cassy.data.repository.SharedPreferencesServerSettingsRepos
 import com.azuredevid.cassy.domain.repository.AuthRepository
 import com.azuredevid.cassy.domain.repository.CatalogRepository
 import com.azuredevid.cassy.domain.repository.OrderQuoteRepository
-import com.azuredevid.cassy.domain.repository.PaymentCredentialRepository
+import com.azuredevid.cassy.domain.repository.PosOrderRepository
+import com.azuredevid.cassy.domain.repository.PrinterSettingsRepository
 import com.azuredevid.cassy.domain.repository.ShiftRepository
 import com.azuredevid.cassy.domain.repository.StoreGovernanceRepository
 import com.azuredevid.cassy.ui.catalog.CatalogManagementViewModel
@@ -41,6 +43,7 @@ val appModule = module {
     single<AeadCipher> { AndroidTinkAeadCipher(androidContext()) }
     single<SessionManager> { DataStoreSessionManager(androidContext(), get()) }
     single<ServerSettingsRepository> { SharedPreferencesServerSettingsRepository(androidContext()) }
+    single<PrinterSettingsRepository> { DataStorePrinterSettingsRepository(androidContext()) }
 
     single<HttpClient> {
         CassyHttpClientFactory.create(
@@ -67,26 +70,15 @@ val repositoryModule = module {
         )
     }
 
-    single<PaymentCredentialRepository> {
-        KtorPaymentCredentialRepository(
-            httpClient = get(),
-            serverSettings = get(),
-            sessionManager = get()
-        )
-    }
-
     single<StoreGovernanceRepository> {
-        val sessionManager = get<SessionManager>()
         KtorStoreGovernanceRepository(
             httpClient = get(),
-            serverSettings = get(),
-            authTokenProvider = { sessionManager.getAccessToken() }
+            serverSettings = get()
         )
     }
 
     single<CatalogRepository> {
         KtorCatalogRepository(
-            context = androidContext(),
             httpClient = get(),
             serverSettings = get()
         )
@@ -101,12 +93,17 @@ val repositoryModule = module {
         )
     }
 
+    single<PosOrderRepository> {
+        KtorPosOrderRepository(
+            httpClient = get(),
+            serverSettings = get()
+        )
+    }
+
     single<ShiftRepository> {
-        val sessionManager = get<SessionManager>()
         KtorShiftRepository(
             httpClient = get(),
-            serverSettings = get(),
-            authTokenProvider = { sessionManager.getAccessToken() }
+            serverSettings = get()
         )
     }
 }
@@ -114,8 +111,8 @@ val repositoryModule = module {
 val viewModelModule = module {
     viewModel { StorePairingViewModel(get()) }
     viewModel { ServerConfigViewModel(get()) }
-    viewModel { StoreSettingsViewModel(get(), get()) }
-    viewModel { ShiftViewModel(get(), get(), get(), get()) }
-    viewModel { PosViewModel(get(), get(), get()) }
+    viewModel { StoreSettingsViewModel(get(), get(), get(), get()) }
+    viewModel { ShiftViewModel(get(), get(), get(), get(), get()) }
+    viewModel { PosViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { CatalogManagementViewModel(get(), get()) }
 }

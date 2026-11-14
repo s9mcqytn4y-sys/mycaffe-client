@@ -21,6 +21,10 @@ data class StorePaymentCredentialDto(
     val isEnabled: Boolean = true,
     @SerialName("fallback_static_qris_enabled")
     val fallbackStaticQrisEnabled: Boolean = true,
+    @SerialName("validation_status")
+    val validationStatus: String = "",
+    @SerialName("last_verified_at")
+    val lastVerifiedAt: String? = null,
     @SerialName("created_at")
     val createdAt: String? = null,
     @SerialName("updated_at")
@@ -143,32 +147,6 @@ data class StoreSettingsPatchDto(
     val staticQrisFallbackMode: String? = null,
     @SerialName("cashier_handles_bar")
     val cashierHandlesBar: Boolean? = null
-)
-
-@Serializable
-data class CreateMediaUploadRequest(
-    @SerialName("content_type")
-    val contentType: String = "image/webp",
-    @SerialName("size_bytes")
-    val sizeBytes: Long
-)
-
-@Serializable
-data class MediaUploadTicketDto(
-    @SerialName("id")
-    val id: String,
-    @SerialName("upload_url")
-    val uploadUrl: String,
-    @SerialName("expires_at")
-    val expiresAt: String? = null
-)
-
-@Serializable
-data class CompletedMediaUploadDto(
-    @SerialName("id")
-    val id: String,
-    @SerialName("public_url")
-    val publicUrl: String
 )
 
 

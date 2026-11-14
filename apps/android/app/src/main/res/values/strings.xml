@@ -22,8 +22,8 @@
 
     <!-- Catalog Grid -->
     <string name="catalog_title">Katalog Menu (%1$d Produk)</string>
-    <string name="catalog_source_cdn">Cloudflare R2 CDN WebP</string>
-    <string name="search_placeholder">Cari 38 menu resmi (Espresso, Latte, Croissant...)</string>
+    <string name="catalog_source_cdn">Katalog Aktif Gerai</string>
+    <string name="search_placeholder">Cari nama menu atau deskripsi…</string>
     <string name="a11y_clear_search">Hapus teks pencarian</string>
     <string name="catalog_loading">Memuat katalog produk...</string>
     <string name="catalog_empty_search">Tidak ada produk yang cocok dengan pencarian \"%1$s\"</string>
@@ -159,4 +159,157 @@
     <string name="catalog_empty">Belum ada produk di kategori ini.</string>
     <string name="catalog_photo_present">Foto tersedia</string>
     <string name="catalog_photo_missing">Belum ada foto</string>
+
+    <!-- Shift Drawer, Blind Count, X-Report & POS Settlement -->
+    <string name="shift_drawer_select_label">Pilih Laci Kasir</string>
+    <string name="shift_banner_cashier_label">Kasir: %1$s</string>
+    <string name="shift_banner_expected_cash">Estimasi Kas: Rp %1$s</string>
+    <string name="shift_banner_cashier_default">Kasir</string>
+    <string name="shift_banner_xreport_btn">X-Report</string>
+    <string name="shift_blind_count_hint">Hitungan buta: sistem memverifikasi selisih kas saat shift ditutup.</string>
+    <string name="shift_xreport_title">Bacaan Kas Shift (X-Report)</string>
+    <string name="shift_xreport_opening_float">Modal Awal</string>
+    <string name="shift_xreport_cash_sales">Penjualan Tunai</string>
+    <string name="shift_xreport_cash_ins">Kas Masuk</string>
+    <string name="shift_xreport_paid_outs">Kas Keluar</string>
+    <string name="shift_xreport_refunds">Pengembalian Tunai</string>
+    <string name="shift_xreport_expected_cash">Ekspektasi Kas Sistem</string>
+    <string name="shift_xreport_expected_redacted">Disamarkan (Mode Kasir)</string>
+    <string name="shift_xreport_unsettled_tabs">Tagihan terbuka: %1$d (Rp %2$s)</string>
+    <string name="shift_xreport_print_btn">Cetak X-Report</string>
+    <string name="shift_xreport_close_btn">Tutup</string>
+    <string name="printer_error_not_configured">Printer kasir belum dikonfigurasi. Atur IP printer di Pengaturan.</string>
+    <string name="order_heading_takeaway">Takeaway</string>
+    <string name="order_table_unspecified">Pilih Meja</string>
+    <string name="order_table_dialog_title">Nomor Meja</string>
+    <string name="order_table_input_label">Nama / Nomor Meja</string>
+    <string name="order_table_input_hint">Contoh: Meja 04</string>
+    <string name="btn_apply">Terapkan</string>
+    <string name="btn_retry">Coba Lagi</string>
+    <string name="catalog_sold_out_badge">HABIS</string>
+    <string name="qris_order_number_label">No. Pesanan: %1$s</string>
+    <string name="qris_total_label">Total Tagihan: %1$s</string>
+    <string name="shift_required_for_payment">Buka shift kasir terlebih dahulu untuk memproses pembayaran</string>
+    <string name="shift_required_for_kitchen">Buka shift kasir terlebih dahulu untuk mengirim pesanan</string>
+    <string name="drawer_open_success">Perintah buka laci kasir terkirim.</string>
+    <string name="printer_lan_unreachable">Printer LAN tidak terjangkau.</string>
+    <string name="pairing_connected_toast">Tablet terhubung ke gerai: %1$s</string>
+
+    <!-- Store Governance & Settings -->
+    <string name="settings_title">Pengaturan Gerai &amp; Perangkat</string>
+    <string name="settings_subtitle">Midtrans BYOK, Tampilan Tamu, Mode Layanan, dan Printer LAN</string>
+    <string name="settings_loading">Memuat konfigurasi gerai…</string>
+    <string name="settings_access_badge_allowed">Izin Kelola Aktif</string>
+    <string name="settings_access_badge_denied">Akses Terbatas</string>
+    <string name="settings_access_denied_title">Izin Kelola Gerai Diperlukan</string>
+    <string name="settings_access_denied_body">Akun Anda tidak memiliki izin store.settings.manage. Hubungi pemilik gerai untuk mengubah Midtrans, tampilan tamu, atau mode layanan.</string>
+    <string name="settings_tab_midtrans">Midtrans BYOK</string>
+    <string name="settings_tab_cms">Tampilan Tamu</string>
+    <string name="settings_tab_service">Mode Layanan</string>
+    <string name="settings_tab_printer">Printer LAN</string>
+
+    <!-- Midtrans Tab -->
+    <string name="midtrans_env_title">Lingkungan Integrasi Midtrans</string>
+    <string name="midtrans_env_sandbox">Mode Sandbox (Uji Coba Transaksi)</string>
+    <string name="midtrans_env_production">Mode Produksi Live</string>
+    <string name="midtrans_badge_sandbox">SANDBOX</string>
+    <string name="midtrans_badge_production">PRODUKSI LIVE</string>
+    <string name="midtrans_merchant_id_label">Merchant ID *</string>
+    <string name="midtrans_merchant_id_placeholder">Contoh: G357841497</string>
+    <string name="midtrans_merchant_id_error">Merchant ID minimal 4 karakter.</string>
+    <string name="midtrans_merchant_id_help">Merchant ID resmi dari Dashboard Midtrans MAP.</string>
+    <string name="midtrans_client_key_label">Client Key *</string>
+    <string name="midtrans_client_key_error">Awali dengan %1$s dan minimal 16 karakter.</string>
+    <string name="midtrans_client_key_help">Kunci publik untuk checkout pembayaran tamu.</string>
+    <string name="midtrans_server_key_label">Server Key (Kunci Rahasia) *</string>
+    <string name="midtrans_server_key_error">Awali dengan %1$s dan panjang 16 sampai 128 karakter.</string>
+    <string name="midtrans_server_key_help">Masukkan Server Key lengkap setiap kali menyimpan atau memverifikasi. Tidak disimpan di perangkat.</string>
+    <string name="midtrans_key_show">Tampilkan</string>
+    <string name="midtrans_key_hide">Sembunyikan</string>
+    <string name="midtrans_fallback_qris_title">Fallback QRIS Statis &amp; Bayar di Kasir</string>
+    <string name="midtrans_fallback_qris_desc">Izinkan tamu memilih bayar di kasir saat gateway mengalami gangguan.</string>
+    <string name="midtrans_rolling_title">Perhatian Rotasi Kunci API</string>
+    <string name="midtrans_rolling_body">Saat mengganti kunci di Dashboard Midtrans MAP, perbarui Server Key di sini agar verifikasi webhook SHA-512 tetap valid.</string>
+    <string name="midtrans_btn_verify_live">Verifikasi Live &amp; Simpan</string>
+    <string name="midtrans_btn_save">Simpan Kredensial</string>
+    <string name="midtrans_status_badge">Status Verifikasi: %1$s</string>
+    <string name="midtrans_last_verified">Terverifikasi terakhir: %1$s</string>
+    <string name="midtrans_status_unverified">Belum Diverifikasi</string>
+
+    <!-- Brand CMS Tab -->
+    <string name="cms_section_title">Identitas Merek &amp; Tampilan Tamu</string>
+    <string name="cms_section_desc">Atur judul sambutan, URL banner HTTPS, palet warna, dan opsi label pada aplikasi tamu.</string>
+    <string name="cms_header_card_title">Teks Sambutan Header</string>
+    <string name="cms_hero_title_id">Judul Utama (Bahasa Indonesia)</string>
+    <string name="cms_hero_title_en">Main Title (English)</string>
+    <string name="cms_hero_subtitle_id">Subjudul (Bahasa Indonesia)</string>
+    <string name="cms_hero_subtitle_en">Subtitle (English)</string>
+    <string name="cms_colors_title">Warna Aksen Merek</string>
+    <string name="cms_presets_label">Preset Cepat:</string>
+    <string name="cms_preset_neutral">Netral</string>
+    <string name="cms_preset_pandan">Pandan</string>
+    <string name="cms_preset_kunyit">Kunyit</string>
+    <string name="cms_preset_tinta">Tinta</string>
+    <string name="cms_preset_batu">Batu</string>
+    <string name="cms_primary_hex_label">Warna Primer (HEX)</string>
+    <string name="cms_accent_hex_label">Warna Aksen (HEX)</string>
+    <string name="cms_hex_error">Gunakan format #RRGGBB atau kosongkan.</string>
+    <string name="cms_banner_card_title">Banner &amp; Opsi White Label</string>
+    <string name="cms_banner_url_label">URL Banner Hero (HTTPS)</string>
+    <string name="cms_banner_url_placeholder">https://cdn.domainanda.com/banner.webp</string>
+    <string name="cms_banner_url_error">URL banner harus diawali https:// atau dikosongkan.</string>
+    <string name="cms_banner_preview_cd">Pratinjau Banner Hero</string>
+    <string name="cms_white_label_title">Sembunyikan Label Cassy</string>
+    <string name="cms_white_label_desc">Aktifkan mode white-label pada footer pemesanan tamu.</string>
+    <string name="cms_btn_saving">Menyimpan Tampilan…</string>
+    <string name="cms_btn_save">Simpan Tampilan Tamu</string>
+    <string name="cms_preview_heading">Pratinjau Tampilan Tamu</string>
+    <string name="cms_preview_cat_1">Kopi Spesialti</string>
+    <string name="cms_preview_cat_2">Pastry &amp; Roti</string>
+    <string name="cms_preview_item_name">Espresso Single Origin</string>
+    <string name="cms_preview_item_price">Rp 28.000</string>
+    <string name="cms_preview_cart_count">1 Sajian • Rp 28.000</string>
+    <string name="cms_preview_cart_cta">Lihat Keranjang</string>
+    <string name="cms_preview_powered_by">Didukung oleh Cassy</string>
+    <string name="cms_preview_white_label">Pemesanan Mandiri Meja</string>
+
+    <!-- Service Mode Tab -->
+    <string name="service_section_title">Mode Layanan &amp; Kebijakan Meja</string>
+    <string name="service_section_desc">Atur alur pengantaran pesanan QR tamu, batas durasi meja, dan jeda darurat.</string>
+    <string name="service_qr_mode_title">Metode Penyajian Pesanan QR</string>
+    <string name="service_qr_mode_desc">Pilih cara staf menyerahkan pesanan yang masuk dari kode QR meja.</string>
+    <string name="service_mode_table_title">Antar ke Meja</string>
+    <string name="service_mode_table_desc">Pramusaji mengantar sajian langsung ke nomor meja saat pesanan siap.</string>
+    <string name="service_mode_pickup_title">Ambil Mandiri di Bar</string>
+    <string name="service_mode_pickup_desc">Tamu mengambil pesanan di counter barista saat status pesanan siap.</string>
+    <string name="service_pause_title">Jeda Pemesanan QR Darurat</string>
+    <string name="service_pause_active_desc">Pemesanan QR dihentikan sementara. Tamu diminta memesan di kasir.</string>
+    <string name="service_pause_idle_desc">Hentikan sementara pemesanan QR saat dapur sedang sangat padat.</string>
+    <string name="service_table_limit_title">Batas Waktu &amp; Peringatan Meja</string>
+    <string name="service_table_limit_label">Batas Durasi Meja</string>
+    <string name="service_table_limit_unlimited">Tanpa batas waktu (bebas durasi)</string>
+    <string name="service_table_limit_minutes">%1$d menit per sesi meja</string>
+    <string name="service_table_limit_chip">%1$d mnt</string>
+    <string name="service_table_warning_label">Peringatan Sebelum Waktu Habis</string>
+    <string name="service_table_warning_desc">Kartu meja kasir menyala peringatan %1$d menit sebelum batas berakhir.</string>
+    <string name="service_table_warning_value">%1$d menit</string>
+    <string name="service_btn_saving">Menyimpan Kebijakan…</string>
+    <string name="service_btn_save">Simpan Kebijakan Operasional</string>
+
+    <!-- Printer LAN Tab -->
+    <string name="printer_tab_title">Konfigurasi Printer Thermal LAN (Port 9100)</string>
+    <string name="printer_tab_desc">Atur alamat IP printer ESC/POS lokal untuk kasir, bar, dapur, pastry, dan expediter. Kosongkan stasiun yang tidak digunakan.</string>
+    <string name="printer_cashier_ip_label">IP Printer Kasir &amp; Laci RJ11</string>
+    <string name="printer_ip_placeholder">Contoh: 192.168.10.200</string>
+    <string name="printer_port_label">Port TCP Kasir</string>
+    <string name="printer_kitchen_ip_label">IP Printer Dapur (Kitchen)</string>
+    <string name="printer_bar_ip_label">IP Printer Bar</string>
+    <string name="printer_pastry_ip_label">IP Printer Pastry</string>
+    <string name="printer_expediter_ip_label">IP Printer Expediter</string>
+    <string name="printer_paper_width_label">Lebar Kertas Struk</string>
+    <string name="printer_paper_58">58 mm</string>
+    <string name="printer_paper_80">80 mm</string>
+    <string name="printer_btn_test">Uji Koneksi Kasir</string>
+    <string name="printer_btn_save">Simpan Pengaturan Printer</string>
+    <string name="printer_btn_saving">Menyimpan Printer…</string>
 </resources>

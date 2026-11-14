@@ -3,11 +3,10 @@ package com.azuredevid.cassy.data.repository
 import com.azuredevid.cassy.domain.model.MidtransEnvironment
 import com.azuredevid.cassy.domain.model.PaymentCredentialInput
 import com.azuredevid.cassy.domain.model.QRServiceMode
-import com.azuredevid.cassy.domain.model.StoreCMSConfigInput
-import com.azuredevid.cassy.domain.model.StoreSettingsPatch
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -29,8 +28,13 @@ class StoreGovernanceRepositoryTest {
         override fun setBaseUrl(url: String) { this.currentUrl = url }
     }
 
-    private fun createMockClient(responseJson: String, statusCode: HttpStatusCode = HttpStatusCode.OK): HttpClient {
-        val mockEngine = MockEngine { _ ->
+    private fun createMockClient(
+        responseJson: String,
+        statusCode: HttpStatusCode = HttpStatusCode.OK,
+        onRequestBody: ((String) -> Unit)? = null
+    ): HttpClient {
+        val mockEngine = MockEngine { request ->
+            onRequestBody?.invoke(String(request.body.toByteArray()))
             respond(
                 content = responseJson,
                 status = statusCode,
@@ -39,17 +43,19 @@ class StoreGovernanceRepositoryTest {
         }
         return HttpClient(mockEngine) {
             install(ContentNegotiation) {
-                json(Json {
-                    ignoreUnknownKeys = true
-                    isLenient = true
-                    encodeDefaults = true
-                })
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                        isLenient = true
+                        encodeDefaults = true
+                    }
+                )
             }
         }
     }
 
     @Test
-    fun getPaymentCredentials_success_returnsDomainModel() = runTest {
+    fun getPaymentCredentials_success_returnsDomainModelWithValidationStatus() = runTest {
         val jsonPayload = """
             {
                 "environment": "sandbox",
@@ -58,8 +64,8 @@ class StoreGovernanceRepositoryTest {
                 "server_key_masked": "SB-Mid-server-••••••••497",
                 "is_enabled": true,
                 "fallback_static_qris_enabled": true,
-                "created_at": "2026-11-12T10:00:00Z",
-                "updated_at": "2026-11-12T10:00:00Z"
+                "validation_status": "verified",
+                "last_verified_at": "2026-11-14T01:00:00Z"
             }
         """.trimIndent()
 
@@ -75,12 +81,14 @@ class StoreGovernanceRepositoryTest {
         assertEquals("G357841497", creds.merchantId)
         assertEquals(MidtransEnvironment.SANDBOX, creds.environment)
         assertEquals("SB-Mid-client-sample123456", creds.clientKey)
+        assertEquals("verified", creds.validationStatus)
+        assertEquals("2026-11-14T01:00:00Z", creds.lastVerifiedAt)
         assertTrue(creds.isEnabled)
         assertTrue(creds.fallbackStaticQrisEnabled)
     }
 
     @Test
-    fun updatePaymentCredentials_success_returnsUpdatedDomain() = runTest {
+    fun updatePaymentCredentials_withVerifyLive_sendsVerifyLiveFlagToBackend() = runTest {
         val jsonPayload = """
             {
                 "environment": "production",
@@ -89,13 +97,14 @@ class StoreGovernanceRepositoryTest {
                 "server_key_masked": "Mid-server-••••••••497",
                 "is_enabled": true,
                 "fallback_static_qris_enabled": false,
-                "created_at": "2026-11-12T10:00:00Z",
-                "updated_at": "2026-11-12T11:00:00Z"
+                "validation_status": "verified",
+                "last_verified_at": "2026-11-14T02:00:00Z"
             }
         """.trimIndent()
 
+        var sentBody = ""
         val repository = KtorStoreGovernanceRepository(
-            httpClient = createMockClient(jsonPayload),
+            httpClient = createMockClient(jsonPayload) { sentBody = it },
             serverSettings = FakeServerSettingsRepository(),
             ioDispatcher = Dispatchers.Unconfined
         )
@@ -107,13 +116,15 @@ class StoreGovernanceRepositoryTest {
             serverKey = "Mid-server-secret12345678",
             isEnabled = true,
             fallbackStaticQrisEnabled = false,
-            verifyLive = false
+            verifyLive = true
         )
 
         val result = repository.savePaymentCredentials(input)
         assertTrue(result.isSuccess)
+        assertTrue(sentBody.contains("\"verify_live\":true"))
         val creds = result.getOrThrow()
         assertEquals(MidtransEnvironment.PRODUCTION, creds.environment)
+        assertEquals("verified", creds.validationStatus)
         assertFalse(creds.fallbackStaticQrisEnabled)
     }
 
@@ -128,8 +139,8 @@ class StoreGovernanceRepositoryTest {
                 "hero_subtitle_id": "Pesan dari meja Anda",
                 "hero_subtitle_en": "Order from your table",
                 "hero_banner_url": "https://cdn.cassy.pos/banner.webp",
-                "primary_hex": "#2C1A12",
-                "accent_hex": "#C68B59",
+                "primary_hex": "#1F5F52",
+                "accent_hex": "#E9A23B",
                 "high_contrast_mode": true,
                 "hide_powered_by_badge": true,
                 "custom_domain": "order.kafe.id"
@@ -147,7 +158,7 @@ class StoreGovernanceRepositoryTest {
         val cms = result.getOrThrow()
         assertEquals("Kopi & Roti Segar", cms.heroTitleId)
         assertEquals("Fresh Coffee & Pastry", cms.heroTitleEn)
-        assertEquals("#2C1A12", cms.primaryHex)
+        assertEquals("#1F5F52", cms.primaryHex)
         assertTrue(cms.hidePoweredByBadge)
     }
 
@@ -177,26 +188,4 @@ class StoreGovernanceRepositoryTest {
         assertFalse(settings.qrOrderingPaused)
         assertEquals(90, settings.tableTimeLimitMinutes)
     }
-
-    @Test
-    fun probeMidtransApi_sandboxKeyValidation_enforcesPrefix() = runTest {
-        val repository = KtorStoreGovernanceRepository(
-            httpClient = createMockClient("{}"),
-            serverSettings = FakeServerSettingsRepository(),
-            ioDispatcher = Dispatchers.Unconfined
-        )
-
-        // Valid sandbox key
-        val validSandbox = repository.probeMidtransApi("SB-Mid-server-testkey12345", "sandbox")
-        assertTrue(validSandbox.isSuccess)
-
-        // Invalid prefix for sandbox
-        val invalidSandbox = repository.probeMidtransApi("Mid-server-testkey12345", "sandbox")
-        assertTrue(invalidSandbox.isFailure)
-
-        // Valid production key
-        val validProd = repository.probeMidtransApi("Mid-server-prodkey123456", "production")
-        assertTrue(validProd.isSuccess)
-    }
 }
-

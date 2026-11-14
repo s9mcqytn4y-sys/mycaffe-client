@@ -14,7 +14,5 @@ interface StoreGovernanceRepository {
     suspend fun saveStoreCMS(input: StoreCMSConfigInput): Result<StoreCMSConfig>
     suspend fun getStoreSettings(): Result<StoreSettings>
     suspend fun updateStoreSettings(patch: StoreSettingsPatch): Result<StoreSettings>
-    suspend fun uploadHeroBanner(imageBytes: ByteArray): Result<String>
-    suspend fun probeMidtransApi(serverKey: String, environment: String): Result<Boolean>
 }
 

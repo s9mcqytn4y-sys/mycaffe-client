@@ -52,7 +52,13 @@ data class Shift(
     val countedCash: Long? = null,
     val variance: Long? = null,
     val varianceReason: String? = null,
+    val ownerOverrideBy: String? = null,
     val notes: String? = null
+)
+
+data class ShiftOpenResult(
+    val shift: Shift,
+    val openDrawer: Boolean = false
 )
 
 data class CashMovement(
@@ -64,6 +70,11 @@ data class CashMovement(
     val actorId: String,
     val reason: String? = null,
     val createdAt: String
+)
+
+data class CashMovementResult(
+    val movement: CashMovement,
+    val openDrawer: Boolean = false
 )
 
 data class ShiftCashSummary(
@@ -88,7 +99,26 @@ data class UnsettledTabSummary(
     val label: String,
     val status: String,
     val totalAmount: Long,
-    val createdAt: String
+    val createdAt: String,
+    val isOverdueBusinessDate: Boolean = false
+)
+
+data class XReport(
+    val shiftId: String,
+    val storeId: String,
+    val drawerId: String,
+    val drawerName: String = "",
+    val openedBy: String,
+    val openedByName: String = "",
+    val openedAt: String,
+    val generatedAt: String,
+    val status: ShiftStatus = ShiftStatus.OPEN,
+    val summary: ShiftCashSummary = ShiftCashSummary(),
+    val expectedCash: Long? = null,
+    val expectedRedacted: Boolean = false,
+    val unsettledOpenTabsCount: Int = 0,
+    val unsettledOpenTabsTotalAmount: Long = 0L,
+    val unsettledOpenTabs: List<UnsettledTabSummary> = emptyList()
 )
 
 data class ZReport(
@@ -108,8 +138,19 @@ data class ZReport(
     val countedCash: Long = 0L,
     val variance: Long = 0L,
     val varianceReason: String? = null,
+    val ownerOverrideBy: String? = null,
+    val overrideByName: String? = null,
     val notes: String? = null,
     val unsettledOpenTabsCount: Int = 0,
     val unsettledOpenTabsTotalAmount: Long = 0L,
-    val unsettledOpenTabs: List<UnsettledTabSummary> = emptyList()
+    val unsettledOpenTabs: List<UnsettledTabSummary> = emptyList(),
+    val amended: Boolean = false,
+    val amendedAt: String? = null,
+    val lateOfflineOrders: Int = 0,
+    val lateOfflineAmount: Long = 0L
+)
+
+data class ShiftCloseResult(
+    val report: ZReport,
+    val openDrawer: Boolean = false
 )
